@@ -1,0 +1,51 @@
+WACRM Website CMS — how to view it
+==================================
+
+TL;DR
+  Double-click  WACRM-CMS.html  (or open index.html — it forwards there).
+  Nothing to install, no build step, no internet connection needed.
+  The app is one self-contained file: HTML + CSS + JS + images inlined.
+
+Three ways, pick one
+--------------------
+
+1. Just look at it (recommended)
+     WACRM-CMS.html                      ← double-click this
+
+2. Serve it locally (nicer URLs, no file:// quirks)
+     python3 serve.py                    → http://localhost:4173
+
+3. Develop it (hot reload, editable source)
+     npm install
+     npm run dev                         → http://localhost:5173
+
+Which file is which
+-------------------
+  WACRM-CMS.html   the built, runnable app  ← the one you open
+  index.html       Vite's dev entry. It needs the dev server; opened from
+                   disk it shows a notice and forwards to WACRM-CMS.html.
+  src/             React 19 + TypeScript source (what npm run dev serves)
+  serve.py         zero-dependency static server (Python 3, no packages)
+  BACKEND-PLAN.md  the backend contract (v1.3 — §7.17 covers Sites & Domains)
+  MODULE-2-SPEC.md the Sites & Domains UI/UX architecture specification
+  STATE-COVERAGE.md Module 1 + Module 2: every state, how to trigger it, what is still missing
+  qa_module2.py    48 layout/data checks for Module 2   (python3, needs playwright)
+  qa_states_m1.py  39 state-coverage checks for Module 1
+  qa_states.py     25 state-coverage checks for Module 2
+  qa_flows.py      38 Module 1 regression steps
+  qa_module2.py    automated acceptance run for the Sites & Domains module
+  MODULE-1-REVIEW.md  build-vs-spec review, defects and fixes
+
+Module status
+-------------
+  Module 1  Overview dashboard          built, 38/38 flow checks
+  Module 2  Sites & Domains             built to the approved layout, 48/48 module checks
+  Modules 3+                            still placeholders (one at a time)
+
+  Module 2 lives at  #/sites  — click "Sites & Domains" in the sidebar.
+
+If the page is ever blank
+-------------------------
+  - Make sure you opened WACRM-CMS.html (or index.html), not src/main.tsx.
+  - Some browsers block file:// scripts for files that arrived inside a ZIP on
+    macOS (quarantine). Either allow it, or use option 2: python3 serve.py
