@@ -29,6 +29,7 @@ Which file is which
   BACKEND-PLAN.md  the backend contract (v1.3 — §7.17 covers Sites & Domains)
   MODULE-2-SPEC.md the Sites & Domains UI/UX architecture specification
   STATE-COVERAGE.md Module 1 + Module 2: every state, how to trigger it, what is still missing
+  ROLLBACK.md      how to return to a previous checkpoint (tags + revert recipes)
   qa_module2.py    48 layout/data checks for Module 2   (python3, needs playwright)
   qa_states_m1.py  39 state-coverage checks for Module 1
   qa_states.py     25 state-coverage checks for Module 2
