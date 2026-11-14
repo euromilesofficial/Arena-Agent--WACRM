@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 03:44:13 UTC · **generated against commit** `c84e4d6` · **working tree** 4 uncommitted file(s)
+**Generated** 2026-11-14 03:44:16 UTC · **generated against commit** `ea0fd16` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -192,14 +192,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `c84e4d6` — Handover: keep --check stable across amends.
-- Working tree: 4 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `ea0fd16` — Handover: keep --check stable across amends.
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
-| `c84e4d6` | 2026-11-14 | Handover: keep --check stable across amends |
+| `ea0fd16` | 2026-11-14 | Handover: keep --check stable across amends |
 | `ae3441c` | 2026-11-14 | Handover: label the header 'generated against commit' and prove --check is stable |
 | `1ff3cd8` | 2026-11-14 | Automate the handover: generated HANDOVER.md, QA evidence, pre-commit gate |
 | `f2ff414` | 2026-11-14 | Builder: draw a real monitor / tablet / phone icon family for the device switch |
