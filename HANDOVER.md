@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 21:40:40 UTC · **generated against commit** `d76e638` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 21:51:02 UTC · **generated against commit** `10530b7` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,131,117 B (1105 kB) · gzip 388 kB |
 | md5 | `9a9ffa75ccfe945e74f248ce59d20018` |
 | sha256 (first 16) | `a3dbf4881324a1e1` |
-| Built | 2026-11-14 21:40:39 |
+| Built | 2026-11-14 21:47:49 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **52 source files, 18,277 lines** of TS/TSX/CSS (25,798 lines across all tracked text files).
+Source inventory: **52 source files, 18,277 lines** of TS/TSX/CSS (25,912 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -216,13 +216,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `d76e638` — feat(module-5): composition diagram on the inspector overview tab.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `10530b7` — chore(qa): write screenshots as WebP directly, drop stray PNGs.
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `10530b7` | 2026-11-14 | chore(qa): write screenshots as WebP directly, drop stray PNGs |
 | `d76e638` | 2026-11-14 | feat(module-5): composition diagram on the inspector overview tab |
 | `fe6b36d` | 2026-11-14 | feat(module-5): desktop block library — four views, computed counts, insert path |
 | `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
@@ -234,7 +235,6 @@ First tasks:
 | `a572c7c` | 2026-11-14 | noop |
 | `28838cc` | 2026-11-14 | security: rotated the credential — 2-day token stored 0600, scope-probed, with an expiry warning at 40h |
 | `25c2c3f` | 2026-11-14 | chore: .gitignore blocks the file class a token would arrive in (this repo is public) |
-| `b68c566` | 2026-11-14 | security: never let a credential reach git; the token is 0600, scripted, documented as exposed |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
