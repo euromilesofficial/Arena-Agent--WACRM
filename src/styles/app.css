@@ -3070,8 +3070,8 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .wb-center{position:relative}
 .wb-aicb{
   display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;margin-left:4px;
-  border:1px solid #D8CCFF;border-radius:7px;background:#F7F5FF;color:#4B22D6;
-  font-size:11px;font-weight:650;letter-spacing:-.01em;cursor:pointer;
+  border:1px solid #CDBBFF;border-radius:7px;background:#F0EBFF;color:#3D22A8;
+  font-size:11px;font-weight:680;letter-spacing:-.01em;cursor:pointer;
   transition:background 160ms cubic-bezier(.16,1,.3,1),border-color 160ms cubic-bezier(.16,1,.3,1);
 }
 .wb-aicb:hover{background:#EFEBFF;border-color:#C3B0FF}
