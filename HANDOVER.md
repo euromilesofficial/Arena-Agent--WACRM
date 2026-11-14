@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 06:47:32 UTC · **generated against commit** `e6d8f58` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 06:57:54 UTC · **generated against commit** `fdf0695` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,042,053 B (1018 kB) · gzip 367 kB |
 | md5 | `119b71ca861482e33f3ea468629dd44a` |
 | sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 06:46:59 |
+| Built | 2026-11-14 06:57:02 |
 
 Packaged deliverables: `wacrm-app.zip` · `wacrm-app.bundle` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,368 lines across all tracked text files).
+Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,425 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -201,13 +201,15 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `e6d8f58` — chore: restore pre-commit hook execute bit (mode is lost by every copy).
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `fdf0695` — assets: bring the reference mocks into version control (16 images + manifest).
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `fdf0695` | 2026-11-14 | assets: bring the reference mocks into version control (16 images + manifest) |
+| `e741b9a` | 2026-11-14 | docs: ship PUSH-TO-GIT.md inside the deliverable and index it in the README |
 | `e6d8f58` | 2026-11-14 | chore: restore pre-commit hook execute bit (mode is lost by every copy) |
 | `67aa7ea` | 2026-11-14 | build: every build now ships a verified zip; add push tooling |
 | `9cac731` | 2026-11-14 | docs: record the packaging commands; bundle is now built on demand (workspace budget) |
@@ -218,8 +220,6 @@ First tasks:
 | `4e5b188` | 2026-11-14 | Restore the pre-commit hook's execute bit |
 | `2025d0a` | 2026-11-14 | Module 5 review: explain D1-D6 mechanically and propose the spine-first order |
 | `a8b0229` | 2026-11-14 | Handover: regenerate at the review commit |
-| `b71a563` | 2026-11-14 | Module 5 review: block library vs the industry, and what the CRM actually has |
-| `e8b3e7b` | 2026-11-14 | Handover: make the document self-reference-free |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
