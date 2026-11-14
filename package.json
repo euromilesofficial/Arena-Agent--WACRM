@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && cp dist/index.html WACRM-CMS.html && cp dist/index.html dist/WACRM-CMS.html",
+    "build": "tsc --noEmit && vite build && cp dist/index.html WACRM-CMS.html && cp dist/index.html dist/WACRM-CMS.html && npm run handover",
     "preview": "vite preview",
-    "serve": "python3 serve.py"
+    "serve": "python3 serve.py",
+    "handover": "node scripts/handover.mjs",
+    "qa": "node scripts/qa-all.mjs",
+    "qa:check": "node scripts/handover.mjs --check"
   },
   "dependencies": {
     "react": "^19.2.0",

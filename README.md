@@ -85,6 +85,30 @@ eight dialogs, **and** Pages → Builder → publish: pick a page, edit it in th
 panels, drag blocks, rewrite copy with the assistant, save, conflict, restore a
 revision, publish.
 
+## Handover (for a human or an AI agent picking this up cold)
+
+`HANDOVER.md` is **generated**, never hand-written. It carries the current module
+status, the measured build artifact (bytes, gzip, md5), the last QA tallies, the
+source inventory, the locked decisions, the next tasks and the traps that cost
+time last time.
+
+```bash
+npm run handover    # regenerate from handover.config.json + live repo facts
+npm run qa          # run every suite → qa/last-run.json → regenerate the handover
+npm run qa:check    # exit 1 when HANDOVER.md is stale (CI gate)
+npm run build       # also regenerates the handover
+```
+
+- `handover.config.json` is the human-owned half: intent, decisions, next steps,
+  traps, contracts. Edit it, never the markdown.
+- `scripts/handover.mjs` measures everything else (git, artifact hashes, file
+  inventory, QA tallies) so the document can never quote a stale number.
+- `scripts/qa-all.mjs` runs the suites, parses each summary line and writes
+  `qa/last-run.json` as machine-readable evidence.
+- `.githooks/pre-commit` regenerates and stages `HANDOVER.md`, so a commit can
+  never carry a stale handover. Enable it once per clone:
+  `git config core.hooksPath .githooks`.
+
 ## Reviews and specs
 
 - `MODULE-1-REVIEW.md` … `MODULE-4-REVIEW.md` — per-module build-versus-spec
