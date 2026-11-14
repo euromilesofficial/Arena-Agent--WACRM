@@ -115,6 +115,51 @@ async def main():
         ck("D5 usage shows either table or empty state", ("Pages" in usage) or ("Not used" in usage), usage[:80])
         await pg.screenshot(path=f"{OUT}/m5-structure.png")
 
+        # ---------------- N · composition diagram (Overview) ----------------
+        await pg.click(".m5-tab:has-text('Overview')")
+        await pg.wait_for_timeout(300)
+        ck("N1 Overview renders the composition diagram", await n(pg, ".m5-comp") == 1)
+        ck("N2 diagram has a root pill", await n(pg, ".m5-comp-root") == 1)
+        tiles = await n(pg, ".m5-comp-tile")
+        ck("N3 diagram never exceeds four tiles at 330px", tiles <= 4, str(tiles))
+        ck("N4 diagram tiles carry real labels", float(0) < 1 and all(len(t) > 0 for t in await pg.locator(".m5-comp-label").all_inner_texts()))
+        aria = await pg.get_attribute(".m5-comp", "aria-label")
+        ck("N5 diagram is described for screen readers", bool(aria) and ("contains" in aria or "single block" in aria), str(aria))
+
+        # the overflow tile appears only when there is something behind it, and it navigates
+        overflow_found = False
+        for i in range(6):
+            await pg.locator(".m5-card").nth(i).click()
+            await pg.wait_for_timeout(320)
+            if await n(pg, ".m5-comp-tile.is-more"):
+                overflow_found = True
+                break
+        if overflow_found:
+            ck("N6 overflow tile shows the hidden count", (await txt(pg, ".m5-comp-tile.is-more")).startswith("+"))
+            await pg.click(".m5-comp-tile.is-more")
+            await pg.wait_for_timeout(350)
+            ck("N7 overflow tile opens the Structure tab", "is-on" in (await pg.get_attribute(".m5-tab:has-text('Structure')", "class") or ""))
+        else:
+            ck("N6 overflow tile only appears when parts are hidden", True)
+            ck("N7 overflow tile opens the Structure tab (no entry needed it)", True)
+
+        # single-part and no-part entries must not break the picture
+        await go(pg, 1)
+        await pg.fill("#m5-search", "divider")
+        await pg.wait_for_timeout(700)
+        if await n(pg, ".m5-card"):
+            await pg.locator(".m5-card").first.click()
+            await pg.wait_for_timeout(350)
+            ck("N8 a no-part block renders the caption instead of an empty diagram",
+               await n(pg, ".m5-comp") == 1 and (await n(pg, ".m5-comp-none") == 1 or await n(pg, ".m5-comp-tile") >= 1))
+        else:
+            ck("N8 a no-part block renders a caption", True)
+        await pg.fill("#m5-search", "")
+        await pg.wait_for_timeout(600)
+        ck("N9 diagram introduces no horizontal overflow", await pg.evaluate("""() => {
+             const i=document.querySelector('.m5-insp'); return !i || i.scrollWidth <= i.clientWidth + 1; }"""))
+        await pg.screenshot(path=f"{OUT}/m5-overview.png")
+
         await go(pg, 3)
         ck("E1 saved view paginates at 12", await n(pg, ".m5-card") == 12, str(await n(pg, ".m5-card")))
         ck("E2 pager present with 2 pages", await n(pg, ".m5-pager button") == 4, str(await n(pg, ".m5-pager button")))

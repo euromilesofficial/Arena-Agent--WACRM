@@ -154,11 +154,13 @@
       },
       {
         "file": "qa_builder.py",
-        "covers": "M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths"
+        "covers": "M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths",
+        "assertions": 98
       },
       {
         "file": "qa_states_m4.py",
-        "covers": "M4 state matrix"
+        "covers": "M4 state matrix",
+        "assertions": 47
       },
       {
         "file": "qa_pages.py",
@@ -187,7 +189,8 @@
       {
         "file": "qa_library.py",
         "name": "Module 5 — Block Library",
-        "assertions": 72
+        "assertions": 81,
+        "covers": "M5 four views, filters, inspector tabs, composition diagram, insert path"
       }
     ]
   },

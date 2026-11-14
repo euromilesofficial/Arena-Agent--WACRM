@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 20:37:56 UTC · **generated against commit** `1b377ab` · **working tree** 18 uncommitted file(s)
+**Generated** 2026-11-14 21:38:18 UTC · **generated against commit** `fe6b36d` · **working tree** 9 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -42,10 +42,10 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 1,123,620 B (1097 kB) · gzip 386 kB |
-| md5 | `3080085f05870241283659988c00bff7` |
-| sha256 (first 16) | `a26a9ed7e1d2b129` |
-| Built | 2026-11-14 20:37:55 |
+| Size | 1,131,117 B (1105 kB) · gzip 388 kB |
+| md5 | `9a9ffa75ccfe945e74f248ce59d20018` |
+| sha256 (first 16) | `a3dbf4881324a1e1` |
+| Built | 2026-11-14 21:38:17 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,28 +86,28 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **52 source files, 18,079 lines** of TS/TSX/CSS (25,528 lines across all tracked text files).
+Source inventory: **52 source files, 18,277 lines** of TS/TSX/CSS (25,798 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 11 | 3,946 | data seams, registries, formatting, no JSX |
+| `src/lib/` | 11 | 4,059 | data seams, registries, formatting, no JSX |
 | `src/components/` | 30 | 7,193 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 6 | 3,379 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 3,491 | one tokenised stylesheet (design system) |
+| `src/views/` | 6 | 3,434 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 3,521 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 3,491 |
+| `src/styles/app.css` | 3,521 |
 | `BACKEND-PLAN.md` | 1,375 |
 | `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
-| `src/views/Library.tsx` | 843 |
+| `src/views/Library.tsx` | 898 |
 | `src/lib/builder.ts` | 828 |
 | `src/views/Pages.tsx` | 789 |
-| `src/lib/library-db.ts` | 615 |
+| `src/lib/library-db.ts` | 728 |
 | `src/lib/store.tsx` | 569 |
 | `src/components/pages/PageModals.tsx` | 552 |
 | `src/views/Sites.tsx` | 538 |
@@ -216,13 +216,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `1b377ab` — docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP.
-- Working tree: 18 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `fe6b36d` — feat(module-5): desktop block library — four views, computed counts, insert path.
+- Working tree: 9 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
-- Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
+- Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `fe6b36d` | 2026-11-14 | feat(module-5): desktop block library — four views, computed counts, insert path |
 | `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
 | `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
 | `d53dbd3` | 2026-11-14 | chore: the mirror no longer carries HANDOVER.md — the hook owns that file |
@@ -234,7 +235,6 @@ First tasks:
 | `25c2c3f` | 2026-11-14 | chore: .gitignore blocks the file class a token would arrive in (this repo is public) |
 | `b68c566` | 2026-11-14 | security: never let a credential reach git; the token is 0600, scripted, documented as exposed |
 | `e018019` | 2026-11-14 | chore: checkpoints never move an existing milestone tag; tags are create-only |
-| `b354de2` | 2026-11-14 | docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
