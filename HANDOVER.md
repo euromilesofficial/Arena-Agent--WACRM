@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 07:02:11 UTC · **generated against commit** `8ff416f` · **working tree** 5 uncommitted file(s)
+**Generated** 2026-11-14 07:06:33 UTC · **generated against commit** `283ad3c` · **working tree** 19 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,042,053 B (1018 kB) · gzip 367 kB |
 | md5 | `119b71ca861482e33f3ea468629dd44a` |
 | sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 07:01:20 |
+| Built | 2026-11-14 07:05:50 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,360 lines across all tracked text files).
+Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,421 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -205,18 +205,18 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `8ff416f` — docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence.
-- Working tree: 5 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `283ad3c` — chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them.
+- Working tree: 19 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
-| `8ff416f` | 2026-11-14 | docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence |
-| `d821c8a` | 2026-11-14 | docs: point the workspace at Git for the mocks; record the sparse-checkout trap |
-| `62665e9` | 2026-11-14 | chore: stop tracking generated QA screenshots |
-| `307a294` | 2026-11-14 | chore: restore execute bits (lost on copy) |
-| `fdf0695` | 2026-11-14 | assets: bring the reference mocks into version control (16 images + manifest) |
+| `283ad3c` | 2026-11-14 | chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them |
+| `5d1a604` | 2026-11-14 | docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence |
+| `4e9aa0f` | 2026-11-14 | docs: point the workspace at Git for the mocks; record the sparse-checkout trap |
+| `4b870b8` | 2026-11-14 | chore: stop tracking generated QA screenshots |
+| `d57c613` | 2026-11-14 | chore: restore execute bits (lost on copy) |
 | `e741b9a` | 2026-11-14 | docs: ship PUSH-TO-GIT.md inside the deliverable and index it in the README |
 | `e6d8f58` | 2026-11-14 | chore: restore pre-commit hook execute bit (mode is lost by every copy) |
 | `67aa7ea` | 2026-11-14 | build: every build now ships a verified zip; add push tooling |
