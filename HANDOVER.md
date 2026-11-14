@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 06:47:00 UTC · **generated against commit** `9cac731`
+**Generated** 2026-11-14 06:47:12 UTC · **generated against commit** `67aa7ea` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,295 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,366 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -201,13 +201,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `../repo`; branch `main`; HEAD `9cac731` — docs: record the packaging commands; bundle is now built on demand (workspace budget).
-- Working tree: clean.
+- Repo: that git directory is `.`; branch `main`; HEAD `67aa7ea` — build: every build now ships a verified zip; add push tooling.
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `67aa7ea` | 2026-11-14 | build: every build now ships a verified zip; add push tooling |
 | `9cac731` | 2026-11-14 | docs: record the packaging commands; bundle is now built on demand (workspace budget) |
 | `3eaad5e` | 2026-11-14 | chore: regenerate HANDOVER.md |
 | `c330068` | 2026-11-14 | polish: AI Copy toolbar pill contrast (violet tint, pressed-state fill) |
@@ -219,7 +220,6 @@ First tasks:
 | `b71a563` | 2026-11-14 | Module 5 review: block library vs the industry, and what the CRM actually has |
 | `e8b3e7b` | 2026-11-14 | Handover: make the document self-reference-free |
 | `0eb8e03` | 2026-11-14 | Handover: regenerate after the amend |
-| `ea0fd16` | 2026-11-14 | Handover: keep --check stable across amends |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
