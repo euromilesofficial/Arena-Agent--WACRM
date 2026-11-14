@@ -7,3 +7,7 @@ dist/
 # QA screenshots are generated artifacts, shipped in wacrm-app.zip instead
 qa/*.webp
 qa/*.png
+
+# credential — never in the repo
+.gh-token
+*.token

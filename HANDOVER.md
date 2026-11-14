@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 07:06:54 UTC · **generated against commit** `8585206` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 19:25:04 UTC · **generated against commit** `39716da` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,042,053 B (1018 kB) · gzip 367 kB |
 | md5 | `119b71ca861482e33f3ea468629dd44a` |
 | sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 07:05:50 |
+| Built | 2026-11-14 19:24:33 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,361 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,364 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -94,7 +94,7 @@ Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,361 lines 
 | `src/components/` | 29 | 6,747 | reusable UI: shell, ui kit, charts, and per-module parts |
 | `src/views/` | 5 | 2,536 | one file per screen; routes are hash-based |
 | `src/styles/` | 1 | 3,160 | one tokenised stylesheet (design system) |
-| `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
+| `qa/` | 56 | — | 56 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
@@ -147,6 +147,8 @@ Product rules (non-negotiable, they came from the user):
 - Every build ships a zip: `npm run build` ends with `scripts/package.mjs`, which rewrites /home/user/wacrm-app.zip and verifies the WACRM-CMS.html inside it matches the fresh build.
 - Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.
 - The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.
+- END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes — run `/home/user/checkpoint.sh "what changed"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.
+- The GitHub credential lives at /home/user/.gh-token (0600, gitignored). Scripts read GH_TOKEN → the file, in that order; it is passed inline to a single push and never written into .git/config or the repo.
 
 Decisions already made — do not reopen without the user:
 
@@ -203,16 +205,18 @@ First tasks:
 - uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.
 - uploads/ is skip-worktree — do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done.
 - History rewrites must be range-limited: `git filter-branch --index-filter … -- d2dd7db..main` keeps the branch base (and therefore the fast-forward to origin) intact. A bare `--all` rewrites the root as well, and the push stops being a fast-forward — recover by re-cloning the pre-rewrite bundle, never by forcing.
+- Push state as of the token handover: origin/main was d2dd7db (Module 3 spec only). Everything from Module 3's build onward — 30 commits — was local until the first successful push; if a session ever finds origin behind again, run checkpoint.sh rather than assuming the work is safe.
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `8585206` — docs: mocks are WebP now; handover and push notes follow.
+- Repo: that git directory is `../repo`; branch `main`; HEAD `39716da` — docs: record the range-limited rewrite rule.
 - Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `39716da` | 2026-11-14 | docs: record the range-limited rewrite rule |
 | `8585206` | 2026-11-14 | docs: mocks are WebP now; handover and push notes follow |
 | `62beb06` | 2026-11-14 | assets: re-encode the reference mocks as WebP — 27.1 MB → 2.9 MB (10.8%) |
 | `283ad3c` | 2026-11-14 | chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them |
@@ -224,7 +228,6 @@ First tasks:
 | `e6d8f58` | 2026-11-14 | chore: restore pre-commit hook execute bit (mode is lost by every copy) |
 | `67aa7ea` | 2026-11-14 | build: every build now ships a verified zip; add push tooling |
 | `9cac731` | 2026-11-14 | docs: record the packaging commands; bundle is now built on demand (workspace budget) |
-| `3eaad5e` | 2026-11-14 | chore: regenerate HANDOVER.md |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

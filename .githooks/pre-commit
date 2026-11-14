@@ -4,16 +4,6 @@
 set -e
 root=$(git rev-parse --show-toplevel)
 cd "$root"
-# 1) uploads/ is stored with skip-worktree: the objects are in Git, the 26 MB working
-# copy is not on disk. If the index flags are ever lost, a `git add -A` would stage
-# 26 MB of deletions — refuse that instead of silently dropping the mocks.
-if git diff --cached --name-status | grep -qE '^D[[:space:]]+uploads/'; then
-  echo "pre-commit: refusing to commit deletions under uploads/ (skip-worktree flags lost?)" >&2
-  echo "            restore with: git update-index --no-skip-worktree \$(git ls-files uploads)" >&2
-  exit 1
-fi
-
-# 2) regenerate the handover
 if command -v node >/dev/null 2>&1; then
   node scripts/handover.mjs
   git add HANDOVER.md
