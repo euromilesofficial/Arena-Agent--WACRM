@@ -39,6 +39,7 @@ src/
     store.tsx               AppProvider: async facade, optimistic state, toasts,
                             drawers, modals, notifications, route guard
     cms-pages.ts            Module 3 page registry: filters, tree, slug rules, seeds
+    library-db.ts           Module 5 catalogue, saved templates, placement index
     builder.ts              Module 4 block registry, 23 section presets, 5 page
                             templates, the seeded Study Abroad document
     builder-db.ts           draft load/save (CAS), revisions, library reads,
@@ -144,6 +145,7 @@ Playwright + Chromium suites, all green against `WACRM-CMS.html` at 1440×900:
 | --- | --- | --- |
 | `qa_builder.py` | Module 4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths | 97/97 |
 | `qa_states_m4.py` | Module 4 state matrix | 47/47 |
+| `qa_library.py` | Module 5 catalogue, four views, inspector tabs, insert path, 12 states | 72/72 |
 | `qa_pages.py` | Module 3 registry, tree, inspector, modals, deep links | 106/106 |
 | `qa_states_m3.py` | Module 3 state matrix | 40/40 |
 | `qa_module2.py` | Module 2 layout, geometry, consistency | 48/48 |

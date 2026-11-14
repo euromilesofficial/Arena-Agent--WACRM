@@ -1335,3 +1335,40 @@ Things the mock currently invents that the backend must **not** inherit:
 5. p95 latency inside budget, verified by a load test at 2× expected peak.
 6. Failure modes exercised: dependency down, timeout, conflict, rate limit — each produces the documented error code and a usable UI state.
 7. Runbook entry: what breaks, how to detect, how to recover.
+
+---
+
+## 7.26 Module 5 — Block Library contracts
+
+Catalogue reads and the single mutation path. Nothing here publishes; every insert lands as one draft revision.
+
+```
+GET    /cms/sites/:siteId/library?view=&q=&category=&scope=&sort=&page=&pageSize=
+       → { rows[], total, facets:{builtin,workspace,site}, chips:[{id,label,count}],
+           kpi:{native,sections,saved,inUse} }
+
+GET    /cms/sites/:siteId/library/:templateId/usage
+       → { pages:[{pageId,pageTitle,siteId,status,index,updatedAt}],
+           totals:{pages,published,draft,placements} }
+
+POST   /cms/sites/:siteId/pages/:pageId/draft/insert-template
+       body  { templateId, variant?, position:{mode:"top"|"end"|"after", afterId?}, expectRevision }
+       200   { revision, sectionIds[], placementId }
+       403   denied            — role cannot edit this page
+       409   conflict          — { latestRevision } (client reloads or keeps its copy)
+       413   page_limit        — 40-block prototype ceiling
+       422   dependency_unmet  — { requirements:[{kind,label,fixUrl}] }
+       503   service_down
+
+POST   /cms/sites/:siteId/library/templates            (create from page section)
+       body { pageId, sectionIndex, name, description, category, scope }
+       409 name_taken (per scope)
+
+POST   /cms/sites/:siteId/library/templates/:id/duplicate
+DELETE /cms/sites/:siteId/library/templates/:id         → 409 in_use { pages[] }
+POST   /cms/sites/:siteId/library/import                → gated until the v1 interchange validates
+```
+
+**Invariants the API must hold** (they are QA-asserted in the prototype): `kpi.*` and the `rows` for the
+same query come from one snapshot; `sum(facets.*) == total` before chips/scope filters; a placement row
+exists for every materialized copy and survives template deletion; `expectRevision` is mandatory.

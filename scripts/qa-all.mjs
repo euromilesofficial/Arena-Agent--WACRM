@@ -29,7 +29,7 @@ const only = process.argv.slice(2).filter((a) => a.endsWith(".py"));
 const PARSERS = [
   { kind: "pf", re: /(\d+)\s*passed,\s*(\d+)\s*failed/i },
   { kind: "pf", re: /steps:\s*(\d+)\s*ok\s*\/\s*(\d+)\s*failed/i },
-  { kind: "of", re: /(\d+)\s*\/\s*(\d+)\s+(?:[A-Za-z0-9 ]*?)?(?:checks|state checks) passed/i },
+  { kind: "of", re: /(\d+)\s*\/\s*(\d+)\s+(?:[A-Za-z0-9 ]*?)?(?:checks|state checks|assertions) passed/i },
 ];
 
 function parse(out) {

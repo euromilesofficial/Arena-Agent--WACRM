@@ -6,6 +6,7 @@ import { Overview } from "./views/Overview";
 import { Sites } from "./views/Sites";
 import { Pages } from "./views/Pages";
 import { Builder } from "./views/Builder";
+import { Library } from "./views/Library";
 import { Placeholder } from "./views/Placeholder";
 import { DrawerHost } from "./components/overlays/DrawerHost";
 import { ModalHost } from "./components/overlays/ModalHost";
@@ -19,6 +20,7 @@ function Screen() {
         : screen === "sites" ? <Sites />
         : screen === "pages" ? <Pages />
         : screen === "builder" ? <Builder />
+        : screen === "library" ? <Library />
         : <Placeholder screen={screen} />}
     </div>
   );

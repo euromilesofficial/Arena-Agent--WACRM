@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 20:01:18 UTC · **generated against commit** `725c9da` · **working tree** 16 uncommitted file(s)
+**Generated** 2026-11-14 20:37:56 UTC · **generated against commit** `1b377ab` · **working tree** 18 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -29,23 +29,23 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | M2 | Sites & Domains | `#/sites` | **done** | qa_module2.py 48/48 · state matrix in STATE-COVERAGE.md |
 | M3 | Pages & Routes | `#/pages?site=&tab=&q=&page=&sel=` | **done** | qa_pages.py 106/106 · qa_states_m3.py 40/40 |
 | M4 | Visual Builder | `#/builder?site=&page=&sel=&lib=&insp=` | **done** | qa_builder.py 97/97 · qa_states_m4.py 47/47 |
-| M5 | Block library expansion + CRM integration | `builder` | **review delivered — awaiting approval** | MODULE-5-REVIEW.md (nothing implemented) |
+| M5 | Block Library | `#/library` | **done** | qa_library.py 72/72 · qa_builder.py 98/98 |
 
 - **M1 Overview** — Dashboard grid, 6 KPI drawers, funnel, acquisition, site health, publishing rail, release wizard, rollback.
 - **M2 Sites & Domains** — Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks.
 - **M3 Pages & Routes** — Registry + tree + inspector, 8 modals, slug/route guards, deep links, trash with restore window.
 - **M4 Visual Builder** — 3-panel editor, 19 blocks / 23 sections / 5 templates, drag with refusal reasons, token-bounded style, autosave 2 s + CAS, revisions with block diff + restore, AI copy stream, publish handoff into M1.
-- **M5 Block library expansion + CRM integration** — Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 → 38 offered blocks in 8 chips, 23 → 32 sections, 5 → 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists — there is a WhatsApp Flows builder, a custom-fields registry (19 types × 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM. §11 of the review explains D1–D6 mechanically and proposes flipping the order: forms/lead-capture spine first, interlink surfaces second, palette expansion third.
+- **M5 Block Library** — Four views (All · Native 20 · Sections 23 · Saved 14), computed KPI/in-use counts, filter rail, grouped grid + list, inspector (Overview/Properties/Compatibility · Overview/Structure/Usage), Insert into Page with six outcomes, Create from page section, duplicate, guarded delete.
 
 ## 3. Build artifact (measured now)
 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 1,042,053 B (1018 kB) · gzip 367 kB |
-| md5 | `119b71ca861482e33f3ea468629dd44a` |
-| sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 19:57:38 |
+| Size | 1,123,620 B (1097 kB) · gzip 386 kB |
+| md5 | `3080085f05870241283659988c00bff7` |
+| sha256 (first 16) | `a26a9ed7e1d2b129` |
+| Built | 2026-11-14 20:37:55 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,32 +86,32 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,966 lines across all tracked text files).
+Source inventory: **52 source files, 18,079 lines** of TS/TSX/CSS (25,528 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 10 | 3,327 | data seams, registries, formatting, no JSX |
-| `src/components/` | 29 | 6,747 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 5 | 2,536 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 3,160 | one tokenised stylesheet (design system) |
+| `src/lib/` | 11 | 3,946 | data seams, registries, formatting, no JSX |
+| `src/components/` | 30 | 7,193 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/views/` | 6 | 3,379 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 3,491 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 3,160 |
-| `BACKEND-PLAN.md` | 1,338 |
+| `src/styles/app.css` | 3,491 |
+| `BACKEND-PLAN.md` | 1,375 |
 | `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
-| `src/lib/builder.ts` | 824 |
+| `src/views/Library.tsx` | 843 |
+| `src/lib/builder.ts` | 828 |
 | `src/views/Pages.tsx` | 789 |
+| `src/lib/library-db.ts` | 615 |
 | `src/lib/store.tsx` | 569 |
 | `src/components/pages/PageModals.tsx` | 552 |
 | `src/views/Sites.tsx` | 538 |
 | `src/components/builder/Blocks.tsx` | 520 |
-| `src/components/Shell.tsx` | 501 |
-| `src/lib/builder-db.ts` | 460 |
 
 ## 6. Data seam and contracts
 
@@ -149,6 +149,8 @@ Product rules (non-negotiable, they came from the user):
 - The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.
 - END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes — run `/home/user/checkpoint.sh "what changed"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.
 - GitHub credential: /home/user/.gh-token (0600, outside the repo). Expiry date in /home/user/.gh-token-expiry — currently 2026-11-17; checkpoint.sh warns when under 12h remain and prints the regenerate link. Never committed: a pre-commit gate refuses token patterns. If it lapses, the push fails with 401 and nothing is lost — commits stay local until the next checkpoint.
+- Catalogue counts are computed from the registry (20 types · 23 sections · 14 saved). If a number appears twice in the source, one of them is a defect, not a default.
+- Only Insert into Page may mutate a page from Module 5, and it must pass `expectRevision` so a stale modal gets a 409.
 
 Decisions already made — do not reopen without the user:
 
@@ -167,19 +169,20 @@ Decisions already made — do not reopen without the user:
 
 ## 8. What is next
 
-**Build the forms spine — the CMS form row, the public submit endpoint contract, consent records and the cms_form source filter on trigger.lead.created. Decisions are closed: see INTERLINK-PLAN.md.**
+**Module 5 (Block Library) is complete: four views, computed counts, inspector tab sets and the single Insert-into-Page mutation path. Nothing is blocked.**
 
 Blocked on:
 
-- Push to GitHub: needs a write credential (run /home/user/push-to-github.sh with GITHUB_TOKEN, or merge wacrm-app.bundle by hand — see PUSH-TO-GIT.md). Local history is complete: 18 commits ahead of origin/main, 0 behind.
+- Module 6 (Forms & Leads) waits on the next specification or on a go-ahead to use the shape recorded in MODULE-5-REVIEW.md §5.
+- Import Template stays disabled until the v1 native interchange format is written (deferred to Module 7).
+- The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost).
 
 First tasks:
 
-1. Build Module 5 forms: forms list + 3-panel form builder + consent block + public submit + source attribution + submissions index (counts only, no PII in the CMS).
-2. Ship the Form and WhatsApp CTA blocks with it: together they complete capture → CRM → automation.
-3. Write BACKEND-PLAN.md §7.20 (cms_forms, submit, consent, page stats, automation suggestions, publish snapshot) before the code.
-4. Extend the Automation group in the inspector: per-block declared contract + 'Suggest a workflow' handoff into Module 2.
-5. Module 6: Integrations pane.
+1. Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.
+2. Write the Module 6 spec (Forms & Leads): form builder, public submit endpoint, consent snapshot, crm_form:<slug> lead source. The shape is already in MODULE-5-REVIEW.md §5 and BACKEND-PLAN.md.
+3. Only then: Import Template's v1 interchange validator (Module 5 §16), and the deferred 19 → 38 palette expansion if it is still wanted.
+4. Keep the count contract: the library, the builder palette and the KPI strip must return the same numbers after every change.
 
 ## 9. Traps that cost time last time
 
@@ -206,16 +209,21 @@ First tasks:
 - uploads/ is skip-worktree — do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done.
 - History rewrites must be range-limited: `git filter-branch --index-filter … -- d2dd7db..main` keeps the branch base (and therefore the fast-forward to origin) intact. A bare `--all` rewrites the root as well, and the push stops being a fast-forward — recover by re-cloning the pre-rewrite bundle, never by forcing.
 - Push state as of the token handover: origin/main was d2dd7db (Module 3 spec only). Everything from Module 3's build onward — 30 commits — was local until the first successful push; if a session ever finds origin behind again, run checkpoint.sh rather than assuming the work is safe.
+- Module 4's builder palette already owns the `lb-*` CSS namespace. Module 5 shipped as `m5-*` after a half-rendered grid exposed the collision — never reuse `lb-` for a new screen.
+- A card grid whose items are flex columns needs `align-items:start`; with the default `stretch`, Chrome resolves the cyclic height and collapses every card to one text line (thumb computed to 1px).
+- The section category `Forms` is separate from the block group `Form` (singular). Both are real and are asserted separately in qa_builder.py (C3/C3b) and qa_library.py (C5).
+- Playwright needs `LD_LIBRARY_PATH=/tmp/libs/root/usr/lib/x86_64-linux-gnu` after scripts/qa-env.sh — /tmp is wiped between sessions and the libs must be re-fetched with `apt-get download` (no root available).
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `725c9da` — docs: record the real token expiry (17 Nov) and key the warning to it.
-- Working tree: 16 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `1b377ab` — docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP.
+- Working tree: 18 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
 | `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
 | `d53dbd3` | 2026-11-14 | chore: the mirror no longer carries HANDOVER.md — the hook owns that file |
 | `a2df16c` | 2026-11-14 | noop |
@@ -227,7 +235,6 @@ First tasks:
 | `b68c566` | 2026-11-14 | security: never let a credential reach git; the token is 0600, scripted, documented as exposed |
 | `e018019` | 2026-11-14 | chore: checkpoints never move an existing milestone tag; tags are create-only |
 | `b354de2` | 2026-11-14 | docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules |
-| `95d3f16` | 2026-11-14 | docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

@@ -73,13 +73,13 @@ async def main():
         # ============ B · library blocks ============
         ck("B1 three library tabs", await n(pg, ".wb-lib-tab") == 3)
         ck("B2 blocks tab is active", "True" == str(await pg.eval_on_selector('#wb-tab-blocks', 'e => e.getAttribute("aria-selected")')).capitalize())
-        ck("B3 19 archetype tiles offered", await n(pg, ".wb-tile") == 19, str(await n(pg, ".wb-tile")))
+        ck("B3 20 archetype tiles offered", await n(pg, ".wb-tile") == 20, str(await n(pg, ".wb-tile")))
         ck("B4 five chips with computed counts",
            await pg.eval_on_selector_all(".wb-chip", "els => els.map(e => e.innerText.replace('\\n',' ').trim())") ==
-           ["All 19", "Content 9", "Media 2", "Layout 4", "Form 4"],
+           ["All 20", "Content 10", "Media 2", "Layout 5", "Form 3"],
            str(await pg.eval_on_selector_all(".wb-chip", "els => els.map(e => e.innerText.replace('\\n',' '))")))
-        ck("B5 five group headers", await n(pg, ".wb-group-head") == 5)
-        ck("B6 footer is registered but not offered", await n(pg, '[data-block="footer"]') == 0)
+        ck("B5 four group headers (spec §20 taxonomy)", await n(pg, ".wb-group-head") == 4)
+        ck("B6 footer is offered as the 20th type (module 5 §20)", await n(pg, '[data-block="footer"]') == 1)
         ck("B7 footer note explains where it lives", "Layouts & Templates" in await pg.inner_text(".wb-lib-note"))
         await pg.fill(".wb-lib-search input", "hero")
         await pg.wait_for_timeout(250)
@@ -97,10 +97,15 @@ async def main():
         await pg.wait_for_timeout(300)
         ck("C1 23 section presets", await n(pg, ".wb-sec-card") == 23, str(await n(pg, ".wb-sec-card")))
         ck("C2 section category counts", await pg.eval_on_selector_all(".wb-chip", "els => els.map(e => e.innerText.replace('\\n',' ').trim())") ==
-           ["All 23", "Hero 5", "Content 6", "Features 6", "CTA 6"])
+           ["All 23", "Hero 5", "Content 6", "Features 6", "CTA 4", "Forms 2"])
         await pg.click('.wb-chip:has-text("CTA")')
         await pg.wait_for_timeout(200)
-        ck("C3 CTA category filters to six", await n(pg, ".wb-sec-card") == 6)
+        ck("C3 CTA category filters to four", await n(pg, ".wb-sec-card") == 4)
+        await pg.click('.wb-chip:has-text("Forms")')
+        await pg.wait_for_timeout(250)
+        ck("C3b Forms category filters to two", await n(pg, ".wb-sec-card") == 2)
+        await pg.click('.wb-chip:has-text("CTA")')
+        await pg.wait_for_timeout(200)
         await pg.click('.wb-chip:has-text("All")')
         await pg.wait_for_timeout(200)
         await pg.click('.wb-sec-card:has-text("Stats Strip") >> text=Preview')
