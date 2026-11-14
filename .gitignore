@@ -3,3 +3,7 @@ dist/
 *.zip
 *.bundle
 .DS_Store
+
+# QA screenshots are generated artifacts, shipped in wacrm-app.zip instead
+qa/*.webp
+qa/*.png
