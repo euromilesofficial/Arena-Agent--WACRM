@@ -43,6 +43,7 @@ git config core.hooksPath .githooks
 # copy everything the clone should own, minus node_modules/dist/build junk
 ( cd "$APP" && tar -cf - \
     --exclude=node_modules --exclude=dist --exclude='qa/*.webp' --exclude='qa/*.png' \
+    --exclude=HANDOVER.md \
     . ) | tar -xf - -C "$REPO"
 
 # the workspace-level docs travel too
