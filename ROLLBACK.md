@@ -54,6 +54,7 @@ That file is the complete, self-contained app as it shipped at that checkpoint �
 | `module-1-and-2-import` | Module 1 (Overview) + Module 2 (Sites & Domains) as first committed — landed together because the Module 2 rebuild rewrote the same files |
 | `module-2-complete` | Module 2 rebuild verified: 48/48 layout, 25/25 Module 2 states, 39/39 Module 1 states, 38/38 flows |
 | `module-3-complete` | Module 3 (Pages & Routes) verified: 105/105 module checks, 40/40 state checks, Module 1–2 regressions still green |
+| `module-4-complete` | Module 4 (Visual Builder) verified: 97/97 builder checks, 47/47 state checks, 106/106 Module 3, 40/40 + 39/39 + 48/48 state/layout, 38/38 flows |
 
 Going forward: a commit per logical change, and a `module-N-complete` tag the moment a module passes its checks — so "roll back to the last good module" is always one command.
 

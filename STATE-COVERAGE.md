@@ -1,4 +1,4 @@
-# State coverage — Modules 1, 2 & 3
+# State coverage — Modules 1, 2, 3 & 4
 
 Every state below is code-backed in `WACRM-CMS.html` (React 19 + TS build; all reads go through `src/lib/data.ts`, which adds latency and failure paths, so nothing is a static mock in the view layer).
 
@@ -8,8 +8,10 @@ Every state below is code-backed in `WACRM-CMS.html` (React 19 + TS build; all r
 | `qa_states.py` | Module 2 — Sites & Domains states | **25/25** |
 | `qa_module2.py` | Module 2 layout, geometry, data consistency, overflow | **48/48** |
 | `qa_flows.py` | cross-module flows: navigation, publish wizard, palette, drawers | **38 ok / 0 failed** |
-| `qa_pages.py` | Module 3 — Pages & Routes: registry, tree, inspector, 8 modals, guards, deep links, 3 widths | **105/105** |
+| `qa_pages.py` | Module 3 — Pages & Routes: registry, tree, inspector, 8 modals, guards, deep links, 3 widths | **106/106** |
 | `qa_states_m3.py` | Module 3 — loading, empty, 503, conflict, viewer, empty trash, stale inspector, bulk partial failure, undo | **40/40** |
+| `qa_builder.py` | Module 4 — Visual Builder: 3 panels, header, status strip, library (19/23/5), stage, inspector, drag, AI, autosave, publish, revisions, 3 widths | **97/97** |
+| `qa_states_m4.py` | Module 4 — skeleton, empty page, draft failure, viewer, CAS conflict, save failure, AI error/abort, empty catalogue, deleted page, publish guards, reduced motion, keyboard, dialog dismissal | **47/47** |
 
 **Triggering states by hand:** open `WACRM-CMS.html`, then use the `Prototype states` menu (beaker icon, top-right) for Default / Empty (no data in range) / Error / Publish conflict / Permission denied (Viewer). Everything else happens by clicking.
 
@@ -139,3 +141,61 @@ Each gap has a contract row in `BACKEND-PLAN.md` §7.17, so they are additions r
 - **Unsaved-changes prompt** in the builder handoff — there is nothing to lose yet (Module 4).
 
 Each gap has a contract row in `BACKEND-PLAN.md` §8.
+
+---
+
+## Module 4 — Visual Builder
+
+One screen, three panels, no fourth rail. Everything below is code-backed in `WACRM-CMS.html`; the document, autosave, revisions, presence and AI stream all go through `src/lib/builder-db.ts`, which adds latency and failure paths, so no state is a static picture.
+
+| # | State | What you see | How to reach it | Backend contract |
+| --- | --- | --- | --- | --- |
+| 1 | Loading | panel-shaped skeleton (header, 3 library groups, stage, inspector) at the real row heights; no layout shift on swap | first paint, or navigate in again | `GET /v1/pages/{id}/draft` |
+| 2 | Empty page | stage shows `This page is empty` + 3 CTAs; the first CTA switches the library to Blocks and focuses the search; the canvas is a live drop target | `Prototype states → Empty`, or `+ Add block` on a fresh page | `200` with `document: []` |
+| 3 | Draft load failure | blocking card naming the page and the reason, `Retry`; the shell stays usable (library and inspector render, nothing is editable) | `Prototype states → Error` | `5xx` on the draft read |
+| 4 | Viewer / read-only | `.wb-readonly`, violet strip, every field and tile disabled, `Publish` disabled with a reason, selection still works so the page can be inspected | `Prototype states → Permission denied (Viewer)` | `403` on any write |
+| 5 | Autosave → saved | strip goes `Unsaved` → `Saving…` → `Draft saved · 2:44 AM` only when the write is acknowledged; 2 s debounce | type in any inspector field | `PATCH …/draft` `If-Match` |
+| 6 | CAS conflict | `This draft was saved elsewhere` with the competing editor, `Reload theirs` / `Keep mine`; the local draft survives either way and the strip returns to saved | `Prototype states → Publish conflict`, then edit | `409 REVISION_CONFLICT` |
+| 7 | Save failure | strip `Save failed` (`data-status="failed"`), `Retry` inside the pill, and a leave guard offering `Stay here` / `Retry save`; retry succeeds on the second attempt | `Prototype states → Error` while editing | `5xx` on `PATCH` |
+| 8 | Undo / redo | 40-step history, both buttons disable at the ends, ⌘Z / ⇧⌘Z, toasts name the step | any structural edit | client-side |
+| 9 | Device morph | 1440 / 768 / 375 with the frame resizing and the document reflowing; mobile collapses the nav to a hamburger and stacks the hero | the three device buttons | view state |
+| 10 | Zoom | 50 / 75 / 100 / 125 / Fit; `Fit` measures the stage (640 px at 1440) and never changes the document | zoom select | view state |
+| 11 | Library tabs | `Blocks` 19 tiles in 5 chips with computed counts (Content 9 · Media 2 · Layout 4 · Form 4 · Actions 2), `Sections` 23 presets in 5 categories, `Pages` 5 templates + Saved Pages + Current Page Structure | the three tabs | `GET /v1/library/*` |
+| 12 | Insertion | click a tile, or drag it onto a drop zone with a guide line and an insertion index; a refused drop explains itself (`A Form cannot sit inside a Columns row`) | drag a Form tile into a column | client-side + `PATCH` |
+| 13 | Selection | block outline, context toolbar (duplicate / move up / move down / delete / drag), inspector follows, structure row highlights, `Escape` walks the selection back one level | click a block | view state |
+| 14 | Inspector | `Content` generated from the registry, `Style` token-bounded with `Inherited` / `Override`, `Advanced` 5 live controls + 4 locked with the reason | the three tabs | `PATCH` on change |
+| 15 | AI copy | bubble with `Improve` / `Make punchier` / `Shorten`, token-by-token stream, `Accept` / `Regenerate` / `Discard`, `Escape` aborts mid-stream and the draft is untouched | select a text element | `POST /v1/ai/copy:stream` |
+| 16 | AI failure | `[data-ai-stream="error"]`, `Nothing was changed`, `Accept` disabled, `Discard` closes | `Prototype states → Error` then ask the assistant | `502 AI_UNAVAILABLE` |
+| 17 | Publish guard | with unsaved edits, `Publish` opens the review with `Save your changes before publishing` and a single `Save first` action; nothing is released | edit, then Publish | `409 DRAFT_DIRTY` |
+| 18 | Publish review | `IN THIS RELEASE` lists the editing page plus every other unpublished page, preflight 4 checks, compare-and-swap note, `Publish release` → Module 1 toast + live badge | header `Publish` | `POST /v1/releases` |
+| 19 | Revision history | list with author, time and block diff (`+3 −1 ~2`), preview of the diff, `Restore` writes a new revision | `Publish` split → `Release & revision history` | `GET/POST …/revisions` |
+| 20 | Presence | banner names other editors working on the same page; advisory only, it never blocks a save | `Prototype states → Publish conflict` | `GET …/presence` (SSE) |
+| 21 | Empty catalogue | `No blocks available` with the reason and a `Reload catalogue` action; group headings disappear rather than render empty | `Prototype states → Empty` + library | `200 []` on `/v1/library/blocks` |
+| 22 | Empty form picker | a Form block with no forms explains itself and links to Forms & Leads instead of offering an empty select | `Prototype states → Empty`, select the Form block | `200 []` on `/v1/forms` |
+| 23 | Deleted page | blocking `wb-blocked` state: `This page no longer exists`, `Back to Pages`, `Nothing was lost`; a page switch clears it and a successful load re-enables the shell | `#/builder?page=pg_does_not_exist`, or delete the page in another tab | `404 PAGE_GONE` |
+| 24 | Dialog dismissal | `Escape` closes publish / revisions / conflict / pickers and keeps the block selection; the builder's own shortcuts stand down while a dialog owns the key | open any dialog, press Escape | — |
+| 25 | Reduced motion | every transition collapses to ~0 s (`animationDuration ≈ 1e-05`), no parallax, no auto-scroll animation | OS setting | — |
+| 26 | Keyboard | tile focus + `Enter` inserts, structure rows select, inspector fields type, dropdowns arrow-navigate | Tab through the screen | — |
+| 27 | Empty search | `No blocks match “zzzz”` with a `Clear search` action, counts unchanged | type in the library search | client-side |
+| 28 | Deep link | `#/builder?site=&page=&sel=&lib=&insp=` restores the exact panel state on a cold load and survives the store's own hash rewrite | paste a link | — |
+| 29 | Layout | no horizontal overflow at 1280 / 1440 / 1920; library 250 px and inspector 292 px stay fixed while the stage takes the remainder (560 / 674 / 1146); the shell never scrolls, only the panels do | resize | — |
+
+### Fixed in this audit (Module 4)
+
+- **The builder CAS conflict hijacked the Module 1 publish dialog.** The store opened its release-conflict modal on any conflict; it is now gated to every screen except the builder, which owns its own resolution.
+- **`Escape` did not abort a running AI suggestion.** The key was consumed by the selection chain; the stream is now cancelled explicitly and the draft is left untouched.
+- **An empty catalogue still rendered its group headings.** The flag was read from the demo state instead of the builder's own mode, and `Library` rendered `GROUP_ORDER` unconditionally; both are fixed.
+- **A deleted or unknown `page=` silently swapped to another page.** It now opens a blocking state naming the page, with `Back to Pages`, instead of quietly editing something else.
+- **`Escape` never closed a builder dialog.** The builder's global key handler re-rendered on the same event, which removed the dialog's listener before the browser dispatched to it; the handler now stands down whenever an overlay owns the key.
+- **Deep links looked broken.** A hash-only `goto` does not reload, so the restored document was never composed; the builder re-asserts its query string after the store's hash effect, and the QA harness reloads before asserting.
+
+### Still not modelled in Module 4
+
+- **Co-editing** — presence is advisory; two people editing the same block is a conflict, not a merge.
+- **Page-level SEO fields** — the inspector stops at content, style and advanced (non-goal).
+- **Repeaters / dynamic lists** — every block is static content.
+- **Staging and scheduling** — publishing is a release-level action owned by Module 1.
+- **Marketplace and custom code** — the library is a fixed catalogue; there is no raw HTML/CSS/JS surface.
+- **Drag between windows / cross-page copy** — drag is within one document.
+
+Each gap has a contract row in `BACKEND-PLAN.md` §7.19.

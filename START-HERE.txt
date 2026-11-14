@@ -19,31 +19,49 @@ Three ways, pick one
      npm install
      npm run dev                         → http://localhost:5173
 
+Where the four modules are
+--------------------------
+  Overview            sidebar → Overview              #/overview
+  Sites & Domains     sidebar → Sites & Domains       #/sites
+  Pages & Routes      sidebar → Pages                 #/pages
+  Visual Builder      row pencil / "Edit Page" on any page   #/builder?page=…
+                      (or sidebar → Visual Builder for the default page)
+
+  Every screen has a "Prototype states" menu (beaker icon, top-right):
+  Default / Empty / Error / Publish conflict / Permission denied (Viewer).
+
 Which file is which
 -------------------
-  WACRM-CMS.html   the built, runnable app  ← the one you open
-  index.html       Vite's dev entry. It needs the dev server; opened from
-                   disk it shows a notice and forwards to WACRM-CMS.html.
-  src/             React 19 + TypeScript source (what npm run dev serves)
-  serve.py         zero-dependency static server (Python 3, no packages)
-  BACKEND-PLAN.md  the backend contract (v1.3 — §7.17 covers Sites & Domains)
-  MODULE-2-SPEC.md the Sites & Domains UI/UX architecture specification
-  STATE-COVERAGE.md Module 1 + Module 2: every state, how to trigger it, what is still missing
-  ROLLBACK.md      how to return to a previous checkpoint (tags + revert recipes)
-  qa_module2.py    48 layout/data checks for Module 2   (python3, needs playwright)
-  qa_states_m1.py  39 state-coverage checks for Module 1
-  qa_states.py     25 state-coverage checks for Module 2
-  qa_flows.py      38 Module 1 regression steps
-  qa_module2.py    automated acceptance run for the Sites & Domains module
-  MODULE-1-REVIEW.md  build-vs-spec review, defects and fixes
+  WACRM-CMS.html    the built, runnable app  ← the one you open
+  index.html        Vite's dev entry. It needs the dev server; opened from
+                    disk it shows a notice and forwards to WACRM-CMS.html.
+  src/              React 19 + TypeScript source (what npm run dev serves)
+  serve.py          zero-dependency static server (Python 3, no packages)
+  BACKEND-PLAN.md   the backend contract (§7.19 covers the builder)
+  MODULE-1..4-REVIEW.md  build-vs-spec review per module, with the defects found
+  MODULE-2-SPEC.md  the Sites & Domains UI/UX architecture specification
+  STATE-COVERAGE.md every state for all four modules, how to trigger it, what is missing
+  ROLLBACK.md       how to return to a previous checkpoint (tags + revert recipes)
+  qa/               WebP captures of the audited states
+
+QA (python3, needs playwright)
+------------------------------
+  qa_builder.py    97 checks — Visual Builder screen, panels, drag, AI, publish
+  qa_states_m4.py  47 checks — Visual Builder state matrix
+  qa_pages.py     106 checks — Pages & Routes
+  qa_states_m3.py  40 checks — Pages state matrix
+  qa_module2.py    48 checks — Sites & Domains layout and data
+  qa_states_m1.py  39 checks — Overview state matrix
+  qa_flows.py      38 regression steps across the shell
+  qa_react.py      full-page render, console clean, no overflow
 
 Module status
 -------------
-  Module 1  Overview dashboard          built, 38/38 flow checks
-  Module 2  Sites & Domains             built to the approved layout, 48/48 module checks
-  Modules 3+                            still placeholders (one at a time)
-
-  Module 2 lives at  #/sites  — click "Sites & Domains" in the sidebar.
+  Module 1  Overview dashboard    built, 39/39 state + 38/38 flow checks
+  Module 2  Sites & Domains       built to the approved layout, 48/48 checks
+  Module 3  Pages & Routes        built, 106/106 module + 40/40 state checks
+  Module 4  Visual Builder        built, 97/97 module + 47/47 state checks
+  Module 5+                       next, one at a time
 
 If the page is ever blank
 -------------------------

@@ -809,6 +809,37 @@ One row per element of the Pages screen; each maps to exactly one read or one mu
 
 **Known prototype gaps.** `sites.pages` is a denormalised counter in the seed; the API derives it. `views30d` / `leads30d` are seeded per page — the real numbers come from `analytics.page_metrics` and the UI must render `Analytics not available` when the window has no rows. The issue list (`issuesFor`) is computed client-side from page fields; the server version is a `GET /v1/pages/{id}/issues` read so the copy can change without a release.
 
+### 7.19 Module 4 — Visual Builder screen surfaces
+
+The builder is the only screen that writes a *document*. Everything it edits is one JSONB column (`pages.draft_document`) guarded by a monotonic counter (`pages.draft_revision`), never a bag of per-field PATCHes.
+
+| Element | Endpoint | Contract notes |
+| --- | --- | --- |
+| Screen entry | `GET /v1/pages/{id}/draft` | `{revision, document, baseReleaseId, updatedAt, updatedBy}`; `document` is the block tree (`{id, type, variant, parentId, order, props, style, advanced}`); `404 PAGE_GONE` when the page was trashed/deleted while the tab was open |
+| Autosave (2 s debounce) | `PATCH /v1/pages/{id}/draft` | `If-Match: <draftRevision>`; body is a **block-level diff** (`{ops:[{op:"insert"\|move\|update\|remove", id, parentId?, index?, props?, style?}]}`), not the whole tree, so two editors on different blocks do not collide |
+| Save conflict | `409 REVISION_CONFLICT` on `PATCH` | returns `{currentRevision, updatedBy, updatedAt, changedBlockIds[]}`; the UI shows *Saved elsewhere* with **Reload theirs** / **Keep mine**; *Keep mine* retries with `?strategy=force` and a fresh `If-Match` |
+| Leave guard | client-side only until the draft is acknowledged | `beforeunload` never fires on an acknowledged save |
+| Revision history | `GET /v1/pages/{id}/revisions?cursor&pageSize` | `{revision, author, createdAt, summary, blockDiff:{added,removed,changed}}`; server recomputes the diff, the UI prints it |
+| Restore a revision | `POST /v1/pages/{id}/revisions/{rev}:restore` | writes a **new** revision whose document equals `rev`; never rewinds the counter |
+| Block / section catalogue | `GET /v1/library/blocks`, `GET /v1/library/sections` | `{id, name, group, variants[], offersCount}`; counts are computed server-side over *offered* archetypes (19 blocks / 23 sections / 5 page templates) and must not be hard-coded in the view |
+| Save selection as a section | `POST /v1/library/sections` | `{name, category, document}`; returns the new preset with a server id |
+| Delete a user section | `DELETE /v1/library/sections/{id}` | built-in presets are `403 BUILTIN`; user presets are soft-deleted so in-flight revisions keep resolving |
+| Page templates | `GET /v1/library/page-templates` | 5 entries; applying one is a client-side compose, then a normal draft PATCH |
+| Media picker | `GET /v1/media?siteId&q&kind` | same catalogue as Module 5; the builder inserts a stable URL + hash, never a data URI |
+| Link picker | `GET /v1/pages/tree?siteId`, `GET /v1/forms?siteId` | three sources (page / form / external); external URLs are validated server-side on save |
+| AI copy (stream) | `POST /v1/ai/copy:stream` | SSE: `token` events, then `done` with the final string; `{sourceText, action:"improve"\|"punchier"\|"shorten", target}`; `429 AI_QUOTA`, `502 AI_UNAVAILABLE` are UI states, and the draft is never mutated by the stream — acceptance is a separate `PATCH` |
+| Presence | `GET /v1/pages/{id}/presence` (SSE) | the banner names other editors; presence is advisory and never blocks a save (no co-editing, per §20 decision) |
+| Preview | `POST /v1/pages/{id}:preview` | same single-use `pv_…` token as Module 3, but built from the **draft** document |
+| Publish handoff | `POST /v1/releases` (Module 1 pipeline) | the builder freezes `draftRevision` into the release manifest; a dirty draft is refused client-side with *Save your changes before publishing*, and server-side with `409 DRAFT_DIRTY` |
+| Publish split menu | `GET /v1/releases?siteId&pageId` | *Review & publish…*, *Compare with live*, *Release & revision history* are all reads of the release API |
+| Undo / redo, zoom, device morph, selection | — | pure view state; never persisted, never an endpoint |
+
+**Ordering and rate rules.** Autosave is client-debounced 2 s and coalesced per block id; the server also coalesces identical ops inside 250 ms. `If-Match` is mandatory — a missing header is `428 PRECONDITION_REQUIRED`. AI streaming is capped at 20 requests/minute/user and 1 concurrent stream per page; a second stream cancels the first (the UI mirrors this: Escape aborts).
+
+**States the screen must handle** (each maps to a contract): skeleton → canvas, empty page (`200` with `document: []`), draft load failure (`5xx`, blocking, named, retryable), page gone (`404`), Viewer (`403` → read-only shell, publish disabled), CAS conflict, save failure (`5xx` with the draft preserved in memory + *Retry*), AI error/abort/quota, empty catalogue (`library` returns no offers), empty form picker, deleted page mid-session, publish held while dirty, reduced motion, keyboard-only insert/select, empty search.
+
+**Known prototype gaps.** The document lives in memory (`BuilderAPI`) with a simulated 2 s autosave and a seeded revision list; `draftRevision` is a number that only the client increments, so the server must own it. Presence is a timer, not a socket. The AI rewrite is a deterministic local transform (`improve | punchier | shorten`), chosen so the prototype has no network and no invented claims; the real endpoint replaces it behind the same `streamCopy` signature.
+
 ## 8. Publishing pipeline (the hard part)
 
 ### 8.1 Objects
@@ -1215,6 +1246,14 @@ Every symbol the UI imports today, and where it must go. Anything marked *dev* i
 | `API.reset()` / `API.raw()` / `API.mode` / `FAIL` | — | *dev only, delete* |
 | `API.restoreBanner()` / `API.setBannerState()` | — | *dev only*; banner state is derived from `issues` |
 | `applyForcedState()` (prototype beaker) | — | *dev only* |
+| `BuilderAPI.loadDraft(pageId)` (M4) | `GET /v1/pages/{id}/draft` | seeds `draftRevision` from the server |
+| `BuilderAPI.saveDraft(doc, rev)` (M4) | `PATCH /v1/pages/{id}/draft` | `If-Match: draftRevision`; sends ops, not the tree |
+| `BuilderAPI.revisions(pageId)` (M4) | `GET /v1/pages/{id}/revisions` | diff is server-computed |
+| `BuilderAPI.restore(pageId, rev)` (M4) | `POST /v1/pages/{id}/revisions/{rev}:restore` | forward-only |
+| `BuilderAPI.library(siteId)` (M4) | `GET /v1/library/blocks` + `/sections` + `/page-templates` | three reads, counts computed |
+| `BuilderAPI.saveSection` / `deleteSection` (M4) | `POST /v1/library/sections`, `DELETE …/{id}` | built-ins are `403` |
+| `streamCopy(text, action)` (M4) | `POST /v1/ai/copy:stream` (SSE) | same callback signature `onToken / onDone / onError`; `cancel()` = abort the request |
+| `BuilderAPI.mode` (M4) | — | *dev only, delete* |
 
 Things the mock currently invents that the backend must **not** inherit:
 
