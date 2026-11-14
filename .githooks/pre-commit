@@ -2,13 +2,13 @@
 # Pre-commit gate for this repo. Runs before every commit; exit 1 aborts it.
 #   1) uploads/ is skip-worktree — refuse to commit its deletion
 #   2) never let a credential reach the history
-#   3) keep HANDOVER.md in lock-step with the tree
+#   3) keep HANDOVER.md in lock-step with the tree, without contributing churn
 set -e
 root=$(git rev-parse --show-toplevel)
 cd "$root"
 
 # 1 · the 19 reference mocks live in .git only; if the skip-worktree flags are lost,
-#     a `git add -A` would stage 26 MB of deletions — refuse that instead
+#     a `git add -A` would stage 26 MB of deletions — refuse that
 if git diff --cached --name-status | grep -qE '^D[[:space:]]+uploads/'; then
   echo "pre-commit: refusing to commit deletions under uploads/ (skip-worktree flags lost?)" >&2
   echo "            restore with: git update-index --no-skip-worktree \$(git ls-files uploads)" >&2
@@ -22,10 +22,24 @@ if git diff --cached -U0 | grep -qE '(github_pat_|ghp_|gho_|ghs_|ghu_)[A-Za-z0-9
   exit 1
 fi
 
-# 3 · regenerate the handover so the committed document never lags the tree
+# 3 · regenerate the handover, but only stage it when something other than the
+#     clock/commit line moved — otherwise every checkpoint would commit itself
 if command -v node >/dev/null 2>&1; then
-  node scripts/handover.mjs
-  git add HANDOVER.md
+  node scripts/handover.mjs >/dev/null
+  node -e '
+    const { execSync } = require("node:child_process");
+    const fs = require("node:fs");
+    let prev = "";
+    try { prev = execSync("git show :HANDOVER.md", { encoding: "utf8", stdio: ["pipe","pipe","ignore"] }); } catch { process.exit(0); }
+    const cur = fs.readFileSync("HANDOVER.md", "utf8");
+    // volatile by construction: the generation clock and the commit it was built against
+    const mask = (s) => s
+      .replace(/^\*\*Generated\*\*.*$/m, "")
+      .replace(/^- Repo: .*HEAD.*$/m, "")
+      .replace(/^- Working tree: .*$/m, "");
+    if (mask(cur) !== mask(prev)) execSync("git add HANDOVER.md");
+    else fs.writeFileSync("HANDOVER.md", prev);
+  '
 else
   echo "pre-commit: node not found — HANDOVER.md not regenerated" >&2
 fi
