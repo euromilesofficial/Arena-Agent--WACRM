@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 06:58:06 UTC · **generated against commit** `307a294` · **working tree** 57 uncommitted file(s)
+**Generated** 2026-11-14 06:58:57 UTC · **generated against commit** `62665e9` · **working tree** 4 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,425 lines across all tracked text files).
+Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,430 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -146,6 +146,7 @@ Product rules (non-negotiable, they came from the user):
 - Commit and tag every milestone; keep rollback tags; never persist the GitHub token; rebuild the zip on every change.
 - Every build ships a zip: `npm run build` ends with `scripts/package.mjs`, which rewrites /home/user/wacrm-app.zip and verifies the WACRM-CMS.html inside it matches the fresh build.
 - Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.
+- The reference mocks live in Git at `uploads/` (manifest + README inside it). Read one straight out of git (`git -C repo show HEAD:uploads/<file> > /tmp/<file>`); never re-add a second workspace copy.
 
 Decisions already made — do not reopen without the user:
 
@@ -198,16 +199,19 @@ First tasks:
 - [object Object]
 - [object Object]
 - [object Object]
+- Never run `git sparse-checkout init` in repo/ — with this git build (2.47) it writes `/*` + `!/*/` and removes every directory (src, qa, uploads…) from the working tree, then `set` fails with 'specify directories rather than patterns'. Recover with `git sparse-checkout disable`. Nothing is lost (the objects are in .git), but the tree has to be re-materialised.
+- uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `307a294` — chore: restore execute bits (lost on copy).
-- Working tree: 57 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `62665e9` — chore: stop tracking generated QA screenshots.
+- Working tree: 4 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `62665e9` | 2026-11-14 | chore: stop tracking generated QA screenshots |
 | `307a294` | 2026-11-14 | chore: restore execute bits (lost on copy) |
 | `fdf0695` | 2026-11-14 | assets: bring the reference mocks into version control (16 images + manifest) |
 | `e741b9a` | 2026-11-14 | docs: ship PUSH-TO-GIT.md inside the deliverable and index it in the README |
@@ -219,7 +223,6 @@ First tasks:
 | `070bc5a` | 2026-11-14 | module 4: AI mode in the builder — prompt-to-page generation, plan-then-compose, in-canvas rewrite |
 | `c767062` | 2026-11-14 | Handover: record the hook execute-bit trap |
 | `4e5b188` | 2026-11-14 | Restore the pre-commit hook's execute bit |
-| `2025d0a` | 2026-11-14 | Module 5 review: explain D1-D6 mechanically and propose the spine-first order |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
