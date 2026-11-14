@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 03:44:16 UTC · **generated against commit** `ea0fd16` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 03:44:33 UTC · **generated against commit** `0eb8e03` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -47,12 +47,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | sha256 (first 16) | `2c6507a06c7d8ad1` |
 | Built | 2026-11-14 03:28:15 |
 
-Packaged deliverables (ready to hand over):
-
-| File | Size | md5 |
-| --- | --- | --- |
-| `wacrm-app.zip` | 5,729,872 B | `39024afa8c46eaa5332dd09119bc1fa6` |
-| `wacrm-app.bundle` | 6,724,800 B | `464b39749e3510e87aff4530f7426f2d` |
+Packaged deliverables: `wacrm-app.zip` · `wacrm-app.bundle` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
 ```bash
 npm ci
@@ -90,7 +85,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (20,716 lines across all tracked text files).
+Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (20,488 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -98,7 +93,7 @@ Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (20,716 lines 
 | `src/components/` | 28 | 6,549 | reusable UI: shell, ui kit, charts, and per-module parts |
 | `src/views/` | 5 | 2,400 | one file per screen; routes are hash-based |
 | `src/styles/` | 1 | 3,066 | one tokenised stylesheet (design system) |
-| `qa/` | 44 | 56 | 43 WebP captures of audited states (evidence, not fixtures) |
+| `qa/` | 43 | — | 43 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
@@ -192,13 +187,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `ea0fd16` — Handover: keep --check stable across amends.
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `0eb8e03` — Handover: regenerate after the amend.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `0eb8e03` | 2026-11-14 | Handover: regenerate after the amend |
 | `ea0fd16` | 2026-11-14 | Handover: keep --check stable across amends |
 | `ae3441c` | 2026-11-14 | Handover: label the header 'generated against commit' and prove --check is stable |
 | `1ff3cd8` | 2026-11-14 | Automate the handover: generated HANDOVER.md, QA evidence, pre-commit gate |
@@ -210,7 +206,6 @@ First tasks:
 | `2d68957` | 2026-11-13 | Ship ROLLBACK.md with the app; rebuild the zip on every checkpoint |
 | `b8cb5c2` | 2026-11-13 | Add ROLLBACK.md and checkpoint tags |
 | `203abcf` | 2026-11-13 | Add QA harnesses and reference screenshots |
-| `df38951` | 2026-11-13 | Add specs: UI/UX architecture, backend contract, state coverage |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
