@@ -252,3 +252,91 @@ Submission side effects, in one transaction or an outbox: upsert contact → ups
 ---
 
 **Nothing above is built.** Reply with D1–D6 (or "defaults") and I will start with Module 5, then Module 6.
+
+---
+
+## 11. How the interlink works — D1–D6 explained
+
+Your motto is the design constraint: **the CMS captures, the CRM owns, automation reacts, the CMS shows the result back.** One spine, three entry points, every hop attributed.
+
+```
+visitor on a CMS page
+   │  (site · page · block · UTM · referrer are attached at the source)
+   ├── lead form block ──► POST /public/forms/{id}/submit ──┐
+   ├── WhatsApp chat widget ─► /api/public/widget/session ──┤
+   └── booking block ───────► /book/{slug} ─────────────────┤
+                                                            ▼
+                                    resolveIdentity()  ── phone, then email, then create
+                                                            │
+                        contact (+ custom_fields) ──► lead (source = cms_form:<slug>)
+                                                            │
+                                    consent record ──► workflow trigger.lead.created
+                                                            │
+                    WhatsApp template · SMS · email · task · deal · inbox thread
+                                                            │
+                                    counters back on the CMS block / page panel
+```
+
+### D1 — the form builder lives in the CRM-facing CMS *(default: a)*
+
+**What it means.** The builder UI, the form definition and the submissions live in the CMS (our repo); the *record* it produces lives in the CRM. No CRM schema change is needed, nothing is blocked on the CRM roadmap.
+
+**How it works.** You compose a form once (fields → `field_key`s that match `custom_field_definitions` for `lead`/`contact`). The block on the page holds only the form id. On submit, the public endpoint: validates → runs `resolveIdentity()` → upserts **contact** (phone first, then email, else create) → upserts **lead** (`source`, `custom_fields`, `status='new'`) → writes the **consent record** → emits `trigger.lead.created` → your existing workflow does the rest.
+
+**Why not the other two.** (A) importing WhatsApp Flow forms renders fields on a page that have nowhere to submit — it looks finished and is not. (B) a CRM-side forms service is the right end state but it is a CRM change we cannot ship from here; **the definition we build maps 1:1 onto it**, so promoting it later is a migration, not a rewrite.
+
+### D2 — a submission lands as contact **and** lead, deduped *(default: both)*
+
+**What it means.** Nobody is lost, nobody is duplicated.
+
+**How it works.** `resolveIdentity()` already does the deterministic match (phone, then email) with `auto_merge_on_phone` / `auto_merge_on_email` flags and AI fuzzy suggestions for the rest. New → create contact + lead. Existing → attach the new values to the same contact, and either update the open lead or create one with `source` naming the page. The submissions table tells the truth: *"new"* vs *"matched Rhea Kulkarni · lead #482"*.
+
+**Why both.** A chat creates a contact but not always a lead; a form should create both, or sales never sees it in the pipeline.
+
+### D3 — unchecked WhatsApp opt-in + stored consent *(default: yes)*
+
+**What it means.** Any block that can message someone carries a checkbox, **off by default**, naming the business, WhatsApp, and the message types. Ticking it writes a consent record (timestamp, IP, page, text hash) that the automation can require as a condition.
+
+**How it works.** The record lands in the CRM's existing consent storage and the workflow gate reads it before `action.whatsapp.send_template`. Meta treats a pre-checked box as non-compliant; a checkbox that is pre-ticked would put the customer's WhatsApp number quality at risk — that is a business risk, not a UI preference.
+
+### D4 — 38 offered blocks *(default)*
+
+**What it means.** 19 today (a one-page palette) → 38 (a site palette): 12 generic + 7 CRM-native.
+
+**How it works.** Every block declares its group, its defaults, its inspector fields and its refusal rules in the registry; counts are computed, never typed, and a QA assertion pins the number so the palette cannot silently drift. The 7 CRM-native blocks are the interlink made visible: WhatsApp CTA, Chat Launcher, Booking, Survey, Program Card, Contact Card, Form-by-name.
+
+### D5 — no popups, no exit-intent, no sticky bars in this round *(default: defer)*
+
+**What it means.** Conversion gimmicks are deferred; one site-wide announcement banner is allowed.
+
+**How it works.** A popup is a second page lifecycle (focus trap, scroll lock, frequency cap, dismiss persistence, SEO/CLS impact). It deserves its own module with its own states, not a corner of the palette.
+
+### D6 — single-step forms in v1, multi-step in v2 *(default)*
+
+**What it means.** One screen per form submission; "add step" exists in the builder but is disabled with the reason, exactly like the Advanced inspector.
+
+**How it works.** Multi-step needs per-step validation, back-navigation state, partial-save and abandonment tracking. The data model already allows it (`steps[]`), so v2 is a UI release, not a migration.
+
+### What already exists versus what I build
+
+| Capability | Status in the CRM today | What the CMS adds |
+| --- | --- | --- |
+| Chat collects name / email / phone | **Built.** `/api/public/widget/session` *requires* `visitorName`, `visitorEmail`, `visitorPhone` ("the visitor must identify themselves before chatting"), then `identifyVisitor()` matches by phone → email → creates the contact and links `livechat_visitors.contact_id` | The launcher block + the embed, with site/page/UTM passed in, and the counters shown back in the editor |
+| Identity matching / de-dup | **Built.** `resolveIdentity()`: deterministic phone/email, auto-merge flags, AI suggestions | Called by the form submit path too, so forms and chats converge on one record |
+| Automation on capture | **Built.** `trigger.lead.created` already has a **source filter** ("e.g. web_form"), plus `whatsapp.send_template`, `sms.send`, `email.send`, `omnichannel.send`, `crm.handoff` | The `source` values we emit, and the field→custom-field mapping |
+| Consent storage | **Tables exist** (`consent_records`, `cookie_consents`), nothing writes them from a lead form | The unchecked checkbox and the record |
+| **Web form submission path** | **Missing** — no `forms` table, no public submit endpoint | Module 5: definition, builder, endpoint, submissions |
+| Attribution | partial (`page`, `referrer` on the widget session) | `siteId`, `pageId`, `blockId`, UTM on every submission and session |
+| Result visible inside the CMS | none | Read-only counters on the block: submissions, chats, leads |
+
+### Revised build order (proposed, because of your motto)
+
+The spine matters more than the palette, so I would flip the order:
+
+1. **Module 5 — Forms & lead capture (the spine).** Forms list + 3-panel builder + public submit + consent + `source` attribution + submissions table + the `Form (CRM)` block that lists forms by name. Two CRM-native blocks ship with it because they complete the story: Form and WhatsApp CTA.
+2. **Module 6 — Interlink surfaces.** An Integrations panel showing what the CRM has connected (chat widgets, WhatsApp CTA token, booking event types, forms) with an honest disconnected state, plus a "captured on this page" read-only panel in the builder.
+3. **Module 7 — Palette 19 → 38.** The 12 generic blocks and the remaining 5 CRM-native ones, with sections and templates.
+
+Approving that order means the first thing you can demo is exactly your motto: fill a form on a page, watch a lead appear in the CRM with the automation running.
+
+**Four confirmations I need before writing code:** the order above (spine → surfaces → palette), D2 = contact + lead, D3 = consent required, D4 = 38.
