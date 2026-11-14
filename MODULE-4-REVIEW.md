@@ -149,3 +149,24 @@ Everything else is decided above with a default I can defend, so building starts
 
 ### Note on the repository
 Module 3 is committed locally (`d32dfc1`, `module-3-complete` pending) and still needs the PAT to push. This review will ride on top of it as its own commit.
+
+---
+
+## J. As built — what shipped, and what it cost
+
+The four delegated decisions were taken as follows and are in the build: **in-document canvas** (D6), **Advanced visible-but-locked, four groups** (D3), **19 offered archetypes** (D5), **5 inlined generated photos** (D7). The mock's frame and spacing were kept; nothing was redesigned.
+
+**Delivered** — one screen, three panels, no fourth rail: header (breadcrumb, website + page selectors over *real* pages, Preview, violet Publish split), status strip (draft state, device morph, undo/redo, zoom, fullscreen), library 250 px (`Blocks | Sections | Pages` — 19 tiles in 5 chips with computed counts, 23 section presets in 5 categories, 5 page templates + Saved Pages + Current Page Structure), stage (master-layout band, selectable blocks, context toolbar, AI bubble, 1440/768/375), inspector 292 px (Content generated from the registry, token-bounded Style with Inherited/Override, Advanced 5 live + 4 locked). Plus 2 s autosave with CAS conflict, revision history with block diff and restore, presence banner, the AI copy stream with Accept/Regenerate/Discard, publish handoff into Module 1, and reuse of the Module 3 preview modal.
+
+**Six defects the state matrix caught, all fixed** (detail in `STATE-COVERAGE.md`):
+
+1. The builder's CAS conflict opened Module 1's release-conflict dialog over the top of it.
+2. `Escape` didn't abort a running AI suggestion — and didn't close *any* builder dialog, because the builder's global key handler re-rendered on the same event and the dialog's listener was gone before dispatch reached it.
+3. An empty catalogue still drew its group headings (wrong flag, plus an unguarded `GROUP_ORDER.map`).
+4. A deleted or unknown `page=` silently swapped to a different page instead of refusing.
+5. A hash-only deep link never re-composed the document, because the store rewrites `#/<screen>` after child effects — the builder now re-asserts its parameters 220 ms after mount.
+6. The Modules 3 → 4 handoff was a placeholder screen; it is now a real in-memory handoff plus `app.go("builder")`.
+
+**Verification** — `qa_builder.py` 97/97, `qa_states_m4.py` 47/47, `qa_pages.py` 106/106, `qa_states_m3.py` 40/40, `qa_module2.py` 48/48, `qa_states_m1.py` 39/39, `qa_flows.py` 38 ok / 0 failed, `qa_react.py` clean. No horizontal overflow at 1280 / 1440 / 1920 (library 250 px and inspector 292 px fixed, stage absorbs 560 / 674 / 1146). `tsc --noEmit` clean; single-file build 1,021,528 B, gzip 370,130 B, md5 `812d821d5ac8f1e5ba752a9dcbc58528`.
+
+**What it still does not do** — no co-editing (presence is advisory, a shared block is a conflict not a merge), no page-level SEO, no repeaters, no staging or scheduling, no marketplace, no raw HTML/CSS/JS. Each has a contract row in `BACKEND-PLAN.md` §7.19.

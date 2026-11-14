@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../components/Icon";
 import { Btn, MenuItem, Pill, Popover } from "../components/ui";
 import { useApp } from "@/lib/store";
+import { setHandoff } from "@/lib/builder-handoff";
 import { API, type CmsPage, type PageCounts, type PageSummary, type PageType, type TreeNode } from "@/lib/data";
 import type { PageIssue } from "@/lib/cms-pages";
 import { PageTree } from "../components/pages/PageTree";
@@ -20,14 +21,6 @@ interface ListResult {
   rows: CmsPage[]; total: number; page: number; pageSize: number;
   counts: PageCounts; summary: PageSummary; authors: string[];
 }
-
-const BUILDER_BLOCKS: { name: string; kind: "hero" | "text" | "cards" | "quote" | "cta" }[] = [
-  { name: "Hero", kind: "hero" },
-  { name: "Rich text", kind: "text" },
-  { name: "Course cards", kind: "cards" },
-  { name: "Testimonial", kind: "quote" },
-  { name: "CTA band", kind: "cta" }
-];
 
 /** #/pages?site=&tab=&q=&page=&sel= — parsed before the first render so a
     deep link never flashes the default view first */
@@ -88,7 +81,6 @@ export function Pages() {
   const [onlyIssues, setOnlyIssues] = useState(false);
   const [onlyLanding, setOnlyLanding] = useState(false);
   const [treeMenu, setTreeMenu] = useState(false);
-  const [builderPage, setBuilderPage] = useState<CmsPage | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [trashTaken, setTrashTaken] = useState(false);
   const [expandTick, setExpandTick] = useState(0);
@@ -263,96 +255,17 @@ export function Pages() {
     return () => window.removeEventListener("keydown", onKey);
   }, [bulk.size]);
 
+  /* the builder is its own screen now: carry the page across and let it own the URL */
+  const openBuilder = (p: CmsPage) => {
+    setHandoff(p.id);
+    app.go("builder");
+  };
+
   const selectedPage = detail?.page ?? null;
   const currentHome = useMemo(() => {
     const home = tree.find((n) => n.isHome);
     return home ? ({ id: home.id, title: home.title } as { id: string; title: string }) : null;
   }, [tree]);
-
-  /* ---------------- builder handoff ---------------- */
-  if (builderPage) {
-    return (
-      <div className="d3-builder">
-        <div className="page-head">
-          <div>
-            <div className="crumb-inline"><button className="link" onClick={() => setBuilderPage(null)}>Pages</button><Icon name="chevRight" size={10} /><span>Visual Builder</span></div>
-            <h1 className="page-title">{builderPage.title}</h1>
-            <p className="page-sub">{siteName} · {builderPage.path} · draft {builderPage.hasChanges ? "with unsaved-to-release edits" : "in sync"}</p>
-          </div>
-          <div className="toolbar">
-            <Pill tone="violet" dot>Module 4 · next</Pill>
-            <Btn icon="arrowLeft" onClick={() => setBuilderPage(null)}>Back to Pages</Btn>
-          </div>
-        </div>
-        <div className="d3-builder-grid">
-          <aside className="card d3-builder-rail">
-            <div className="d3-card-head"><div className="d3-card-title"><Icon name="blocks" size={13} /> Page blocks</div><span className="f10 muted num">{builderPage.blocks}</span></div>
-            <div className="d3-builder-blocklist">
-              {BUILDER_BLOCKS.map((b, i) => (
-                <div key={b.name} className="d3-builder-block"><span className="d3-builder-grip" /><Icon name="blocks" size={11} /> {b.name}<span className="f10 muted num" style={{ marginLeft: "auto" }}>{i + 1}</span></div>
-              ))}
-            </div>
-            <div className="d3-builder-locked"><Icon name="lock" size={11} /> Editing unlocks in Module 4</div>
-          </aside>
-
-          <section className="card d3-builder-canvas">
-            <div className="d3-builder-chrome">
-              <span className="f10 muted mono truncate">euromiles.in{builderPage.path}</span>
-              <span className="grow" />
-              <Pill tone={builderPage.status === "published" ? "green" : "amber"} dot>{builderPage.status === "published" ? "Live release" : "Draft"}</Pill>
-            </div>
-            <div className="d3-builder-stage">
-              <div className="d3-doc">
-                {BUILDER_BLOCKS.map((b, i) => (
-                  <div key={b.name} className={`d3-doc-block is-${b.kind}`}>
-                    <div className="d3-doc-tag"><Icon name="blocks" size={9} /> {i + 1} · {b.name}</div>
-                    {b.kind === "hero" ? (
-                      <div className="d3-doc-hero">
-                        <span className="d3-doc-h" /><span className="d3-doc-h short" />
-                        <span className="d3-doc-cta" />
-                      </div>
-                    ) : b.kind === "cards" ? (
-                      <div className="d3-doc-cards">{[0, 1, 2].map((k) => <span key={k} className="d3-doc-card" />)}</div>
-                    ) : b.kind === "quote" ? (
-                      <div className="d3-doc-quote"><span className="d3-doc-av" /><span className="d3-doc-line" /><span className="d3-doc-line short" /></div>
-                    ) : (
-                      <div className="d3-doc-lines">
-                        <span className="d3-doc-line" /><span className="d3-doc-line" /><span className="d3-doc-line short" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="d3-builder-note">
-              <Icon name="sparkles" size={14} />
-              <div>
-                <div className="f12 w650">The Visual Builder is Module 4</div>
-                <div className="f11 muted">This handoff screen carries the page, site and draft context so the builder opens straight into “{builderPage.title}”. Autosave, CAS and preview land with that module.</div>
-              </div>
-            </div>
-          </section>
-
-          <aside className="card d3-builder-side">
-            <div className="d3-card-head"><div className="d3-card-title"><Icon name="info" size={13} /> Context handed over</div></div>
-            <div className="d3-meta">
-              <div className="d3-meta-row"><span className="d3-meta-k">Page</span><span className="d3-meta-v">{builderPage.title}</span></div>
-              <div className="d3-meta-row"><span className="d3-meta-k">Route</span><span className="d3-meta-v mono">{builderPage.path}</span></div>
-              <div className="d3-meta-row"><span className="d3-meta-k">Website</span><span className="d3-meta-v">{siteName}</span></div>
-              <div className="d3-meta-row"><span className="d3-meta-k">Template</span><span className="d3-meta-v">{builderPage.template}</span></div>
-              <div className="d3-meta-row"><span className="d3-meta-k">Layout</span><span className="d3-meta-v">{builderPage.layout}</span></div>
-              <div className="d3-meta-row"><span className="d3-meta-k">Blocks</span><span className="d3-meta-v num">{builderPage.blocks}</span></div>
-              <div className="d3-meta-row"><span className="d3-meta-k">Revision</span><span className="d3-meta-v num">r{builderPage.revision}</span></div>
-            </div>
-            <div className="d3-builder-actions">
-              <Btn icon="eye" onClick={() => void openPreview(builderPage)}>Preview draft</Btn>
-              <Btn icon="arrowLeft" onClick={() => setBuilderPage(null)}>Back to Pages</Btn>
-            </div>
-          </aside>
-        </div>
-      </div>
-    );
-  }
 
   /* ---------------- render ---------------- */
   return (
@@ -611,7 +524,7 @@ export function Pages() {
                             <>
                               <button className="icon-btn icon-sm" aria-label={`Edit ${p.title}`} disabled={denied}
                                 title={denied ? "Read-only role" : "Open in the Visual Builder"}
-                                onClick={() => setBuilderPage(p)}><Icon name="pencil" size={13} /></button>
+                                onClick={() => openBuilder(p)}><Icon name="pencil" size={13} /></button>
                               <button className="icon-btn icon-sm" aria-label={`Open ${p.title}`}
                                 title={p.status === "published" ? "Open live page" : "Preview draft"}
                                 onClick={() => (p.status === "published" ? openLive(p) : void openPreview(p))}>
@@ -665,7 +578,7 @@ export function Pages() {
           canDelete={canDelete}
           previewBusy={previewBusy}
           onPreview={() => selectedPage && void openPreview(selectedPage)}
-          onEdit={() => selectedPage && setBuilderPage(selectedPage)}
+          onEdit={() => selectedPage && openBuilder(selectedPage)}
           onEditDetails={() => selectedPage && setModal({ kind: "edit", page: selectedPage })}
           onMore={() => selectedPage && setRowMenu(selectedPage.id)}
           onOpenLive={() => selectedPage && openLive(selectedPage)}
@@ -751,7 +664,7 @@ export function Pages() {
               </>
             ) : (
               <>
-                <MenuItem icon="blocks" disabled={denied} onClick={() => { setRowMenu(null); selectRow(p.id); setBuilderPage(p); }}>Edit Page</MenuItem>
+                <MenuItem icon="blocks" disabled={denied} onClick={() => { setRowMenu(null); selectRow(p.id); openBuilder(p); }}>Edit Page</MenuItem>
                 <MenuItem icon="eye" onClick={() => { setRowMenu(null); selectRow(p.id); void openPreview(p); }}>Preview Draft</MenuItem>
                 <MenuItem icon="external" disabled={p.status !== "published"} meta={p.status !== "published" ? "not live" : undefined}
                   onClick={() => { setRowMenu(null); openLive(p); }}>Open Live Page</MenuItem>
@@ -784,7 +697,7 @@ export function Pages() {
             setModal(null); setSelectedId(p.id); setTab("all"); setPageNo(1);
             setQ(""); setSearch(""); setType("all"); setStatus("all"); setAuthor("all");
             setOnlyIssues(false); setOnlyLanding(false);
-            after({ title: "Page created as a draft", sub: `${p.title} · ${p.path}`, action: { label: "Open builder", onClick: () => setBuilderPage(p) } });
+            after({ title: "Page created as a draft", sub: `${p.title} · ${p.path}`, action: { label: "Open builder", onClick: () => openBuilder(p) } });
           }} />
       )}
       {modal?.kind === "edit" && (

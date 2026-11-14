@@ -955,7 +955,7 @@ export const API = {
   readNotification: (id: string) => { db.notifications = db.notifications.map(n => n.id === id ? { ...n, unread: false } : n); persist(); },
   publishRelease: async () => {
     await latency(900, 1300);
-    if (Math.random() < 0.34) {
+    if (FAIL.conflict) {
       const e = new Error('Conflict: release v1.25 was created by Anita N. while you were editing.');
       throw Object.assign(e, { code: 'CONFLICT' as const });
     }
@@ -968,3 +968,6 @@ export const API = {
 
 
 export const DB_UTIL = { hash, fmtShort, fmtISO, addDays, TODAY, mulberry32 };
+
+/** Read-only access to the live seeded database (Module 4 syncs page records). */
+export const DBX = () => db;

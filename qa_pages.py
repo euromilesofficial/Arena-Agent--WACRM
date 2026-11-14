@@ -359,14 +359,17 @@ async def main():
         await pg.keyboard.press("Escape")
         await pg.wait_for_timeout(500)
 
-        # ---------- builder handoff ----------
+        # ---------- builder handoff (Module 4 owns the screen now) ----------
+        wanted = await pg.evaluate("()=>new URLSearchParams(location.hash.split('?')[1]||'').get('sel')||''")
         await pg.evaluate("()=>{const b=[...document.querySelectorAll('.d3-insp-foot button')].find(b=>/Edit Page/.test(b.innerText)); b.click()}")
-        await pg.wait_for_timeout(900)
-        ck("builder handoff screen", await pg.evaluate("()=>!!document.querySelector('.d3-builder-grid')"))
-        ck("handoff keeps the page context", await pg.evaluate("()=>/Context handed over/.test(document.body.innerText)"))
-        ck("handoff documents 5 blocks", await pg.evaluate("()=>document.querySelectorAll('.d3-builder-block').length") == 5)
-        await pg.evaluate("()=>[...document.querySelectorAll('.toolbar button')].find(b=>/Back to Pages/.test(b.innerText)).click()")
-        await pg.wait_for_timeout(1000)
+        await pg.wait_for_timeout(2000)
+        ck("builder handoff opens the builder", await pg.evaluate("()=>!!document.querySelector('.wb-root')"))
+        got = await pg.evaluate("()=>document.querySelector('select[aria-label=\"Page\"]')?.value ?? ''")
+        ck("handoff keeps the page context", bool(wanted) and wanted in got, f"{wanted!r} vs {got!r}")
+        ck("handoff loads a composed document", await pg.evaluate("()=>document.querySelectorAll('[data-slot]').length") >= 2)
+        ck("handoff writes the page into the URL", await pg.evaluate("()=>/page=/.test(location.hash)"))
+        await pg.click('.nav-item:has-text("Pages")')
+        await pg.wait_for_timeout(1200)
         ck("back returns to the registry", await pg.evaluate("()=>!!document.querySelector('.d3-grid')"))
 
         # ---------- deep links (cold load, the way a shared link opens) ----------
