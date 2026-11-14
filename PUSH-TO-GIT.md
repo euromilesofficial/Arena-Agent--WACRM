@@ -32,20 +32,28 @@ Two smaller entry points do one half each: `push-to-github.sh` (push only) and `
 
 ## Credential — what is stored, where, and what I cannot protect
 
-**Rotated.** The first token was revoked by the user (verified: `GET /user` → **401**). The current one lives at **`/home/user/.gh-token`** (mode `0600`, outside the repository, installed `2026-11-14T19:44Z`), and **expires two days later — around `2026-11-16T19:44Z`.**
+**Rotated.** The first token was revoked by the user (verified: `GET /user` → **401**). The current one lives at **`/home/user/.gh-token`** (mode `0600`, outside the repository, installed `2026-11-14T19:44Z`), and **expires Tuesday 17 November 2026** — three days, not two. The date lives in `/home/user/.gh-token-expiry`, so the guard reads the real lifecycle instead of a hard-coded guess.
 
 Scope probe on the live token: `GET /repos/…/hooks`, `/actions/secrets` and `/branches/main/protection` all return **403**, so it is not an administrator credential — it can push contents and little else.
 
-Scripts resolve `GITHUB_TOKEN` → `GH_TOKEN` → that file, and re-apply `0600` on every run, because the workspace snapshot drops file modes (`0600` came back as `0644` once). `checkpoint.sh` also warns when the token passes **40 hours**, so the expiry never arrives as a surprise mid-push.
+Scripts resolve `GITHUB_TOKEN` → `GH_TOKEN` → that file, and re-apply `0600` on every run, because the workspace snapshot drops file modes (`0600` came back as `0644` once). `checkpoint.sh` warns when **fewer than 12 hours** remain before that date, and prints the regenerate link (`…/personal-access-tokens/22939853/regenerate`) in the same breath.
 
 | Where the string exists | Mitigation |
 |---|---|
 | `/home/user/.gh-token` (0600, outside the repo) | the only copy on disk; deleted on request, and at expiry by you |
-| this chat transcript | unavoidable — the reason the token is **2-day** |
-| the platform snapshot bundle (`hydrate.zip` carries `.gh-token`) | same — bounded by the 2-day life, not by where the file sits |
+| this chat transcript | unavoidable — the reason the token is short-lived (3 days) |
+| the platform snapshot bundle (`hydrate.zip` carries `.gh-token`) | same — bounded by the expiry date, not by where the file sits |
 | the git repository, the zip, HANDOVER, logs | **not present** — the pre-commit gate refuses any staged `github_pat_` / `ghp_` / `gho_` / `ghs_` pattern, and `.gitignore` blocks `findgreattoken*`, `*secret*.ts`, `.env*` |
 
-**Rotating when it expires** (takes a minute): fine-grained token → access **only `euromilesofficial/Arena-Agent--WACRM`** → permission **Contents = Read and write** → expiration **2 days** → paste it into `/home/user/.gh-token` and refresh `.gh-token-since` (`date -u +%FT%TZ`). Nothing else changes; `checkpoint.sh` keeps pushing.
+**Rotating before 17 Nov** (takes a minute): open `https://github.com/settings/personal-access-tokens/22939853/regenerate` (your browser session, not mine — the page needs a login and is not an API), then either accept the regenerated value or mint a new fine-grained token: access **only `euromilesofficial/Arena-Agent--WACRM`**, permission **Contents = Read and write**, expiration **3 days**. Then:
+
+```bash
+printf '%s' 'github_pat_…' > /home/user/.gh-token && chmod 600 /home/user/.gh-token
+printf '%s' '2026-11-20' > /home/user/.gh-token-expiry     # the new date
+date -u +%FT%TZ > /home/user/.gh-token-since
+```
+
+`checkpoint.sh` keeps pushing with no other change. If the token lapses first, the push fails loudly with a 401 and nothing is lost — the commits are already local and the next checkpoint sends them.
 
 ### If you would rather I never store it
 

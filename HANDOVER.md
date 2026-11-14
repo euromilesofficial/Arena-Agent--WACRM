@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 19:45:30 UTC · **generated against commit** `a2df16c` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 19:46:25 UTC · **generated against commit** `d53dbd3` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,367 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,375 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -148,7 +148,7 @@ Product rules (non-negotiable, they came from the user):
 - Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.
 - The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.
 - END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes — run `/home/user/checkpoint.sh "what changed"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.
-- GitHub credential: /home/user/.gh-token (0600, outside the repo, never committed — a pre-commit gate blocks token patterns). It has a 2-day lifecycle, installed 2026-11-14T19:44Z; checkpoint.sh warns after 40h. Rotate by writing the new fine-grained token to that path and refreshing /home/user/.gh-token-since. A leaked or expired token is a hard stop, not a warning: push fails loudly.
+- GitHub credential: /home/user/.gh-token (0600, outside the repo). Expiry date in /home/user/.gh-token-expiry — currently 2026-11-17; checkpoint.sh warns when under 12h remain and prints the regenerate link. Never committed: a pre-commit gate refuses token patterns. If it lapses, the push fails with 401 and nothing is lost — commits stay local until the next checkpoint.
 
 Decisions already made — do not reopen without the user:
 
@@ -209,13 +209,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `a2df16c` — noop.
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `d53dbd3` — chore: the mirror no longer carries HANDOVER.md — the hook owns that file.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `d53dbd3` | 2026-11-14 | chore: the mirror no longer carries HANDOVER.md — the hook owns that file |
 | `a2df16c` | 2026-11-14 | noop |
 | `22c68d8` | 2026-11-14 | noop |
 | `a41df35` | 2026-11-14 | chore: the handover hook no longer manufactures a commit on every checkpoint |
@@ -227,7 +228,6 @@ First tasks:
 | `b354de2` | 2026-11-14 | docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules |
 | `95d3f16` | 2026-11-14 | docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives |
 | `39716da` | 2026-11-14 | docs: record the range-limited rewrite rule |
-| `8585206` | 2026-11-14 | docs: mocks are WebP now; handover and push notes follow |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
