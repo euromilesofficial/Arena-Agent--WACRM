@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 19:44:47 UTC · **generated against commit** `25c2c3f` · **working tree** 4 uncommitted file(s)
+**Generated** 2026-11-14 19:44:53 UTC · **generated against commit** `28838cc` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -209,13 +209,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `25c2c3f` — chore: .gitignore blocks the file class a token would arrive in (this repo is public).
-- Working tree: 4 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `28838cc` — security: rotated the credential — 2-day token stored 0600, scope-probed, with an expiry warning at 40h.
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `28838cc` | 2026-11-14 | security: rotated the credential — 2-day token stored 0600, scope-probed, with an expiry warning at 40h |
 | `25c2c3f` | 2026-11-14 | chore: .gitignore blocks the file class a token would arrive in (this repo is public) |
 | `b68c566` | 2026-11-14 | security: never let a credential reach git; the token is 0600, scripted, documented as exposed |
 | `e018019` | 2026-11-14 | chore: checkpoints never move an existing milestone tag; tags are create-only |
@@ -227,7 +228,6 @@ First tasks:
 | `283ad3c` | 2026-11-14 | chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them |
 | `5d1a604` | 2026-11-14 | docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence |
 | `4e9aa0f` | 2026-11-14 | docs: point the workspace at Git for the mocks; record the sparse-checkout trap |
-| `4b870b8` | 2026-11-14 | chore: stop tracking generated QA screenshots |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
