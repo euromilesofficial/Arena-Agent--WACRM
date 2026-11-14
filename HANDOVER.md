@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 06:57:54 UTC · **generated against commit** `fdf0695` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 06:58:06 UTC · **generated against commit** `307a294` · **working tree** 57 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -94,7 +94,7 @@ Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,425 lines 
 | `src/components/` | 29 | 6,747 | reusable UI: shell, ui kit, charts, and per-module parts |
 | `src/views/` | 5 | 2,536 | one file per screen; routes are hash-based |
 | `src/styles/` | 1 | 3,160 | one tokenised stylesheet (design system) |
-| `qa/` | 56 | — | 56 WebP captures of audited states (evidence, not fixtures) |
+| `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
@@ -201,13 +201,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `fdf0695` — assets: bring the reference mocks into version control (16 images + manifest).
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `307a294` — chore: restore execute bits (lost on copy).
+- Working tree: 57 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `307a294` | 2026-11-14 | chore: restore execute bits (lost on copy) |
 | `fdf0695` | 2026-11-14 | assets: bring the reference mocks into version control (16 images + manifest) |
 | `e741b9a` | 2026-11-14 | docs: ship PUSH-TO-GIT.md inside the deliverable and index it in the README |
 | `e6d8f58` | 2026-11-14 | chore: restore pre-commit hook execute bit (mode is lost by every copy) |
@@ -219,7 +220,6 @@ First tasks:
 | `c767062` | 2026-11-14 | Handover: record the hook execute-bit trap |
 | `4e5b188` | 2026-11-14 | Restore the pre-commit hook's execute bit |
 | `2025d0a` | 2026-11-14 | Module 5 review: explain D1-D6 mechanically and propose the spine-first order |
-| `a8b0229` | 2026-11-14 | Handover: regenerate at the review commit |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
