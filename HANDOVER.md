@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 19:46:25 UTC · **generated against commit** `d53dbd3` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 20:01:18 UTC · **generated against commit** `725c9da` · **working tree** 16 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,042,053 B (1018 kB) · gzip 367 kB |
 | md5 | `119b71ca861482e33f3ea468629dd44a` |
 | sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 19:44:24 |
+| Built | 2026-11-14 19:57:38 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,375 lines across all tracked text files).
+Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,966 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -209,13 +209,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `d53dbd3` — chore: the mirror no longer carries HANDOVER.md — the hook owns that file.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `725c9da` — docs: record the real token expiry (17 Nov) and key the warning to it.
+- Working tree: 16 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
 | `d53dbd3` | 2026-11-14 | chore: the mirror no longer carries HANDOVER.md — the hook owns that file |
 | `a2df16c` | 2026-11-14 | noop |
 | `22c68d8` | 2026-11-14 | noop |
@@ -227,7 +228,6 @@ First tasks:
 | `e018019` | 2026-11-14 | chore: checkpoints never move an existing milestone tag; tags are create-only |
 | `b354de2` | 2026-11-14 | docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules |
 | `95d3f16` | 2026-11-14 | docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives |
-| `39716da` | 2026-11-14 | docs: record the range-limited rewrite rule |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
