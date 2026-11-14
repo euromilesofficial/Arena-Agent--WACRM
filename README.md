@@ -115,6 +115,9 @@ npm run build       # also regenerates the handover
 
 - `MODULE-1-REVIEW.md` … `MODULE-4-REVIEW.md` — per-module build-versus-spec
   reviews: what shipped, the defects found and fixed, what is deferred and why.
+- `MODULE-5-REVIEW.md` — block library vs the industry (Elementor / Webflow /
+  Gutenberg / HubSpot), the WACRM CRM integration map, and the form-builder
+  verdict: what the CRM has, what it lacks, and the three ways to close it.
 - `MODULE-2-SPEC.md` — the accepted v2 layout for Sites & Domains.
 - `BACKEND-PLAN.md` — the backend contract: data model, every endpoint and CTA,
   RBAC/tenancy, publishing with compare-and-swap, analytics, jobs, SLOs,
