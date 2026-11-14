@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-11-14 03:43:01 UTC",
+  "node": "v20.20.2",
+  "artifact": "WACRM-CMS.html",
+  "suites": [
+    {
+      "file": "qa_builder.py",
+      "passed": 97,
+      "failed": 0,
+      "seconds": 41.475
+    },
+    {
+      "file": "qa_states_m4.py",
+      "passed": 47,
+      "failed": 0,
+      "seconds": 42.671
+    },
+    {
+      "file": "qa_pages.py",
+      "passed": 106,
+      "failed": 0,
+      "seconds": 123.608
+    },
+    {
+      "file": "qa_states_m3.py",
+      "passed": 40,
+      "failed": 0,
+      "seconds": 56.446
+    },
+    {
+      "file": "qa_module2.py",
+      "passed": 48,
+      "failed": 0,
+      "seconds": 34.39
+    },
+    {
+      "file": "qa_states_m1.py",
+      "passed": 39,
+      "failed": 0,
+      "seconds": 45.269
+    },
+    {
+      "file": "qa_flows.py",
+      "passed": 38,
+      "failed": 0,
+      "seconds": 52.052
+    },
+    {
+      "file": "qa_react.py",
+      "passed": null,
+      "failed": 0,
+      "seconds": 3.925
+    }
+  ]
+}

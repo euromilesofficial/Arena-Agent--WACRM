@@ -42,6 +42,10 @@ Which file is which
   MODULE-2-SPEC.md  the Sites & Domains UI/UX architecture specification
   STATE-COVERAGE.md every state for all four modules, how to trigger it, what is missing
   ROLLBACK.md       how to return to a previous checkpoint (tags + revert recipes)
+  HANDOVER.md       generated state of the project — read this first if you are
+                    picking the work up (human or AI agent): what is built, what
+                    is verified, what is next, and the traps. Regenerate with
+                    `npm run handover`; it updates itself on build and on qa.
   qa/               WebP captures of the audited states
 
 QA (python3, needs playwright)

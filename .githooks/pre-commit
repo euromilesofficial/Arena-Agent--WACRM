@@ -1,0 +1,12 @@
+#!/bin/sh
+# Keeps HANDOVER.md in lock-step with the tree: regenerate, stage, and refuse the
+# commit if the artifact or the handover could not be produced.
+set -e
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+if command -v node >/dev/null 2>&1; then
+  node scripts/handover.mjs
+  git add HANDOVER.md
+else
+  echo "pre-commit: node not found — HANDOVER.md not regenerated" >&2
+fi
