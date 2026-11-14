@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 06:42:35 UTC · **generated against commit** `c330068` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 06:43:30 UTC · **generated against commit** `3eaad5e` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -47,7 +47,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | sha256 (first 16) | `904cf420c6e5e625` |
 | Built | 2026-11-14 06:42:00 |
 
-Packaged deliverables: `wacrm-app.zip` · `wacrm-app.bundle` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
+Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
 ```bash
 npm ci
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,263 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,280 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -196,13 +196,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `c330068` — polish: AI Copy toolbar pill contrast (violet tint, pressed-state fill).
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `3eaad5e` — chore: regenerate HANDOVER.md.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `3eaad5e` | 2026-11-14 | chore: regenerate HANDOVER.md |
 | `c330068` | 2026-11-14 | polish: AI Copy toolbar pill contrast (violet tint, pressed-state fill) |
 | `070bc5a` | 2026-11-14 | module 4: AI mode in the builder — prompt-to-page generation, plan-then-compose, in-canvas rewrite |
 | `c767062` | 2026-11-14 | Handover: record the hook execute-bit trap |
@@ -214,7 +215,6 @@ First tasks:
 | `0eb8e03` | 2026-11-14 | Handover: regenerate after the amend |
 | `ea0fd16` | 2026-11-14 | Handover: keep --check stable across amends |
 | `ae3441c` | 2026-11-14 | Handover: label the header 'generated against commit' and prove --check is stable |
-| `1ff3cd8` | 2026-11-14 | Automate the handover: generated HANDOVER.md, QA evidence, pre-commit gate |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
