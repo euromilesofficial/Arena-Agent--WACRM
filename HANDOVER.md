@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 04:06:25 UTC · **generated against commit** `b71a563` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 05:43:04 UTC · **generated against commit** `a8b0229` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -35,7 +35,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 - **M2 Sites & Domains** — Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks.
 - **M3 Pages & Routes** — Registry + tree + inspector, 8 modals, slug/route guards, deep links, trash with restore window.
 - **M4 Visual Builder** — 3-panel editor, 19 blocks / 23 sections / 5 templates, drag with refusal reasons, token-bounded style, autosave 2 s + CAS, revisions with block diff + restore, AI copy stream, publish handoff into M1.
-- **M5 Block library expansion + CRM integration** — Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 → 38 offered blocks in 8 chips, 23 → 32 sections, 5 → 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists — there is a WhatsApp Flows builder, a custom-fields registry (19 types × 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM.
+- **M5 Block library expansion + CRM integration** — Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 → 38 offered blocks in 8 chips, 23 → 32 sections, 5 → 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists — there is a WhatsApp Flows builder, a custom-fields registry (19 types × 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM. §11 of the review explains D1–D6 mechanically and proposes flipping the order: forms/lead-capture spine first, interlink surfaces second, palette expansion third.
 
 ## 3. Build artifact (measured now)
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,021,844 B (998 kB) · gzip 361 kB |
 | md5 | `e5853efc3fd48af73798c280f017f585` |
 | sha256 (first 16) | `4f927f9573c7c7d6` |
-| Built | 2026-11-14 03:59:01 |
+| Built | 2026-11-14 05:42:22 |
 
 Packaged deliverables: `wacrm-app.zip` · `wacrm-app.bundle` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -85,7 +85,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (20,977 lines across all tracked text files).
+Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (21,065 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -159,7 +159,7 @@ Decisions already made — do not reopen without the user:
 
 ## 8. What is next
 
-**Approve MODULE-5-REVIEW.md (D1–D6, or 'defaults'), then build Module 5 (block palette), then Module 6 (Forms).**
+**Approve MODULE-5-REVIEW.md §11 (four confirmations), then build Module 5 = Forms & lead capture (the spine), not the palette.**
 
 Blocked on:
 
@@ -168,11 +168,11 @@ Blocked on:
 
 First tasks:
 
-1. If approved: extend the block registry 19 → 38 offered in 8 chips (counts stay computed and QA-asserted).
-2. Add the 7 CRM-native blocks, each with an empty state that names the missing CRM object and links to it.
-3. Grow sections 23 → 32 and templates 5 → 7.
-4. Build Module 6: #/forms list + 3-panel form builder + submissions, then the Form (CRM) block that lists forms by name.
-5. Write BACKEND-PLAN.md §7.20 (forms, consent, WhatsApp CTA, widget embed, booking, products) before the code.
+1. On approval: build Module 5 — forms list + 3-panel form builder + public submit + consent + source attribution + submissions table.
+2. Ship the Form (CRM) and WhatsApp CTA blocks with it: together they complete the capture→CRM→automation story.
+3. Write BACKEND-PLAN.md §7.20 (forms, consent, WhatsApp CTA, widget embed, booking, products) before the code.
+4. Module 6: Integrations panel (widgets, CTA token, booking, forms) + 'captured on this page' read-only panel.
+5. Module 7: palette 19 → 38 in 8 chips, sections 23 → 32, templates 5 → 7.
 
 ## 9. Traps that cost time last time
 
@@ -189,13 +189,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `b71a563` — Module 5 review: block library vs the industry, and what the CRM actually has.
+- Repo: that git directory is `../repo`; branch `main`; HEAD `a8b0229` — Handover: regenerate at the review commit.
 - Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `a8b0229` | 2026-11-14 | Handover: regenerate at the review commit |
 | `b71a563` | 2026-11-14 | Module 5 review: block library vs the industry, and what the CRM actually has |
 | `e8b3e7b` | 2026-11-14 | Handover: make the document self-reference-free |
 | `0eb8e03` | 2026-11-14 | Handover: regenerate after the amend |
@@ -207,7 +208,6 @@ First tasks:
 | `5add3bb` | 2026-11-14 | Add Module 4 (Visual Builder) review: contract defects, 13 decisions, 12 gaps, cross-module wiring |
 | `d32dfc1` | 2026-11-14 | Module 3: Pages & Routes — 3-pane registry, 8 modals, guards, deep links |
 | `d2dd7db` | 2026-11-13 | Add Module 3 (Pages) spec review: conflicts, gaps, decisions |
-| `2d68957` | 2026-11-13 | Ship ROLLBACK.md with the app; rebuild the zip on every checkpoint |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

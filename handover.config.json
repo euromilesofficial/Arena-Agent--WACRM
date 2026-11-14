@@ -59,7 +59,7 @@
       "route": "builder",
       "status": "review delivered \u2014 awaiting approval",
       "evidence": "MODULE-5-REVIEW.md (nothing implemented)",
-      "notes": "Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 \u2192 38 offered blocks in 8 chips, 23 \u2192 32 sections, 5 \u2192 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists \u2014 there is a WhatsApp Flows builder, a custom-fields registry (19 types \u00d7 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM."
+      "notes": "Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 \u2192 38 offered blocks in 8 chips, 23 \u2192 32 sections, 5 \u2192 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists \u2014 there is a WhatsApp Flows builder, a custom-fields registry (19 types \u00d7 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM. \u00a711 of the review explains D1\u2013D6 mechanically and proposes flipping the order: forms/lead-capture spine first, interlink surfaces second, palette expansion third."
     }
   ],
   "decisions": [
@@ -105,17 +105,17 @@
     }
   ],
   "next": {
-    "headline": "Approve MODULE-5-REVIEW.md (D1\u2013D6, or 'defaults'), then build Module 5 (block palette), then Module 6 (Forms).",
+    "headline": "Approve MODULE-5-REVIEW.md \u00a711 (four confirmations), then build Module 5 = Forms & lead capture (the spine), not the palette.",
     "blockedOn": [
       "User approval of D1\u2013D6 in MODULE-5-REVIEW.md \u00a76 \u2014 nothing is implemented by design.",
       "Push to GitHub still needs a fresh PAT (Contents: write); local commits and tags are complete."
     ],
     "tasks": [
-      "If approved: extend the block registry 19 \u2192 38 offered in 8 chips (counts stay computed and QA-asserted).",
-      "Add the 7 CRM-native blocks, each with an empty state that names the missing CRM object and links to it.",
-      "Grow sections 23 \u2192 32 and templates 5 \u2192 7.",
-      "Build Module 6: #/forms list + 3-panel form builder + submissions, then the Form (CRM) block that lists forms by name.",
-      "Write BACKEND-PLAN.md \u00a77.20 (forms, consent, WhatsApp CTA, widget embed, booking, products) before the code."
+      "On approval: build Module 5 \u2014 forms list + 3-panel form builder + public submit + consent + source attribution + submissions table.",
+      "Ship the Form (CRM) and WhatsApp CTA blocks with it: together they complete the capture\u2192CRM\u2192automation story.",
+      "Write BACKEND-PLAN.md \u00a77.20 (forms, consent, WhatsApp CTA, widget embed, booking, products) before the code.",
+      "Module 6: Integrations panel (widgets, CTA token, booking, forms) + 'captured on this page' read-only panel.",
+      "Module 7: palette 19 \u2192 38 in 8 chips, sections 23 \u2192 32, templates 5 \u2192 7."
     ]
   },
   "environment": {
