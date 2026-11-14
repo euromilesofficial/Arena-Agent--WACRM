@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 21:38:18 UTC · **generated against commit** `fe6b36d` · **working tree** 9 uncommitted file(s)
+**Generated** 2026-11-14 21:40:40 UTC · **generated against commit** `d76e638` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,131,117 B (1105 kB) · gzip 388 kB |
 | md5 | `9a9ffa75ccfe945e74f248ce59d20018` |
 | sha256 (first 16) | `a3dbf4881324a1e1` |
-| Built | 2026-11-14 21:38:17 |
+| Built | 2026-11-14 21:40:39 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -216,13 +216,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `fe6b36d` — feat(module-5): desktop block library — four views, computed counts, insert path.
-- Working tree: 9 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `d76e638` — feat(module-5): composition diagram on the inspector overview tab.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `d76e638` | 2026-11-14 | feat(module-5): composition diagram on the inspector overview tab |
 | `fe6b36d` | 2026-11-14 | feat(module-5): desktop block library — four views, computed counts, insert path |
 | `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
 | `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
@@ -234,7 +235,6 @@ First tasks:
 | `28838cc` | 2026-11-14 | security: rotated the credential — 2-day token stored 0600, scope-probed, with an expiry warning at 40h |
 | `25c2c3f` | 2026-11-14 | chore: .gitignore blocks the file class a token would arrive in (this repo is public) |
 | `b68c566` | 2026-11-14 | security: never let a credential reach git; the token is 0600, scripted, documented as exposed |
-| `e018019` | 2026-11-14 | chore: checkpoints never move an existing milestone tag; tags are create-only |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

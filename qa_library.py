@@ -97,7 +97,7 @@ async def main():
         await pg.wait_for_timeout(200)
         ck("C9 compatibility lists requirements", await n(pg, ".m5-reqs li") >= 1)
         ck("C10 compatibility lists emits or says presentational", (await txt(pg, ".m5-tabpane")) != "")
-        await pg.screenshot(path=f"{OUT}/m5-native.png")
+        await pg.screenshot(path=f"{OUT}/m5-native.webp", type="webp", quality=80)
 
         # ---------------- D · sections + saved ----------------
         await go(pg, 2)
@@ -113,7 +113,7 @@ async def main():
         await pg.wait_for_timeout(250)
         usage = await txt(pg, ".m5-tabpane")
         ck("D5 usage shows either table or empty state", ("Pages" in usage) or ("Not used" in usage), usage[:80])
-        await pg.screenshot(path=f"{OUT}/m5-structure.png")
+        await pg.screenshot(path=f"{OUT}/m5-structure.webp", type="webp", quality=80)
 
         # ---------------- N · composition diagram (Overview) ----------------
         await pg.click(".m5-tab:has-text('Overview')")
@@ -158,7 +158,7 @@ async def main():
         await pg.wait_for_timeout(600)
         ck("N9 diagram introduces no horizontal overflow", await pg.evaluate("""() => {
              const i=document.querySelector('.m5-insp'); return !i || i.scrollWidth <= i.clientWidth + 1; }"""))
-        await pg.screenshot(path=f"{OUT}/m5-overview.png")
+        await pg.screenshot(path=f"{OUT}/m5-overview.webp", type="webp", quality=80)
 
         await go(pg, 3)
         ck("E1 saved view paginates at 12", await n(pg, ".m5-card") == 12, str(await n(pg, ".m5-card")))
@@ -214,7 +214,7 @@ async def main():
         await pg.locator(".modal .m5-sec-row").first.click()
         await pg.wait_for_timeout(250)
         ck("H5 position 'after a section' selects", await pg.evaluate("""() => document.querySelector('.modal .m5-sec-row.is-on') !== null"""))
-        await pg.screenshot(path=f"{OUT}/m5-insert.png")
+        await pg.screenshot(path=f"{OUT}/m5-insert.webp", type="webp", quality=80)
         confirm = pg.locator(".modal .modal-foot .btn-primary")
         ck("H6 confirm is enabled when nothing is missing", await confirm.is_enabled())
         target = await txt(pg, ".modal .modal-foot .btn-primary")
@@ -258,7 +258,7 @@ async def main():
         await pg.wait_for_timeout(1300)
         ck("J6 create lands in saved view", "Saved Templates" in (await txt(pg, ".m5-main-title")))
         ck("J7 saved KPI incremented to 15", "15" == (await pg.locator(".m5-kpi-n").all_inner_texts())[2])
-        await pg.screenshot(path=f"{OUT}/m5-created.png")
+        await pg.screenshot(path=f"{OUT}/m5-created.webp", type="webp", quality=80)
 
         # ---------------- K · delete guard ----------------
         used = await pg.evaluate("""() => {

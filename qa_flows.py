@@ -16,7 +16,7 @@ async def main():
         async def step(name, fn, wait=700, shot=True):
             try:
                 await fn(); await pg.wait_for_timeout(wait)
-                if shot: await pg.screenshot(path=f'{OUT}/r-{name}.png')
+                if shot: await pg.screenshot(path=f'{OUT}/r-{name}.webp', type='webp', quality=80)
                 tally['ok'] += 1
                 print('OK  ', name)
             except Exception as e:
@@ -47,11 +47,11 @@ async def main():
         await pg.wait_for_timeout(2600)
         print(('OK   15-publish  → ' + ok15) if ok15 else 'FAIL 15-publish  → no publish control'); tally['ok' if ok15 else 'fail'] += 1
         if await pg.locator('text=is live').count():
-            await pg.screenshot(path=f'{OUT}/r-15-published.png'); print('OK   15b-published')
+            await pg.screenshot(path=f'{OUT}/r-15-published.webp', type='webp', quality=80); print('OK   15b-published')
             await pg.evaluate("()=>{const b=[...document.querySelectorAll('.modal-foot button')]"
                               ".find(b=>/Done/i.test(b.textContent)); if(b)b.click()}")
         elif await pg.locator('text=Publish conflict detected').count():
-            await pg.screenshot(path=f'{OUT}/r-15-conflict.png'); print('OK   15b-conflict')
+            await pg.screenshot(path=f'{OUT}/r-15-conflict.webp', type='webp', quality=80); print('OK   15b-conflict')
             await pg.evaluate("()=>{const b=[...document.querySelectorAll('.modal-foot button')]"
                               ".find(b=>/Rebase/i.test(b.textContent)); if(b)b.click()}")
             await pg.wait_for_timeout(600)
