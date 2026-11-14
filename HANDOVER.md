@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 19:25:04 UTC · **generated against commit** `39716da` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 19:25:30 UTC · **generated against commit** `95d3f16` · **working tree** 4 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,364 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,352 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -94,7 +94,7 @@ Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,364 lines 
 | `src/components/` | 29 | 6,747 | reusable UI: shell, ui kit, charts, and per-module parts |
 | `src/views/` | 5 | 2,536 | one file per screen; routes are hash-based |
 | `src/styles/` | 1 | 3,160 | one tokenised stylesheet (design system) |
-| `qa/` | 56 | — | 56 WebP captures of audited states (evidence, not fixtures) |
+| `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
@@ -209,13 +209,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `../repo`; branch `main`; HEAD `39716da` — docs: record the range-limited rewrite rule.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `95d3f16` — docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives.
+- Working tree: 4 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `95d3f16` | 2026-11-14 | docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives |
 | `39716da` | 2026-11-14 | docs: record the range-limited rewrite rule |
 | `8585206` | 2026-11-14 | docs: mocks are WebP now; handover and push notes follow |
 | `62beb06` | 2026-11-14 | assets: re-encode the reference mocks as WebP — 27.1 MB → 2.9 MB (10.8%) |
@@ -227,7 +228,6 @@ First tasks:
 | `e741b9a` | 2026-11-14 | docs: ship PUSH-TO-GIT.md inside the deliverable and index it in the README |
 | `e6d8f58` | 2026-11-14 | chore: restore pre-commit hook execute bit (mode is lost by every copy) |
 | `67aa7ea` | 2026-11-14 | build: every build now ships a verified zip; add push tooling |
-| `9cac731` | 2026-11-14 | docs: record the packaging commands; bundle is now built on demand (workspace budget) |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

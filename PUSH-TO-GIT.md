@@ -1,56 +1,44 @@
-# Pushing this to `euromilesofficial/Arena-Agent--WACRM`
+# GitHub: pushed, and now automatic
 
-**Status: still not pushed — the token did not arrive in this sandbox.** I probed every place it could have landed before writing this:
+**Status: in sync.** `origin/main` = the workspace, verified by cloning the repository back out.
 
-| Where a token would be | Result |
-|---|---|
-| `GITHUB_TOKEN` / `GH_TOKEN` in the environment | not set (`env` has 15 entries, none of them a credential) |
-| `~/.git-credentials`, `~/.netrc` | do not exist |
-| `git config --global` / `--system` credential helper | none configured |
-| a token file anywhere in the workspace or `/tmp` | none (`grep` for `ghp_*` / `github_pat_*` finds nothing) |
-| Arena **GitHub connector** | `list_connector_tools("github")` → `unsupported` (not an available connector) |
-| platform-injected credential (`push --dry-run`) | `fatal: could not read Username for 'https://github.com'` |
+```
+origin/main   95d3f16   ← matches /home/user/repo exactly
+files         107       (88 source/docs/QA + 19 reference mocks)
+tags          module-1-and-2-import · module-2-complete · module-3-complete · module-4-complete · module-4-ai
+round trip    fresh clone → WACRM-CMS.html md5 119b71ca… (identical) · uploads/EuroMiles…webp sha 7b51c952… (matches MANIFEST)
+```
 
-Read access works — `git ls-remote` returns the real refs — so this is purely a missing write credential, not a network or permissions problem with the repository.
+Before the credential arrived, GitHub held only `d2dd7db` — your Module 3 *spec review*. The 30 commits after it (Module 3's build, the whole Module 4 builder, the interlink plan, AI mode, the packaging automation, the WebP mocks) were local-only. They are now on `main`.
 
 ---
 
-## Where the two sides stand
+## The automatic process
 
-```
-GitHub origin/main   d2dd7db   "Add Module 3 (Pages) spec review"
-local main           62beb06   34 commits · 27 ahead · 0 behind  → clean fast-forward
-                               107 tracked files · 5 tags · includes uploads/
-on GitHub now        module-1-and-2-import, module-2-complete  (nothing later)
-```
-
-Everything from Module 3's build onward is local only: the Module 3 build, the whole Module 4 builder, the interlink plan, **AI mode**, the packaging automation, and the **reference mocks** (committed under `uploads/` as WebP — 27.1 MB of PNG re-encoded to 2.9 MB — with working copies hidden via `skip-worktree`).
-
-## One command closes it
+Every task ends the same way, with one command:
 
 ```bash
-GH_TOKEN=github_pat_xxx ./push-to-github.sh      # or GITHUB_TOKEN=…
+/home/user/checkpoint.sh "what changed" [optional-tag]
 ```
 
-What the script does, in order: restores the git identity and `core.hooksPath` (this sandbox does not persist `.gitconfig`), refuses to push a dirty tree, fetches `origin`, **refuses any non-fast-forward** (no `--force` anywhere), pushes `main` **and all tags**, then compares the remote head with the local head and fails loudly if they differ. The token is passed inline to those two commands only — never written to `.git/config`, a remote URL, a log file, or shell history. Required scope: **Contents: Read and write**.
+It does, in order:
 
-If you would rather not hand over a token at all, say so and I will regenerate `wacrm-app.bundle` (9 MB) so you can `git fetch`/`merge --ff-only` from it locally — that artefact was deleted during the clean-up because `repo/` already holds the same history.
+1. **Build** — `npm run build` (tsc → vite → single file → HANDOVER → zip) when `node_modules` exists; otherwise it regenerates HANDOVER and the zip directly.
+2. **Mirror** — `wacrm-app/` is copied into the clone at `repo/` (`node_modules`, `dist` and generated QA screenshots excluded), along with `PUSH-TO-GIT.md`. The execute bits on `.githooks/pre-commit` and `push-to-github.sh` are re-applied after every copy, because tar preserves whatever mode the source had and a non-executable hook is silently skipped.
+3. **Commit** — the pre-commit hook regenerates `HANDOVER.md` and refuses any commit that stages deletions under `uploads/`; an empty change set is a no-op, not a failure.
+4. **Push** — fetches `origin`, **refuses a non-fast-forward**, pushes `main` and **all tags**, then compares the remote head with the local head and fails loudly if they differ.
 
----
+Two smaller entry points do one half each: `push-to-github.sh` (push only) and `npm run package` (zip only).
 
-## What is in the 25 unpushed commits
+## Credential
 
-| Range | Contents |
-|---|---|
-| `d2dd7db → 6e8749e` | Module 3 build (Pages & Routes) — registry, tree, inspector, modals, deep links |
-| `6e8749e → b71a563` | Module 4 build (Visual Builder) — three panels, drag, autosave + CAS conflict, revisions, publish handoff |
-| `b71a563 → 2025d0a` | `MODULE-5-REVIEW.md` §11 — interlink spine + palette benchmark |
-| `2025d0a → c767062` | hook execute-bit fix + the matching handover trap |
-| `c767062 → c330068` | **AI mode** — prompt → page generation, plan-then-compose, in-canvas rewrite, `AI-BUILDER-SPEC.md`, `INTERLINK-PLAN.md`, `BACKEND-PLAN.md` §7.20, `qa_ai.py` |
-| `c330068 → 283ad3c` | packaging automation (`scripts/package.mjs`), push tooling, **`uploads/` committed as WebP**, QA screenshots untracked, history rewritten to purge the PNG blobs |
+The token lives at **`/home/user/.gh-token`**, mode `0600`, outside the repository, and `.gh-token` / `*.token` are in `.gitignore`. Scripts resolve `GITHUB_TOKEN` → `GH_TOKEN` → that file, and the value is only ever interpolated into the single `git push` / `git ls-remote` URL for that command: it is never written into `.git/config`, a remote URL, a log, or a commit. Every command that prints the URL scrubs the token to `***` first.
 
-## After the push lands
+Since a token has now been shared in a chat window, treat it as exposed: rotate it at **Settings → Developer settings → Fine-grained tokens** when convenient, and drop the new value into the same file — nothing else needs to change. Scope it to this one repository with **Contents: Read and write**; nothing here needs more.
 
-- Delete nothing — `repo/` is already the minimal copy.
-- Every `npm run build` rewrites `wacrm-app.zip` and fails if the app inside it differs from the build, so the artefact and the commit cannot drift.
-- The mocks stay in Git only (`skip-worktree`, so no 26 MB working copy); read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`, verify the folder with `sha256sum -c MANIFEST.sha256` inside `repo/uploads/`.
+## Rules this repository follows
+
+- Commits sit on top of your `main`; the push is always a fast-forward. Nothing is ever force-pushed.
+- `node_modules/`, `dist/`, `*.zip`, `*.bundle`, `qa/*.webp`, `qa/*.png` and the credential are ignored — a checkout is source + the built `WACRM-CMS.html` + the mocks, and runs immediately.
+- A commit claims green tests only when the suites were run at that commit; the numbers live in the commit message or the tag annotation.
+- History rewrites are range-limited (`git filter-branch … -- <base>..main`) so the fast-forward to `origin` survives. A bare `--all` rewrites the root and breaks it.
