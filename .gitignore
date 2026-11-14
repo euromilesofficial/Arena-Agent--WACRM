@@ -11,3 +11,9 @@ qa/*.png
 # credential — never in the repo
 .gh-token
 *.token
+
+# secrets must never enter a public repo — this one is PUBLIC
+findgreattoken*
+*secret*.ts
+.env
+.env.*
