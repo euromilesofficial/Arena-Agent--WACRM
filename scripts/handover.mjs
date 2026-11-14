@@ -143,7 +143,7 @@ w("> **This file is generated. Do not edit it by hand.**");
 w(`> Source of truth: \`handover.config.json\` (intent, decisions, next steps) + live repo facts.`);
 w(`> Regenerate with \`npm run handover\`; \`npm run build\` and \`npm run qa\` do it for you.`);
 w();
-w(`**Generated** ${now} · **commit** \`${sha}\`${git.available && git.dirty ? ` · **working tree** ${git.dirty} uncommitted file(s)` : ""}`);
+w(`**Generated** ${now} · **generated against commit** \`${sha}\`${git.available && git.dirty ? ` · **working tree** ${git.dirty} uncommitted file(s)` : ""}`);
 w();
 w(cfg.project.tagline);
 w();
@@ -345,7 +345,15 @@ w();
 const text = L.join("\n");
 if (CHECK) {
   const current = exists(OUT) ? read(OUT) : "";
-  const strip = (s) => s.replace(/\*\*Generated\*\*.*$/m, "").trim();
+  /* Volatile by design: the timestamp line, commit ids and the build clock move
+     on every commit/rebuild. --check verifies the *facts and structure*, so it
+     masks those rather than forcing a rewrite after every amend. */
+  const strip = (s) =>
+    s
+      .replace(/\*\*Generated\*\*.*$/m, "")
+      .replace(/\b[0-9a-f]{7,40}\b/g, "<sha>")
+      .replace(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/g, "<time>")
+      .trim();
   if (strip(current) !== strip(text)) {
     console.error("HANDOVER.md is out of date — run `npm run handover`.");
     process.exit(1);
