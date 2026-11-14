@@ -1,8 +1,8 @@
 # Reference mocks (source material for every module)
 
-The screenshots the product was specified against — the visual builder mock with the **AI Copy** chip, ten dashboard frames, the Sites & Domains / Pages / Overview / Spec dashboards, and a stray `vite.config.ts` that arrived with them.
+The screenshots the product was specified against — the visual builder mock with the **AI Copy** chip, ten dashboard frames plus eleven Module 5 frames, the Sites & Domains / Pages / Overview / Spec dashboards, and a stray `vite.config.ts` that arrived with them.
 
-**16 images · 2.9 MB · WebP q86.** The originals were 1672×941 (a few 1536×1024) PNGs totalling **27.1 MB**; at q86 WebP they are 10.8 % of that with no visible loss — text in the builder mock, including 9 px inspector labels, is still crisp. PNG is a terrible format for flat UI at this size and every extra second of `git clone` was paying for it.
+**27 images + 1 config · 4.8 MB · WebP q86.** Module 5 added 11 frames (2.1 MB as WebP). The originals were 1672×941 (a few 1536×1024) PNGs totalling **27.1 MB**; at q86 WebP they are 10.8 % of that with no visible loss — text in the builder mock, including 9 px inspector labels, is still crisp. PNG is a terrible format for flat UI at this size and every extra second of `git clone` was paying for it.
 
 They live **in Git, and only in Git**. The working copies are marked `skip-worktree` and removed from disk: a committed file otherwise costs twice (once in `.git`, once in the tree). Reading one needs no restore at all:
 
@@ -33,6 +33,8 @@ rm -rf /home/user/repo/uploads
 | `WACRM Website CMS Dashboard Overview.webp` | Module 1 dashboard |
 | `WACRM Website CMS Dashboard Spec.webp` | the overview's written spec |
 | `Screenshot 2026-11-13 at 9.20.58 AM.webp` | supporting state capture |
+| `WACRM Block Library Dashboard.webp` | **Module 5** — the Block Library screen: KPI strip, filter rail, 3-column grid, card menu open, section inspector |
+| `ChatGPT Image … 08_05_53 … 08_06_08 AM-1…10.webp` | **Module 5** — ten 1672×941 frames: All view, Native Blocks (grouped), Section Templates, Saved Templates, three category filters, and the inspector's Overview / Structure / Usage tabs. Nothing in the set shows the insert, create, import or delete modals, nor any error/empty state — those are built from the written spec |
 | `vite.config.ts` | arrived with the mocks; kept for completeness, not used by the build |
 
 ## If a mock is ever needed again at full fidelity

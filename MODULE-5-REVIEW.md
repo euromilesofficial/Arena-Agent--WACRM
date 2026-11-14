@@ -1,5 +1,9 @@
 # Module 5 review — block library vs the industry, and what the WACRM CRM gives us
 
+> **Superseded for the catalogue scope (13 Nov 2026).** Your specification v1.0 and the eleven mocks replaced the proposals in this document. The catalogue now ships against the canonical 20 archetypes in `MODULE-5-BLOCK-LIBRARY-SPEC.md`; the `19 → 38 offered` expansion proposed in §4 / D4 below was never approved and is deferred as a builder-palette change, not a library-screen change. The industry comparison, the CRM facts and the form-builder shape (Module 6) in this file still hold. The gap list that governs the build is `MODULE-5-GAP-REVIEW.md`.
+>
+> Everything below this line is the original pre-spec review, unedited.
+
 **Status:** findings and proposals only. **Nothing is implemented.** Sign off on §8 and it becomes Module 5 (blocks) and Module 6 (forms).
 
 Reviewed repository: `euromilesofficial/EuroMiles-WACRM` @ `c07cbb61` — *"feat: initial commit of EuroMiles WACRM parent codebase"*, 14 Nov 2026, 35 MB checkout, 267 authenticated route files, 379 migrations, ~300 tables.
