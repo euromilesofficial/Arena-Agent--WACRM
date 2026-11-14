@@ -85,6 +85,7 @@ function artifactFacts(cfg) {
 }
 
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git", "qa", "__pycache__"]);
+const GENERATED = new Set(["HANDOVER.md", "last-run.json"]);
 function inventory(dir = ROOT, depth = 0) {
   const rows = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
@@ -94,6 +95,8 @@ function inventory(dir = ROOT, depth = 0) {
       if (SKIP_DIRS.has(entry.name) || depth > 3) continue;
       const kids = inventory(full, depth + 1);
       if (kids.length) rows.push({ dir: true, name: entry.name + "/", depth, loc: kids.reduce((n, k) => n + (k.loc || 0), 0), kids });
+    } else if (GENERATED.has(entry.name)) {
+      continue; // generated output: counting it here would make the document reference itself
     } else if (/\.(tsx?|css|py|md|json|html)$/.test(entry.name) && !entry.name.endsWith("lock.json")) {
       const loc = read(full).split("\n").length;
       rows.push({ dir: false, name: entry.name, rel: rel(full), depth, loc });
@@ -191,16 +194,12 @@ w();
 const side = (cfg.project.sideArtifacts || [])
   .map((name) => ({ name, full: path.resolve(ROOT, name) }))
   .filter((x) => exists(x.full))
-  .map((x) => {
-    const buf = fs.readFileSync(x.full);
-    return { name: path.basename(x.name), bytes: buf.length, md5: createHash("md5").update(buf).digest("hex") };
-  });
+  .map((x) => ({ name: path.basename(x.name) }));
 if (side.length) {
-  w("Packaged deliverables (ready to hand over):");
-  w();
-  w("| File | Size | md5 |");
-  w("| --- | --- | --- |");
-  for (const x of side) w(`| \`${x.name}\` | ${x.bytes.toLocaleString()} B | \`${x.md5}\` |`);
+  /* The zips contain this document, so recording their size or hash here would
+     make the file reference itself and never settle. Their names are listed;
+     the authoritative hashes are the ones printed by the packaging step. */
+  w("Packaged deliverables: " + side.map((x) => `\`${x.name}\``).join(" · ") + " — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).");
   w();
 }
 w("```bash");
