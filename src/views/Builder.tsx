@@ -577,7 +577,7 @@ export function Builder() {
               </Tip>
             </div>
             <div className="wb-devices" role="group" aria-label="Viewport">
-              {([["desktop", "Desktop 1440", "dashboard"], ["tablet", "Tablet 768", "sheet"], ["mobile", "Mobile 375", "form"]] as [Device, string, string][]).map(([d, label, icon]) => (
+              {([["desktop", "Desktop 1440", "monitor"], ["tablet", "Tablet 768", "tablet"], ["mobile", "Mobile 375", "phone"]] as [Device, string, string][]).map(([d, label, icon]) => (
                 <button key={d} className={`wb-dev ${device === d ? "is-on" : ""}`} aria-pressed={device === d} title={label}
                   aria-label={label} onClick={() => setDevice(d)}><Icon name={icon} size={14} /></button>
               ))}
