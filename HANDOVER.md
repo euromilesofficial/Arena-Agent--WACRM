@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 21:51:02 UTC · **generated against commit** `10530b7` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 23:55:13 UTC · **generated against commit** `0fbd45c` · **working tree** 9 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -29,7 +29,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | M2 | Sites & Domains | `#/sites` | **done** | qa_module2.py 48/48 · state matrix in STATE-COVERAGE.md |
 | M3 | Pages & Routes | `#/pages?site=&tab=&q=&page=&sel=` | **done** | qa_pages.py 106/106 · qa_states_m3.py 40/40 |
 | M4 | Visual Builder | `#/builder?site=&page=&sel=&lib=&insp=` | **done** | qa_builder.py 97/97 · qa_states_m4.py 47/47 |
-| M5 | Block Library | `#/library` | **done** | qa_library.py 72/72 · qa_builder.py 98/98 |
+| M5 | Block Library | `#/library` | **done** | qa_library.py 90/90 · qa_builder.py 98/98 |
 
 - **M1 Overview** — Dashboard grid, 6 KPI drawers, funnel, acquisition, site health, publishing rail, release wizard, rollback.
 - **M2 Sites & Domains** — Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks.
@@ -42,10 +42,10 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 1,131,117 B (1105 kB) · gzip 388 kB |
-| md5 | `9a9ffa75ccfe945e74f248ce59d20018` |
-| sha256 (first 16) | `a3dbf4881324a1e1` |
-| Built | 2026-11-14 21:47:49 |
+| Size | 1,146,821 B (1120 kB) · gzip 391 kB |
+| md5 | `5b74ce418e5818f60dc8345c06482a3e` |
+| sha256 (first 16) | `87dc111fefbdb3af` |
+| Built | 2026-11-14 23:55:11 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,28 +86,28 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **52 source files, 18,277 lines** of TS/TSX/CSS (25,912 lines across all tracked text files).
+Source inventory: **52 source files, 18,655 lines** of TS/TSX/CSS (26,379 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 11 | 4,059 | data seams, registries, formatting, no JSX |
+| `src/lib/` | 11 | 4,187 | data seams, registries, formatting, no JSX |
 | `src/components/` | 30 | 7,193 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 6 | 3,434 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 3,521 | one tokenised stylesheet (design system) |
+| `src/views/` | 6 | 3,607 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 3,598 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 3,521 |
+| `src/styles/app.css` | 3,598 |
 | `BACKEND-PLAN.md` | 1,375 |
+| `src/views/Library.tsx` | 1,071 |
 | `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
-| `src/views/Library.tsx` | 898 |
+| `src/lib/library-db.ts` | 856 |
 | `src/lib/builder.ts` | 828 |
 | `src/views/Pages.tsx` | 789 |
-| `src/lib/library-db.ts` | 728 |
 | `src/lib/store.tsx` | 569 |
 | `src/components/pages/PageModals.tsx` | 552 |
 | `src/views/Sites.tsx` | 538 |
@@ -216,13 +216,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `10530b7` — chore(qa): write screenshots as WebP directly, drop stray PNGs.
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `0fbd45c` — docs(module-5): audit the ten block-library mocks against the build.
+- Working tree: 9 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `0fbd45c` | 2026-11-14 | docs(module-5): audit the ten block-library mocks against the build |
 | `10530b7` | 2026-11-14 | chore(qa): write screenshots as WebP directly, drop stray PNGs |
 | `d76e638` | 2026-11-14 | feat(module-5): composition diagram on the inspector overview tab |
 | `fe6b36d` | 2026-11-14 | feat(module-5): desktop block library — four views, computed counts, insert path |
@@ -234,7 +235,6 @@ First tasks:
 | `a41df35` | 2026-11-14 | chore: the handover hook no longer manufactures a commit on every checkpoint |
 | `a572c7c` | 2026-11-14 | noop |
 | `28838cc` | 2026-11-14 | security: rotated the credential — 2-day token stored 0600, scope-probed, with an expiry warning at 40h |
-| `25c2c3f` | 2026-11-14 | chore: .gitignore blocks the file class a token would arrive in (this repo is public) |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

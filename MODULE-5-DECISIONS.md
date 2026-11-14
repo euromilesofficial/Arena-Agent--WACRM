@@ -94,3 +94,47 @@ single-purpose diagram, not a second structure editor:
   copies count recorded placements — seeded, or written by Insert into Page — because
   window-matching cannot tell "the Study Abroad hero" from "a hero". `Used on 2 pages`
   therefore means two rows a user can open, never an estimate.
+
+## 23 · Mock-fidelity pass (audit `10530b7` → this build)
+
+The audit found 14 divergences from the ten mocks. Closed here:
+
+1. **Native catalogue = 25, not 20.** The mock's twenty blocks exist 1:1 — Rich Text,
+   Spacer, Stats Strip and Icon Grid are *configurations* of existing types (Text rich,
+   Divider space, Feature Grid stats/icons) and Accordion is the FAQ type under its
+   generic label. Five domain blocks the workspace already ships (Hero, Footer, Pricing,
+   Feature Grid, FAQ) ride along. No type was duplicated: the builder still offers one
+   way to make a spacer.
+2. **Library categories are the mock's four** — Content · Layout · Interactive ·
+   Engagement — computed per catalogue row, not from the builder's palette groups. The
+   Visual Builder keeps Content · Media · Layout · Form because that is *its* mock
+   (07:03 batch). Two screens, two taxonomies, one registry.
+3. **Native cards are icon cards**: icon tile, grip, kebab, three-line copy, `Preview` /
+   `Insert` — no thumbnail, so five fit a row and all four groups stay visible.
+4. **Section + saved grids are three-up**, the mock's rhythm, so `Use Template` and the
+   creator line fit without clipping.
+5. **Compatibility facet is real**: Schema-validated / Built-in / Reusable are checkboxes
+   that filter (unticking Reusable drops the Footer, the one master layout).
+6. **View titles carry counts and a one-line explanation**, and a category filter turns
+   the title into `Templates (6) — Hero`.
+7. **CTAs are per-kind**: `Insert Block` (native), `Insert into Page` (section),
+   `Use Template` (saved) — card and inspector.
+8. **Duplicate to My Templates works on a built-in**, as the menu mock shows.
+9. **Native Overview is a property view** — About this block · Key supported properties ·
+   Compatibility · Where you can use it. Sections keep the composition diagram; the two
+   kinds genuinely differ in the mocks and in reality.
+10. **Diagram fits five tiles**, renders counts as `(×3)` and qualifies backdrops as
+    `Image (Background)`.
+11. **Breakpoints are cards** (Desktop ≥1200 / Tablet 768–1199 / Mobile ≤767) instead of a
+    one-line strip.
+12. **Saved cards** carry creator + `Updated` stamp, paginate six at a time, and the saved
+    Overview is the mock's icon-keyed list (Owner · Created by · Last updated · Total
+    usage · Used in, per website).
+13. **Usage table gains Last Updated and View placement** — the latter resolves the real
+    block id and opens the Visual Builder with that placement selected, so it is a link to
+    something, not a label.
+14. **Structure tab** gains Expand/Collapse.
+
+Left as it is, deliberately: card thumbnails remain wireframe schematics rather than
+photographic renders (a generated-image set would add ~0.6–1 MB to a single-file artefact
+and would still be fiction); the inspector preview is the same schematic.
