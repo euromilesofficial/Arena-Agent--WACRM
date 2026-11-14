@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 03:44:01 UTC · **generated against commit** `ac6621d` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 03:44:13 UTC · **generated against commit** `c84e4d6` · **working tree** 4 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -90,7 +90,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (20,939 lines across all tracked text files).
+Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (20,716 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -163,7 +163,7 @@ Decisions already made — do not reopen without the user:
 
 ## 8. What is next
 
-**Approve the M5 block-library + CRM integration plan, then implement it.**
+**PROBE**
 
 Blocked on:
 
@@ -192,14 +192,15 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `ac6621d` — Handover: label the header 'generated against commit' and prove --check is stable.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `c84e4d6` — Handover: keep --check stable across amends.
+- Working tree: 4 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
-| `ac6621d` | 2026-11-14 | Handover: label the header 'generated against commit' and prove --check is stable |
+| `c84e4d6` | 2026-11-14 | Handover: keep --check stable across amends |
+| `ae3441c` | 2026-11-14 | Handover: label the header 'generated against commit' and prove --check is stable |
 | `1ff3cd8` | 2026-11-14 | Automate the handover: generated HANDOVER.md, QA evidence, pre-commit gate |
 | `f2ff414` | 2026-11-14 | Builder: draw a real monitor / tablet / phone icon family for the device switch |
 | `6e8749e` | 2026-11-14 | Module 4: Visual Builder — 3-panel editor, autosave + CAS, revisions, AI copy |
@@ -210,7 +211,6 @@ First tasks:
 | `b8cb5c2` | 2026-11-13 | Add ROLLBACK.md and checkpoint tags |
 | `203abcf` | 2026-11-13 | Add QA harnesses and reference screenshots |
 | `df38951` | 2026-11-13 | Add specs: UI/UX architecture, backend contract, state coverage |
-| `858dd22` | 2026-11-13 | Add WACRM Website CMS app (Module 1 + Module 2) |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

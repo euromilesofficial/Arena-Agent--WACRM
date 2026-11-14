@@ -353,6 +353,9 @@ if (CHECK) {
       .replace(/\*\*Generated\*\*.*$/m, "")
       .replace(/\b[0-9a-f]{7,40}\b/g, "<sha>")
       .replace(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/g, "<time>")
+      /* the git section is one commit behind by construction (the hook runs
+         before the commit exists), so it is excluded from the staleness test */
+      .replace(/## 10\.[\s\S]*?(?=## 11\.)/, "<git-section>")
       .trim();
   if (strip(current) !== strip(text)) {
     console.error("HANDOVER.md is out of date — run `npm run handover`.");
