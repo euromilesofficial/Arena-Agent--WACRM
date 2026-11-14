@@ -63,10 +63,24 @@ fi
 
 # ---------- 4 · push ----------
 TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
-if [ -z "$TOKEN" ] && [ -f "$TOKEN_FILE" ]; then TOKEN=$(cat "$TOKEN_FILE"); fi
+if [ -z "$TOKEN" ] && [ -f "$TOKEN_FILE" ]; then chmod 600 "$TOKEN_FILE" 2>/dev/null || true; TOKEN=$(cat "$TOKEN_FILE"); fi
 if [ -z "$TOKEN" ]; then
   echo "! no credential: set GH_TOKEN or write it to $TOKEN_FILE" >&2
   exit 1
+fi
+
+# the credential has a 2-day lifecycle — say so before it silently expires
+SINCE_FILE=/home/user/.gh-token-since
+if [ -f "$SINCE_FILE" ]; then
+  since=$(date -d "$(cat "$SINCE_FILE")" +%s 2>/dev/null || echo 0)
+  if [ "$since" -gt 0 ]; then
+    age_h=$(( ( $(date +%s) - since ) / 3600 ))
+    left_h=$(( 48 - age_h ))
+    if [ "$age_h" -ge 40 ]; then
+      echo "! the GitHub token is ${age_h}h old — its 2-day life expires in about ${left_h}h" >&2
+      echo "  rotate it: new fine-grained token (Contents: write, this repo only) → /home/user/.gh-token" >&2
+    fi
+  fi
 fi
 
 URL="https://x-access-token:${TOKEN}@github.com/${OWNER_REPO}.git"

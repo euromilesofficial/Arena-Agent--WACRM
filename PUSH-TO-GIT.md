@@ -32,26 +32,20 @@ Two smaller entry points do one half each: `push-to-github.sh` (push only) and `
 
 ## Credential — what is stored, where, and what I cannot protect
 
-The token is at **`/home/user/.gh-token`** (mode `0600`, outside the repository). Scripts resolve `GITHUB_TOKEN` → `GH_TOKEN` → that file, and enforce the `0600` on every run because file modes are **not preserved** by the workspace snapshot — it came back as `0644` once already.
+**Rotated.** The first token was revoked by the user (verified: `GET /user` → **401**). The current one lives at **`/home/user/.gh-token`** (mode `0600`, outside the repository, installed `2026-11-14T19:44Z`), and **expires two days later — around `2026-11-16T19:44Z`.**
 
-**Where the string exists right now — all of it:**
+Scope probe on the live token: `GET /repos/…/hooks`, `/actions/secrets` and `/branches/main/protection` all return **403**, so it is not an administrator credential — it can push contents and little else.
 
-| Location | Consequence |
+Scripts resolve `GITHUB_TOKEN` → `GH_TOKEN` → that file, and re-apply `0600` on every run, because the workspace snapshot drops file modes (`0600` came back as `0644` once). `checkpoint.sh` also warns when the token passes **40 hours**, so the expiry never arrives as a surprise mid-push.
+
+| Where the string exists | Mitigation |
 |---|---|
-| `/home/user/.gh-token` | readable by anything running in this sandbox; the only copy I control |
-| **the conversation transcript** | it was pasted in chat — this is the exposure that matters, and it cannot be undone |
-| **the platform's snapshot bundle** (`/tmp/arena-workspace/hydrate.zip` contains `.gh-token`) | any workspace snapshot includes it, because it is a file in the workspace |
-| the git repository, the zip, HANDOVER, logs | **not present** — verified by grep; a pre-commit gate now blocks any commit containing a `github_pat_`/`ghp_`/`gho_`/`ghs_` pattern |
+| `/home/user/.gh-token` (0600, outside the repo) | the only copy on disk; deleted on request, and at expiry by you |
+| this chat transcript | unavoidable — the reason the token is **2-day** |
+| the platform snapshot bundle (`hydrate.zip` carries `.gh-token`) | same — bounded by the 2-day life, not by where the file sits |
+| the git repository, the zip, HANDOVER, logs | **not present** — the pre-commit gate refuses any staged `github_pat_` / `ghp_` / `gho_` / `ghs_` pattern, and `.gitignore` blocks `findgreattoken*`, `*secret*.ts`, `.env*` |
 
-That is the honest picture: I never send the token anywhere except `github.com`, never print it (every command scrubs it to `***`), and never write it into the repo — but **I cannot make a token that has already transited a chat "safe from the outside world."** Once it is in a transcript and a snapshot, it should be treated as known.
-
-### The fix, and it takes a minute
-
-1. **Settings → Developer settings → Fine-grained tokens → revoke** the current token.
-2. Create a new one: **repository access: only `euromilesofficial/Arena-Agent--WACRM`**, **permissions: Contents = Read and write** (nothing else), **expiration: 30–90 days**.
-3. Paste it once; it replaces the file. `checkpoint.sh` keeps working unchanged.
-
-Rotating means the copy in this transcript, in old snapshots, and in anyone's shell history stops being able to do anything at all. That is the only durable protection; everything else is damage reduction.
+**Rotating when it expires** (takes a minute): fine-grained token → access **only `euromilesofficial/Arena-Agent--WACRM`** → permission **Contents = Read and write** → expiration **2 days** → paste it into `/home/user/.gh-token` and refresh `.gh-token-since` (`date -u +%FT%TZ`). Nothing else changes; `checkpoint.sh` keeps pushing.
 
 ### If you would rather I never store it
 
