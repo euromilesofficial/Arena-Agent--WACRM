@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 19:25:30 UTC · **generated against commit** `95d3f16` · **working tree** 4 uncommitted file(s)
+**Generated** 2026-11-14 19:25:39 UTC · **generated against commit** `b354de2` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -209,13 +209,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `95d3f16` — docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives.
-- Working tree: 4 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `b354de2` — docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules.
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `b354de2` | 2026-11-14 | docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules |
 | `95d3f16` | 2026-11-14 | docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives |
 | `39716da` | 2026-11-14 | docs: record the range-limited rewrite rule |
 | `8585206` | 2026-11-14 | docs: mocks are WebP now; handover and push notes follow |
@@ -227,7 +228,6 @@ First tasks:
 | `d57c613` | 2026-11-14 | chore: restore execute bits (lost on copy) |
 | `e741b9a` | 2026-11-14 | docs: ship PUSH-TO-GIT.md inside the deliverable and index it in the README |
 | `e6d8f58` | 2026-11-14 | chore: restore pre-commit hook execute bit (mode is lost by every copy) |
-| `67aa7ea` | 2026-11-14 | build: every build now ships a verified zip; add push tooling |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
