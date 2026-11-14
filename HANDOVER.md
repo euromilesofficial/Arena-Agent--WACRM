@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 05:43:04 UTC · **generated against commit** `a8b0229` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 05:43:13 UTC · **generated against commit** `2025d0a` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -189,13 +189,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `../repo`; branch `main`; HEAD `a8b0229` — Handover: regenerate at the review commit.
+- Repo: that git directory is `.`; branch `main`; HEAD `2025d0a` — Module 5 review: explain D1-D6 mechanically and propose the spine-first order.
 - Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `2025d0a` | 2026-11-14 | Module 5 review: explain D1-D6 mechanically and propose the spine-first order |
 | `a8b0229` | 2026-11-14 | Handover: regenerate at the review commit |
 | `b71a563` | 2026-11-14 | Module 5 review: block library vs the industry, and what the CRM actually has |
 | `e8b3e7b` | 2026-11-14 | Handover: make the document self-reference-free |
@@ -207,7 +208,6 @@ First tasks:
 | `6e8749e` | 2026-11-14 | Module 4: Visual Builder — 3-panel editor, autosave + CAS, revisions, AI copy |
 | `5add3bb` | 2026-11-14 | Add Module 4 (Visual Builder) review: contract defects, 13 decisions, 12 gaps, cross-module wiring |
 | `d32dfc1` | 2026-11-14 | Module 3: Pages & Routes — 3-pane registry, 8 modals, guards, deep links |
-| `d2dd7db` | 2026-11-13 | Add Module 3 (Pages) spec review: conflicts, gaps, decisions |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
