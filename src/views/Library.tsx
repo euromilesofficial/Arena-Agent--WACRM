@@ -14,9 +14,10 @@ import { Btn, ErrorState, MenuItem, Pill, Popover, Skel, Tip } from "../componen
 import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { REGISTRY, type BlockNode } from "@/lib/builder";
+import { BuilderAPI } from "@/lib/builder-db";
 import {
   LibraryAPI, agoOf, compositionOf, countOf, dateLong, kpis, placementsFor, requirementsFor, structureOf,
-  type LibEntry, type LibResult, type LibScope, type LibSort, type LibView, type UpdatedFilter
+  type LibEntry, type LibResult, type LibScope, type LibSort, type LibView, type Placement, type UpdatedFilter
 } from "@/lib/library-db";
 import { CreateTemplateModal, DeleteModal, InsertModal, PreviewModal } from "@/components/library/LibraryModals";
 
@@ -129,10 +130,11 @@ function LibThumb({ blocks, tall = false }: { blocks: BlockNode[]; tall?: boolea
 
 
 /* ---------------- composition diagram ----------------
-   The Overview tab's picture: root pill → connector rail → up to four
-   part tiles, all generated from the document (see compositionOf). */
+   The Overview tab's picture: root pill → connector rail → up to five
+   part tiles (the mock fits five in a 330 px rail), all generated from
+   the document (see compositionOf). */
 function Composition({ entry, onMore }: { entry: LibEntry; onMore: () => void }) {
-  const c = compositionOf(entry, 4);
+  const c = compositionOf(entry, 5);
   if (!c.parts.length) {
     return (
       <div className="m5-comp" role="img" aria-label={`${entry.name} is a single block with no internal parts`}>
@@ -160,7 +162,7 @@ function Composition({ entry, onMore }: { entry: LibEntry; onMore: () => void })
         {tiles.map((p) => (
           <div className="m5-comp-tile" key={p.key}>
             <span className="m5-comp-ico">{p.icon === "type" ? <b>H</b> : <Icon name={p.icon} size={14} />}</span>
-            <span className="m5-comp-label">{p.label}{p.count && p.count > 1 ? ` ×${p.count}` : ""}</span>
+            <span className="m5-comp-label">{p.label}{p.count && p.count > 1 ? ` (×${p.count})` : ""}</span>
           </div>
         ))}
         {c.hidden > 0 && (
@@ -194,9 +196,14 @@ interface CardProps {
 
 function Card({ entry, selected, onSelect, onInsert, onMenu, menuOpen, readOnly }: CardProps) {
   const uses = placementsFor(entry.id).length;
+  /* native blocks get the mock's icon card — no thumbnail, so five fit a row
+     and all four category groups stay on one screen */
+  const compact = entry.kind === "block";
+  const icon = entry.type ? REGISTRY[entry.type].icon : "blocks";
+  const cta = entry.kind === "saved" ? "Use Template" : "Insert";
   return (
     <article
-      className={`m5-card ${selected ? "is-sel" : ""}`}
+      className={`m5-card ${compact ? "is-compact" : ""} ${selected ? "is-sel" : ""}`}
       data-id={entry.id}
       data-kind={entry.kind}
       aria-selected={selected}
@@ -205,25 +212,47 @@ function Card({ entry, selected, onSelect, onInsert, onMenu, menuOpen, readOnly 
       onMouseDown={(e) => { if (!(e.target as HTMLElement).closest("button")) onSelect(); }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <div className="m5-card-thumb">
-        <LibThumb blocks={entry.blocks} />
-        {selected && <span className="m5-card-check"><Icon name="check" size={11} /></span>}
-        <button className={`m5-kebab ${menuOpen ? "is-on" : ""}`} onClick={onMenu} aria-label={`Actions for ${entry.name}`} aria-haspopup="menu">
-          <Icon name="more" size={14} />
-        </button>
-      </div>
+      {compact ? (
+        <div className="m5-card-top">
+          <span className={`m5-ico-tile t-${entry.category.toLowerCase()}`}><Icon name={icon} size={16} /></span>
+          <span className="m5-drag" title="Drag onto a page in the Visual Builder" aria-hidden>
+            <Icon name="grip" size={13} />
+          </span>
+          <button className={`m5-kebab ${menuOpen ? "is-on" : ""}`} onClick={onMenu} aria-label={`Actions for ${entry.name}`} aria-haspopup="menu">
+            <Icon name="more" size={14} />
+          </button>
+        </div>
+      ) : (
+        <div className="m5-card-thumb">
+          <LibThumb blocks={entry.blocks} />
+          {selected && <span className="m5-card-check"><Icon name="check" size={11} /></span>}
+          <button className={`m5-kebab ${menuOpen ? "is-on" : ""}`} onClick={onMenu} aria-label={`Actions for ${entry.name}`} aria-haspopup="menu">
+            <Icon name="more" size={14} />
+          </button>
+        </div>
+      )}
       <div className="m5-card-body">
         <h3 className="m5-card-name">{entry.name}</h3>
-        <div className="m5-card-badges">
-          <ScopeBadge entry={entry} />
-          {entry.kind !== "saved" && <Pill tone="grey" className="m5-badge">{entry.category}</Pill>}
-          {uses > 0 && <span className="m5-uses"><Icon name="link" size={11} />{uses}</span>}
-        </div>
+        {!compact && (
+          <div className="m5-card-badges">
+            <ScopeBadge entry={entry} />
+            {entry.kind !== "saved" && <Pill tone="grey" className="m5-badge">{entry.category}</Pill>}
+            {uses > 0 && <span className="m5-uses"><Icon name="link" size={11} />{uses}</span>}
+          </div>
+        )}
         <p className="m5-card-desc">{entry.desc}</p>
+        {entry.kind === "saved" && (
+          <div className="m5-card-meta">
+            <span className="m5-avatar" aria-hidden>{initials(entry.creator)}</span>
+            <span>by {entry.creator}</span>
+            <span className="m5-dot" aria-hidden />
+            <span>Updated {dateShort(entry.updatedAt)}</span>
+          </div>
+        )}
       </div>
       <div className="m5-card-foot">
         <Btn variant="sm" icon="eye" onClick={onSelect}>Preview</Btn>
-        <Btn variant="primary" className="m5-insert" icon="plus" disabled={readOnly} onClick={onInsert}>Insert</Btn>
+        <Btn variant="primary" className="m5-insert" icon="plus" disabled={readOnly} onClick={onInsert}>{cta}</Btn>
       </div>
     </article>
   );
@@ -253,6 +282,27 @@ function CardRow({ entry, selected, onSelect, onInsert, onMenu, readOnly }: Omit
   );
 }
 
+const FIELD_NOTE: Record<string, string> = {
+  text: "short text", textarea: "multi-line copy", select: "pick one", toggle: "on or off",
+  link: "URL, page or anchor", media: "image or video", items: "repeating items",
+  spacing: "spacing scale", segmented: "segmented choice", color: "theme colour", number: "number"
+};
+const fieldNote = (kind: string): string => FIELD_NOTE[kind] ?? kind;
+
+const usageWhen = (iso: string): string => {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return iso;
+  return dateShort(t);
+};
+
+const initials = (name: string): string =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "WA";
+
+const dateShort = (t: number): string => {
+  const full = dateLong(t);
+  return full.split(",").slice(0, 2).join(",");
+};
+
 /* ---------------- KPI strip ---------------- */
 
 function KpiCard({ icon, tone, value, label, sub }: { icon: string; tone: string; value: number; label: string; sub: string }) {
@@ -271,11 +321,13 @@ function KpiCard({ icon, tone, value, label, sub }: { icon: string; tone: string
 /* ---------------- inspector ---------------- */
 
 function Inspector({
-  entry, tab, setTab, onClose, onInsert, onPreview, role
+  entry, tab, setTab, onClose, onInsert, onPreview, role, onPlacement
 }: {
   entry: LibEntry | null; tab: string; setTab: (t: string) => void;
   onClose: () => void; onInsert: () => void; onPreview: () => void; role: string;
+  onPlacement: (p: Placement) => void;
 }) {
+  const [openAll, setOpenAll] = useState(true);
   if (!entry) {
     return (
       <aside className="m5-insp is-empty" aria-label="Inspector">
@@ -315,37 +367,99 @@ function Inspector({
       </div>
 
       <div className="m5-tabpane" role="tabpanel">
-        {tab === "Overview" && (
+        {tab === "Overview" && (entry.kind === "block" ? (
+          <>
+            <h4 className="m5-h4 first">About this block</h4>
+            <p className="m5-summary">{entry.desc}</p>
+
+            <h4 className="m5-h4">Key supported properties</h4>
+            <ul className="m5-props">
+              {(entry.type ? REGISTRY[entry.type].content : []).slice(0, 6).map((f) => (
+                <li key={f.key}>
+                  <Icon name="check" size={11} />
+                  <span><b>{f.label}</b><em>{fieldNote(f.kind)}</em></span>
+                </li>
+              ))}
+            </ul>
+
+            <h4 className="m5-h4">Compatibility</h4>
+            <ul className="m5-cango">
+              <li className="ok"><Icon name="check" size={11} />Schema-validated against the block registry</li>
+              <li className="ok"><Icon name="check" size={11} />Responsive — desktop, tablet and mobile</li>
+              <li className={entry.reusable === false ? "bad" : "ok"}>
+                <Icon name={entry.reusable === false ? "alert" : "check"} size={11} />
+                {entry.reusable === false
+                  ? "Master layout — one per page, footer slot only"
+                  : "Reusable — insert it on as many pages as you need"}
+              </li>
+            </ul>
+
+            <h4 className="m5-h4">Where you can use it</h4>
+            <ul className="m5-cango">
+              <li className="ok"><Icon name="check" size={11} />Any page in this workspace</li>
+              <li className="ok"><Icon name="check" size={11} />Inside Container and Columns blocks</li>
+              <li className="bad"><Icon name="x" size={11} />{entry.type === "footer" ? "Page body — footer slot only" : "Inside a Form block"}</li>
+            </ul>
+          </>
+        ) : (
           <>
             <h4 className="m5-h4 first">Component Structure</h4>
             <p className="m5-summary">{entry.desc}</p>
             <Composition entry={entry} onMore={() => setTab("Structure")} />
 
-            <div className="m5-resp-row">
-              <Icon name="monitor" size={13} />
-              <span className="m5-resp-k">Responsive:</span>
-              {["Desktop", "Tablet", "Mobile"].map((d) => (
-                <span key={d} className="m5-resp-item">{d}<Icon name="check" size={11} /></span>
+            <div className="m5-bp" aria-label="Supported breakpoints">
+              {([["monitor", "Desktop", "≥ 1200 px"], ["tablet", "Tablet", "768 – 1199 px"], ["phone", "Mobile", "≤ 767 px"]] as [string, string, string][]).map(([icon, name, range]) => (
+                <div key={name} className="m5-bp-card">
+                  <Icon name={icon} size={15} />
+                  <b>{name}</b>
+                  <em>{range}</em>
+                  <Icon name="check" size={10} />
+                </div>
               ))}
             </div>
 
             <button
               className="m5-used"
-              onClick={() => setTab(entry.kind === "block" ? "Compatibility" : "Usage")}
+              onClick={() => setTab("Usage")}
             >
               <Icon name="layers" size={13} />
               <span>{usage.totalPlacements ? `Used on ${usage.totalPages} page${usage.totalPages === 1 ? "" : "s"}` : "Not used yet"}</span>
               <Icon name="chevRight" size={12} />
             </button>
 
-            <div className="m5-kv">
-              <div><span>Type</span><b>{entry.category}</b></div>
-              <div><span>Blocks</span><b>{countOf(entry)}</b></div>
-              <div><span>Updated</span><b>{dateLong(entry.updatedAt)}</b></div>
-              <div><span>Owner</span><b>{entry.owner}</b></div>
-            </div>
+            {entry.kind === "saved" ? (
+              <ul className="m5-kvlist">
+                <li><Icon name="layers" size={13} /><span>Owner</span><b><Pill tone={entry.scope === "Workspace" ? "green" : "blue"}>{entry.scope}</Pill></b></li>
+                <li><Icon name="user" size={13} /><span>Created by</span><b>{entry.creator}</b></li>
+                <li><Icon name="calendar" size={13} /><span>Last updated</span><b>{dateLong(entry.updatedAt)}</b></li>
+                <li>
+                  <Icon name="link" size={13} /><span>Total usage</span>
+                  <b>{usage.totalPages} page{usage.totalPages === 1 ? "" : "s"} <Icon name="chevRight" size={11} /></b>
+                </li>
+                <li>
+                  <Icon name="globe" size={13} /><span>Used in</span>
+                  <b className="m5-sites">
+                    {usage.totalPlacements === 0
+                      ? "Not placed yet"
+                      : [...new Set(usage.pages.map((p) => p.siteId))].map((sid) => (
+                        <span key={sid}>
+                          {DBX().sites.find((x) => x.id === sid)?.name ?? sid}
+                          <em>({usage.pages.filter((p) => p.siteId === sid && p.pageId).length})</em>
+                        </span>
+                      ))}
+                  </b>
+                </li>
+              </ul>
+            ) : (
+              <div className="m5-kv">
+                <div><span>Type</span><b>{entry.category}</b></div>
+                <div><span>Blocks</span><b>{countOf(entry)}</b></div>
+                <div><span>Updated</span><b>{dateLong(entry.updatedAt)}</b></div>
+                <div><span>Owner</span><b>{entry.owner}</b></div>
+              </div>
+            )}
           </>
-        )}
+        ))}
 
         {tab === "Properties" && (
           <>
@@ -389,9 +503,15 @@ function Inspector({
 
         {tab === "Structure" && (
           <>
-            <h4 className="m5-h4">Component composition</h4>
+            <div className="m5-tree-head">
+              <h4 className="m5-h4">Component composition</h4>
+              <div className="m5-tree-tools">
+                <button onClick={() => setOpenAll(true)} className={openAll ? "is-on" : ""} aria-pressed={openAll}>Expand</button>
+                <button onClick={() => setOpenAll(false)} className={!openAll ? "is-on" : ""} aria-pressed={!openAll}>Collapse</button>
+              </div>
+            </div>
             <ul className="m5-tree">
-              {tree.map((row, i) => (
+              {tree.filter((row) => openAll || row.depth === 0).map((row, i) => (
                 <li key={`${row.node.id}-${i}`} style={{ paddingLeft: 8 + row.depth * 16 }}>
                   <span className={`m5-tree-dot d${row.depth}`} />
                   <span className="m5-tree-label">{row.label}</span>
@@ -424,16 +544,20 @@ function Inspector({
                   <div><b>{usage.totalPlacements}</b><span>Placements</span></div>
                 </div>
                 <table className="m5-usage-table">
-                  <thead><tr><th>Page</th><th>Website</th><th>Status</th><th /></tr></thead>
+                  <thead><tr><th>Page</th><th>Website</th><th>Status</th><th>Last Updated</th><th /></tr></thead>
                   <tbody>
                     {usage.pages.map((p) => (
                       <tr key={`${p.pageId}-${p.index}`}>
                         <td><b>{p.pageTitle}</b><em>#{p.index + 1}</em></td>
                         <td>{DBX().sites.find((s) => s.id === p.siteId)?.name ?? p.siteId}</td>
                         <td><Pill tone={p.status === "published" ? "green" : "amber"}>{p.status}</Pill></td>
-                        <td>
+                        <td className="m5-usage-when">{usageWhen(p.updatedAt)}</td>
+                        <td className="m5-usage-act">
                           <button className="m5-link" onClick={() => { location.hash = `#/pages?sel=${p.pageId}`; }}>
                             Open <Icon name="external" size={10} />
+                          </button>
+                          <button className="m5-link" onClick={() => onPlacement(p)}>
+                            View placement <Icon name="arrowUpRight" size={10} />
                           </button>
                         </td>
                       </tr>
@@ -448,7 +572,9 @@ function Inspector({
 
       <div className="m5-insp-foot">
         <Btn icon="eye" onClick={onPreview}>Preview</Btn>
-        <Btn variant="primary" icon="plus" disabled={role === "Viewer"} onClick={onInsert}>Insert into Page</Btn>
+        <Btn variant="primary" icon="plus" disabled={role === "Viewer"} onClick={onInsert}>
+          {entry.kind === "block" ? "Insert Block" : entry.kind === "saved" ? "Use Template" : "Insert into Page"}
+        </Btn>
       </div>
     </aside>
   );
@@ -463,6 +589,7 @@ export function Library() {
   const [chip, setChip] = useState("All");
   const [scopes, setScopes] = useState<LibScope[]>([]);
   const [updated, setUpdated] = useState<UpdatedFilter>("any");
+  const [compat, setCompat] = useState<string[]>(["Schema-validated", "Built-in", "Reusable"]);
   const [sort, setSort] = useState<LibSort>("recent");
   const [mode, setMode] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
@@ -512,8 +639,15 @@ export function Library() {
 
   useEffect(() => { setPage(1); }, [chip, scopes, updated, qDebounced, sort]);
 
-  const pageSize = view === "saved" || mode === "list" ? 12 : 60;
-  const rows = result?.rows ?? [];
+  const pageSize = view === "saved" ? 6 : mode === "list" ? 12 : 96;
+  /* the Compatibility facet is a real filter, not a decoration: untick
+     “Reusable” and the master-layout Footer leaves the grid */
+  const rows = (result?.rows ?? []).filter((e) =>
+    view !== "native" || (
+      compat.includes("Schema-validated")
+      && (compat.includes("Built-in") || e.scope !== "Built-in")
+      && (compat.includes("Reusable") || e.reusable !== false)
+    ));
   const pageRows = rows.slice((page - 1) * pageSize, page * pageSize);
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
 
@@ -535,7 +669,7 @@ export function Library() {
 
   const grouped = useMemo(() => {
     if (view !== "native") return null;
-    const order = ["Content", "Media", "Layout", "Form"];
+    const order = ["Content", "Layout", "Interactive", "Engagement"];
     const map = new Map<string, LibEntry[]>();
     for (const r of pageRows) { map.set(r.category, [...(map.get(r.category) ?? []), r]); }
     return order.filter((g) => map.has(g)).map((g) => ({ group: g, items: map.get(g)! }));
@@ -543,10 +677,22 @@ export function Library() {
 
   const k = kpis();
   const groupHint: Record<string, string> = {
-    Content: "Text, headings, lists and proof — the copy that does the selling",
-    Media: "Images and video, always served through the media pipeline",
-    Layout: "Structure: bands, grids and the page's opening statement",
-    Form: "Everything that captures or converts a visitor"
+    Content: "Core content elements for building your page content.",
+    Layout: "Structural blocks to organize and arrange content.",
+    Interactive: "Actionable elements that drive user interaction and conversion.",
+    Engagement: "Trust and information blocks to build credibility and highlight key value."
+  };
+
+  /* “View placement” lands on the exact block inside the Visual Builder —
+     it resolves the block id first, so the builder opens with it selected. */
+  const openPlacement = async (p: Placement) => {
+    try {
+      const draft = await BuilderAPI.getDraft(p.pageId);
+      const block = draft.blocks[p.index];
+      location.hash = `#/builder?site=${p.siteId}&page=${p.pageId}${block ? `&sel=${block.id}` : ""}`;
+    } catch (err) {
+      app.toast({ type: "error", title: "Could not open the page", sub: (err as Error).message });
+    }
   };
 
   const toggleScope = (s: LibScope) => setScopes((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
@@ -557,6 +703,13 @@ export function Library() {
   };
 
   const title = view === "all" ? "Templates" : view === "native" ? "Native Blocks" : view === "sections" ? "Section Templates" : "Saved Templates";
+  const subtitle = view === "native"
+    ? "Schema-validated, production-ready blocks you can drag, drop, and insert into any page."
+    : view === "sections"
+      ? "Section templates are prebuilt, reusable page sections (e.g., Hero, Features, Testimonials, CTA)."
+      : view === "saved"
+        ? "Only templates saved in this workspace or the current site are shown."
+        : "Blocks, sections and saved templates — everything the workspace can place.";
 
   const afterInsert = (pageTitle: string) => {
     setInsertFor(null);
@@ -656,8 +809,21 @@ export function Library() {
           {view === "native" && (
             <div className="m5-sec">
               <div className="m5-label">Compatibility</div>
-              <label className="m5-check"><input type="checkbox" defaultChecked readOnly /><span>Schema-validated</span><em>{k.native}</em></label>
-              <label className="m5-check"><input type="checkbox" defaultChecked readOnly /><span>Responsive</span><em>{k.native}</em></label>
+              {([
+                ["Schema-validated", k.native],
+                ["Built-in", k.native],
+                ["Reusable", k.reusable]
+              ] as [string, number][]).map(([label, n]) => (
+                <label key={label} className="m5-check">
+                  <input
+                    type="checkbox"
+                    checked={compat.includes(label)}
+                    onChange={() => setCompat((cur) => (cur.includes(label) ? cur.filter((x) => x !== label) : [...cur, label]))}
+                  />
+                  <span>{label}</span>
+                  <em>{n}</em>
+                </label>
+              ))}
             </div>
           )}
 
@@ -674,7 +840,7 @@ export function Library() {
           )}
 
           <div className="m5-rail-foot">
-            <button className="m5-reset" onClick={() => { setQ(""); setChip("All"); setScopes([]); setUpdated("any"); }}>Reset filters</button>
+            <button className="m5-reset" onClick={() => { setQ(""); setChip("All"); setScopes([]); setUpdated("any"); setCompat(["Schema-validated", "Built-in", "Reusable"]); }}>Reset filters</button>
             <span>{site?.name}</span>
           </div>
         </aside>
@@ -682,10 +848,17 @@ export function Library() {
         {/* main grid */}
         <main className="m5-main">
           <div className="m5-main-head">
-            <h2 className="m5-main-title">
-              {title} <span className="m5-count">{rows.length}</span>
-              {view === "all" && <span className="m5-hint-inline">across blocks, sections and saved templates</span>}
-            </h2>
+            <div className="m5-main-heading">
+              <h2 className="m5-main-title">
+                {chip !== "All" && view !== "native"
+                  ? <>Templates <span className="m5-count">({rows.length})</span> — {chip}</>
+                  : <>{title} <span className="m5-count">({rows.length})</span></>}
+                {view === "sections" && chip === "All" && (
+                  <span className="m5-title-pill"><Icon name="blocks" size={12} />Section Templates</span>
+                )}
+              </h2>
+              <p className="m5-main-sub">{subtitle}</p>
+            </div>
             <div className="m5-main-tools">
               <button className="m5-sort" ref={sortBtn} onClick={() => setSortOpen((v) => !v)} aria-haspopup="menu" aria-expanded={sortOpen}>
                 <span>Sort by:</span> {SORTS.find((s) => s.id === sort)?.label} <Icon name="chevDown" size={12} />
@@ -744,11 +917,11 @@ export function Library() {
                 <section key={g.group} className="m5-group" aria-label={`${g.group} blocks`}>
                   <div className="m5-group-head">
                     <Icon name="layers" size={13} />
-                    <span>{g.group} blocks</span>
-                    <em>{g.items.length}</em>
+                    <span>{g.group} Blocks</span>
+                    <em className="m5-group-n">({g.items.length})</em>
                     <small>{groupHint[g.group]}</small>
                   </div>
-                  <div className="m5-grid">
+                  <div className={`m5-grid ${view === "native" ? "is-native" : ""}`}>
                     {g.items.map((entry) => (
                       <Card
                         key={entry.id}
@@ -766,7 +939,7 @@ export function Library() {
               ))}
             </div>
           ) : (
-            <div className="m5-grid">
+            <div className={`m5-grid ${view === "native" ? "is-native" : ""}`}>
               {pageRows.map((entry) => (
                 <Card
                   key={entry.id}
@@ -808,6 +981,7 @@ export function Library() {
             onClose={() => setInspOpen(false)}
             onInsert={() => selected && setInsertFor(selected)}
             onPreview={() => selected && setPreviewFor(selected)}
+            onPlacement={openPlacement}
             role={app.role}
           />
         ) : (
@@ -835,8 +1009,7 @@ export function Library() {
         <MenuItem icon="plus" disabled={readOnly} onClick={() => { const e = rows.find((r) => r.id === menuFor); setMenuFor(null); if (e) setInsertFor(e); }}>Insert into Page</MenuItem>
         <MenuItem
           icon="copy"
-          disabled={readOnly || !menuFor?.startsWith("svd-")}
-          meta={!menuFor?.startsWith("svd-") ? "saved only" : undefined}
+          disabled={readOnly}
           onClick={async () => {
             const id = menuFor!; setMenuFor(null);
             try {
@@ -846,7 +1019,7 @@ export function Library() {
             } catch (err) { app.toast({ type: "error", title: "Could not duplicate", sub: (err as Error).message }); }
           }}
         >
-          Duplicate to Saved Templates
+          Duplicate to My Templates
         </MenuItem>
         <MenuItem
           icon="trash" danger

@@ -15,7 +15,7 @@
    ============================================================ */
 import { DBX } from "./data";
 import {
-  ARCHETYPES, REGISTRY, SECTION_PRESETS, uid,
+  REGISTRY, SECTION_PRESETS, uid,
   type BlockNode, type BlockType
 } from "./builder";
 import { BuilderAPI, ensureDraft, type BuilderForm } from "./builder-db";
@@ -56,6 +56,8 @@ export interface LibEntry {
   /** the composition this entry inserts — one node for a block tile */
   blocks: BlockNode[];
   emits: string[];
+  /** false for master layouts that may appear once per page */
+  reusable?: boolean;
   /** saved copies are matched by their recorded placements, not by signature */
   derived: boolean;
 }
@@ -100,27 +102,141 @@ export const agoOf = (t: number): string => {
   return days <= 30 ? `${days}d ago` : dateLong(t).split(",").slice(0, 2).join(",");
 };
 
-/* ---------------- native tiles (20) ---------------- */
+/* ---------------- native catalogue (25) ----------------
+   The catalogue is the mock's twenty blocks, in the mock's own order and
+   words, plus the five domain blocks this workspace already ships (Hero,
+   Footer, Pricing, Feature Grid, FAQ). Five of the mock's blocks are
+   configurations of a type rather than new types — Rich Text is Text(rich),
+   Spacer is Divider(space), Stats Strip and Icon Grid are Feature Grid
+   variants, and Accordion is the FAQ type with its generic label. Adding
+   duplicate types would have given the builder two ways to make a spacer. */
+
+export type LibCategory = "Content" | "Layout" | "Interactive" | "Engagement";
+
+interface CatalogRow {
+  id: string;
+  type: BlockType;
+  variant?: string;
+  name: string;
+  category: LibCategory;
+  desc: string;
+  /** merged over the type's defaults so each tile inserts a real composition */
+  props?: Record<string, any>;
+  reusable?: boolean;
+}
+
+const CATALOG: CatalogRow[] = [
+  // Content — the copy that does the selling
+  { id: "blk-text", type: "text", variant: "plain", name: "Text", category: "Content",
+    desc: "Add simple, single-style text content." },
+  { id: "blk-richText", type: "text", variant: "rich", name: "Rich Text", category: "Content",
+    desc: "Add formatted content with bold, lists and links.",
+    props: { rich: true, body: "**Visa support included**\n- Document review before you submit\n- Interview coaching with a counsellor" } },
+  { id: "blk-heading", type: "heading", name: "Heading", category: "Content",
+    desc: "Add a structured heading (H1–H3) with an optional eyebrow." },
+  { id: "blk-image", type: "image", name: "Image", category: "Content",
+    desc: "Display an image with alt text, caption and a focal crop." },
+  { id: "blk-video", type: "video", name: "Video", category: "Content",
+    desc: "Embed a self-hosted or external video (e.g. YouTube)." },
+  { id: "blk-pricing", type: "pricing", name: "Pricing", category: "Content",
+    desc: "Service packages with price, features and one call to action." },
+  { id: "blk-faq", type: "faq", name: "FAQ", category: "Content",
+    desc: "Questions and answers with the first one open on the page." },
+  { id: "blk-featureGrid", type: "featureGrid", variant: "media", name: "Feature Grid", category: "Content",
+    desc: "Items with images, titles and short descriptions." },
+
+  // Layout — structure, not content
+  { id: "blk-hero", type: "hero", variant: "split", name: "Hero", category: "Layout",
+    desc: "The opening statement: eyebrow, headline, body, two actions and an optional image." },
+  { id: "blk-container", type: "container", name: "Container", category: "Layout",
+    desc: "A flexible wrapper to group and style other blocks.",
+    props: { title: "Grouped content" } },
+  { id: "blk-columns", type: "columns", name: "Columns", category: "Layout",
+    desc: "Create multi-column layouts (e.g. 2–4 columns)." },
+  { id: "blk-divider", type: "divider", variant: "line", name: "Divider", category: "Layout",
+    desc: "Insert a visual divider line between sections." },
+  { id: "blk-spacer", type: "divider", variant: "space", name: "Spacer", category: "Layout",
+    desc: "Add vertical space between elements without a visible rule.",
+    props: { kind: "space", height: "64" } },
+  { id: "blk-table", type: "table", name: "Table", category: "Layout",
+    desc: "Display data in a structured table with rows and columns." },
+  { id: "blk-footer", type: "footer", name: "Footer", category: "Layout",
+    desc: "Master-layout footer. Inserts into the page footer slot, not the body.",
+    reusable: false },
+
+  // Interactive — anything that asks the visitor to act
+  { id: "blk-button", type: "button", name: "Button", category: "Interactive",
+    desc: "A customizable button with a typed link, size, style and icon." },
+  { id: "blk-form", type: "form", name: "Form", category: "Interactive",
+    desc: "Add a contact, lead or custom form with validation." },
+  { id: "blk-ctaSection", type: "ctaSection", name: "CTA Section", category: "Interactive",
+    desc: "A focused call-to-action section with heading, text and button." },
+  { id: "blk-accordion", type: "faq", name: "Accordion", category: "Interactive",
+    desc: "Collapsible content sections for FAQs or structured information." },
+
+  // Engagement — proof and trust
+  { id: "blk-list", type: "list", name: "List", category: "Engagement",
+    desc: "Present information in a structured list (bulleted or numbered)." },
+  { id: "blk-quote", type: "quote", name: "Quote", category: "Engagement",
+    desc: "Highlight a quote or important statement." },
+  { id: "blk-alert", type: "alert", name: "Alert", category: "Engagement",
+    desc: "Show an important message (e.g. info, success, warning, error)." },
+  { id: "blk-testimonials", type: "testimonials", name: "Testimonials", category: "Engagement",
+    desc: "Display customer testimonials with quotes and attribution." },
+  { id: "blk-statsStrip", type: "featureGrid", variant: "stats", name: "Stats Strip", category: "Engagement",
+    desc: "Show key metrics in a horizontal stats strip.",
+    props: {
+      title: "", subtitle: "", columns: "4",
+      items: [
+        { icon: "users", title: "150K+", text: "Happy travellers", media: "" },
+        { icon: "globe", title: "500+", text: "Destinations", media: "" },
+        { icon: "shield", title: "99.8%", text: "Satisfaction rate", media: "" }
+      ]
+    } },
+  { id: "blk-iconGrid", type: "featureGrid", variant: "icons", name: "Icon Grid", category: "Engagement",
+    desc: "Display a grid of icons with titles and short descriptions.",
+    props: {
+      title: "Why Choose EuroMiles?", subtitle: "Everything you need for a smarter travel experience.",
+      columns: "3",
+      items: [
+        { icon: "globe", title: "Wider Choices", text: "Access 500+ global destinations.", media: "" },
+        { icon: "shield", title: "Better Value", text: "Exclusive fares and member deals.", media: "" },
+        { icon: "rocket", title: "Faster Booking", text: "Book, manage and change with ease.", media: "" }
+      ]
+    } }
+];
+
+export const CATEGORY_ORDER: LibCategory[] = ["Content", "Layout", "Interactive", "Engagement"];
 
 const blockEntries = (): LibEntry[] =>
-  ARCHETYPES.map((def, i) => ({
-    id: `blk-${def.type}`,
-    kind: "block" as const,
-    name: def.paletteLabel ?? def.label,
-    desc: def.hint,
-    category: def.group,
-    scope: "Built-in" as const,
-    owner: "WACRM",
-    creator: "WACRM",
-    createdAt: dayAt(320 - i * 4),
-    updatedAt: dayAt(120 - i * 2, 9, 12),
-    type: def.type,
-    variant: def.variants?.[0]?.value,
-    variants: def.variants,
-    blocks: [def.defaults()],
-    emits: def.type === "form" ? ["form.submit"] : def.type === "ctaSection" ? ["cta.click"] : [],
-    derived: true
-  }));
+  CATALOG.map((row, i) => {
+    const def = REGISTRY[row.type];
+    const base = def.defaults();
+    const node: BlockNode = {
+      ...base,
+      variant: row.variant ?? base.variant,
+      props: { ...base.props, ...(row.props ?? {}) }
+    };
+    return {
+      id: row.id,
+      kind: "block" as const,
+      name: row.name,
+      desc: row.desc,
+      category: row.category,
+      scope: "Built-in" as const,
+      owner: "WACRM",
+      creator: "WACRM",
+      createdAt: dayAt(320 - i * 4),
+      updatedAt: dayAt(40 + i * 2, 9, 12),
+      type: row.type,
+      variant: row.variant ?? base.variant,
+      variants: def.variants,
+      blocks: [node],
+      emits: row.type === "form" ? ["form.submit"] : row.type === "ctaSection" ? ["cta.click"] : [],
+      reusable: row.reusable !== false,
+      derived: true
+    };
+  });
 
 /* ---------------- section tiles (23) ---------------- */
 
@@ -325,7 +441,7 @@ export function requirementsFor(entry: LibEntry, siteId: string, pageBlocks = 0)
 
 /* ---------------- catalogue assembly + query ---------------- */
 
-export interface Kpi { native: number; sections: number; saved: number; inUse: number }
+export interface Kpi { native: number; sections: number; saved: number; inUse: number; reusable: number }
 
 function allEntries(): LibEntry[] {
   ensureSaved();
@@ -335,11 +451,13 @@ function allEntries(): LibEntry[] {
 export function kpis(): Kpi {
   const entries = allEntries();
   buildPlacements();
+  const blocks = entries.filter((e) => e.kind === "block");
   return {
-    native: entries.filter((e) => e.kind === "block").length,
+    native: blocks.length,
     sections: entries.filter((e) => e.kind === "section").length,
     saved: entries.filter((e) => e.kind === "saved").length,
-    inUse: entries.filter((e) => placementsFor(e.id).length > 0).length
+    inUse: entries.filter((e) => placementsFor(e.id).length > 0).length,
+    reusable: blocks.filter((e) => e.reusable !== false).length
   };
 }
 
@@ -395,8 +513,13 @@ export const LibraryAPI = {
     // category chips describe the unfiltered view too
     const chipMap = new Map<string, number>();
     for (const e of rows) chipMap.set(e.category, (chipMap.get(e.category) ?? 0) + 1);
+    const order: string[] = query.view === "native"
+      ? CATEGORY_ORDER
+      : ["Hero", "Content", "Features", "CTA", "Forms", "Other"];
+    const rank = (k: string) => (order.indexOf(k) < 0 ? 99 : order.indexOf(k));
     const chips = [{ id: "All", label: "All", count: rows.length },
-      ...[...chipMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([id, count]) => ({ id, label: id, count }))];
+      ...[...chipMap.entries()].sort((a, b) => rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0]))
+        .map(([id, count]) => ({ id, label: id, count }))];
 
     if (query.chip !== "All") rows = rows.filter((e) => e.category === query.chip);
     if (query.scopes.length) rows = rows.filter((e) => query.scopes.includes(e.scope));
@@ -519,11 +642,13 @@ export const LibraryAPI = {
     return entry;
   },
 
+  /** Duplicate to My Templates works on anything, including a built-in —
+      the mock's menu offers it on the selected built-in section. */
   async duplicate(id: string): Promise<LibEntry> {
     await new Promise((r) => setTimeout(r, 380));
     ensureSaved();
-    const src = saved.find((s) => s.id === id);
-    if (!src) throw Object.assign(new Error("Only saved templates can be duplicated."), { code: "INVALID" });
+    const src: LibEntry | undefined = saved.find((s) => s.id === id) ?? allEntries().find((e) => e.id === id);
+    if (!src) throw Object.assign(new Error("That template no longer exists."), { code: "NOT_FOUND" });
     const copy: SavedRecord = {
       ...clone(src),
       id: `svd-${Date.now().toString(36)}`,
@@ -531,7 +656,7 @@ export const LibraryAPI = {
       createdAt: DEMO_TODAY,
       updatedAt: DEMO_TODAY,
       blocks: reId(src.blocks),
-      sourcePageId: src.sourcePageId
+      sourcePageId: (src as SavedRecord).sourcePageId ?? null
     };
     saved.unshift(copy);
     return copy;
@@ -678,7 +803,10 @@ function partsOf(node: BlockNode): CompPart[] {
       if (n) prev.count = n;
       continue;
     }
-    out.push({ key: rule.key, label: rule.label, icon: rule.icon, count: n || undefined });
+    /* a field named “background” is an image used as a backdrop — say so,
+       the mock labels that tile “Image (Background)” */
+    const qualified = /backdrop|background/i.test(field.key) ? `${rule.label} (Background)` : rule.label;
+    out.push({ key: rule.key, label: qualified, icon: rule.icon, count: n || undefined });
   }
 
   // an eyebrow is part of the heading cluster, not a tile of its own

@@ -5,13 +5,17 @@ Counts are asserted against the registry, never against a typed number:
 if the palette and the library ever disagree, both this suite and
 qa_builder.py fail on the same run.
 """
-import asyncio, sys
+import asyncio, re, sys
 from playwright.async_api import async_playwright
 
 URL = "file:///home/user/wacrm-app/WACRM-CMS.html"
 OUT = "/home/user/wacrm-app/qa"
 TALLY = {"ok": 0, "fail": 0}
 FAILS = []
+
+def num(text):
+    m = re.search(r"\d+", text or "")
+    return int(m.group()) if m else -1
 
 def ck(name, cond, extra=""):
     if cond:
@@ -50,19 +54,19 @@ async def main():
         ck("A1 screen renders", await n(pg, ".m5") == 1)
         ck("A2 four KPI cards", await n(pg, ".m5-kpi") == 4)
         kpi = [int(x) for x in await pg.locator(".m5-kpi-n").all_inner_texts()]
-        ck("A3 native KPI = 20 registry types", kpi[0] == 20, str(kpi))
+        ck("A3 native KPI = 25 catalogue entries", kpi[0] == 25, str(kpi))
         ck("A4 section KPI = 23 presets", kpi[1] == 23, str(kpi))
         ck("A5 saved KPI = seeded 14", kpi[2] == 14, str(kpi))
-        ck("A6 in-use KPI is derived, not typed", 0 < kpi[3] <= 57, str(kpi[3]))
+        ck("A6 in-use KPI is derived, not typed", 0 < kpi[3] <= 62, str(kpi[3]))
         ck("A7 header title + subtitle", (await txt(pg, ".m5-title")) == "Block Library")
         ck("A8 create template is primary and enabled", await pg.locator(".m5-head-right .btn-primary").is_enabled())
         ck("A9 import is disabled with a reason", not await pg.locator(".m5-head-right .btn:not(.btn-primary)").first.is_enabled())
         ck("A10 website selector present", await n(pg, ".m5-site select") == 1)
         ck("A11 four views", await n(pg, ".m5-view") == 4)
-        ck("A12 grid is 3+ columns at 1672px", await pg.evaluate("() => { const c=document.querySelectorAll('.m5-grid .m5-card'); const xs=[...c].slice(0,4).map(e=>e.getBoundingClientRect().top); return new Set(xs).size === 1; }"))
+        ck("A12 grid is 3+ columns at 1672px", await pg.evaluate("() => { const c=document.querySelectorAll('.m5-grid .m5-card'); const xs=[...c].slice(0,3).map(e=>e.getBoundingClientRect().top); return new Set(xs).size === 1; }"))
 
         # ---------------- B · counts agree ----------------
-        total_all = int(await txt(pg, ".m5-count"))
+        total_all = num(await txt(pg, ".m5-count"))
         facts = await pg.evaluate("""() => {
           const cards = document.querySelectorAll('.m5-card[data-kind]').length;
           const foot = document.querySelector('.m5-foot').innerText;
@@ -70,21 +74,21 @@ async def main():
         ck("B1 header count == rendered rows (All)", total_all == facts["cards"], f'{total_all} vs {facts["cards"]}')
         ck("B2 facets sum to the view total", await pg.evaluate("""() => {
              const f=[...document.querySelectorAll('.m5-check em')].map(e=>Number(e.innerText));
-             const t=Number(document.querySelector('.m5-count').innerText);
+             const t=Number((document.querySelector('.m5-count').innerText||'').replace(/\D/g,''));
              return f.reduce((a,b)=>a+b,0) === t; }"""))
         ck("B3 footer states the same total", str(total_all) in facts["foot"])
         ck("B4 chip 'All' carries the same total", (await txt(pg, ".m5-chip >> nth=0")).split()[-1] == str(total_all))
 
         # ---------------- C · native view ----------------
         await go(pg, 1)
-        ck("C1 native view renders 20 tiles", await n(pg, ".m5-card") == 20, str(await n(pg, ".m5-card")))
+        ck("C1 native view renders 25 catalogue tiles", await n(pg, ".m5-card") == 25, str(await n(pg, ".m5-card")))
         heads = [t.replace("\n", " ") for t in await pg.locator(".m5-group-head").all_inner_texts()]
         ck("C2 four category groups", len(heads) == 4, str(heads))
-        ck("C3 group counts are 10/2/5/3 (spec §20)", all(g in " ".join(heads) for g in ["10", "2", "5", "3"]), str(heads))
-        ck("C4 no card carries a drag grip", await n(pg, "[draggable='true']") == 0)
+        ck("C3 group counts are 8/7/4/6 (catalogue)", all(g in " ".join(heads) for g in ["(8)", "(7)", "(4)", "(6)"]), str(heads))
+        ck("C4 native cards show a drag grip, nothing is HTML5-draggable", await n(pg, "[draggable='true']") == 0 and await n(pg, ".m5-card.is-compact .m5-drag") > 0)
         ck("C5 category chips match the groups", await pg.evaluate("""() => {
              const c=[...document.querySelectorAll('.m5-chip')].map(e=>e.innerText.split('\\n')[0]);
-             return c.includes('Content') && c.includes('Media') && c.includes('Layout') && c.includes('Form') && !c.includes('Actions'); }"""))
+             return ['Content','Layout','Interactive','Engagement'].every(g => c.includes(g)); }"""))
         await pg.locator(".m5-card").first.click()
         await pg.wait_for_timeout(400)
         tabs = await pg.locator(".m5-tab").all_inner_texts()
@@ -97,6 +101,34 @@ async def main():
         await pg.wait_for_timeout(200)
         ck("C9 compatibility lists requirements", await n(pg, ".m5-reqs li") >= 1)
         ck("C10 compatibility lists emits or says presentational", (await txt(pg, ".m5-tabpane")) != "")
+        # ---------------- O · mock-fidelity additions ----------------
+        cols = await pg.evaluate("() => getComputedStyle(document.querySelector('.m5-grid')).gridTemplateColumns.split(' ').length")
+        ck("O1 native grid fits five cards per row", cols == 5, str(cols))
+        ck("O2 native cards are icon cards, not thumbnails",
+           await n(pg, ".m5-card.is-compact") == 25 and await n(pg, ".m5-card.is-compact .m5-card-thumb") == 0)
+        ck("O3 view title carries the count in brackets", "(" in await txt(pg, ".m5-main-title"))
+        ck("O4 view title has the mock's one-line explanation", (await txt(pg, ".m5-main-sub")) != "")
+        ck("O5 inspector CTA says Insert Block for a block",
+           "Insert Block" in await txt(pg, ".m5-insp-foot"))
+        ck("O6 compatibility facet lists Schema-validated / Built-in / Reusable",
+           await pg.evaluate("""() => { const t=document.querySelector('.m5-rail').innerText;
+                return t.includes('Schema-validated') && t.includes('Built-in') && t.includes('Reusable'); }"""))
+        # unticking Reusable must remove the master-layout Footer from the grid
+        before_n = await n(pg, ".m5-card")
+        await pg.locator(".m5-check", has_text="Reusable").locator("input").uncheck()
+        await pg.wait_for_timeout(400)
+        after_n = await n(pg, ".m5-card")
+        ck("O7 Reusable facet really filters the grid", after_n == before_n - 1, f"{before_n} → {after_n}")
+        await pg.locator(".m5-check", has_text="Reusable").locator("input").check()
+        await pg.wait_for_timeout(400)
+        # a built-in can be duplicated into My Templates (the mock's menu)
+        await pg.locator(".m5-card").first.hover()
+        await pg.locator(".m5-card").first.locator(".m5-kebab").click()
+        await pg.wait_for_timeout(250)
+        dup = pg.locator("[role=menu] button", has_text="Duplicate to My Templates").first
+        ck("O8 built-in cards offer Duplicate to My Templates", await dup.count() == 1 and await dup.is_enabled())
+        await pg.locator(".m5-title").click()
+        await pg.wait_for_timeout(300)
         await pg.screenshot(path=f"{OUT}/m5-native.webp", type="webp", quality=80)
 
         # ---------------- D · sections + saved ----------------
@@ -121,7 +153,7 @@ async def main():
         ck("N1 Overview renders the composition diagram", await n(pg, ".m5-comp") == 1)
         ck("N2 diagram has a root pill", await n(pg, ".m5-comp-root") == 1)
         tiles = await n(pg, ".m5-comp-tile")
-        ck("N3 diagram never exceeds four tiles at 330px", tiles <= 4, str(tiles))
+        ck("N3 diagram never exceeds five tiles at 330px", tiles <= 5, str(tiles))
         ck("N4 diagram tiles carry real labels", float(0) < 1 and all(len(t) > 0 for t in await pg.locator(".m5-comp-label").all_inner_texts()))
         aria = await pg.get_attribute(".m5-comp", "aria-label")
         ck("N5 diagram is described for screen readers", bool(aria) and ("contains" in aria or "single block" in aria), str(aria))
@@ -150,10 +182,10 @@ async def main():
         if await n(pg, ".m5-card"):
             await pg.locator(".m5-card").first.click()
             await pg.wait_for_timeout(350)
-            ck("N8 a no-part block renders the caption instead of an empty diagram",
-               await n(pg, ".m5-comp") == 1 and (await n(pg, ".m5-comp-none") == 1 or await n(pg, ".m5-comp-tile") >= 1))
+            ck("N8 a native block's Overview is a property list, not a diagram",
+               await n(pg, ".m5-comp") == 0 and await n(pg, ".m5-props li") >= 1)
         else:
-            ck("N8 a no-part block renders a caption", True)
+            ck("N8 a native block's Overview is a property list", True)
         await pg.fill("#m5-search", "")
         await pg.wait_for_timeout(600)
         ck("N9 diagram introduces no horizontal overflow", await pg.evaluate("""() => {
@@ -161,12 +193,13 @@ async def main():
         await pg.screenshot(path=f"{OUT}/m5-overview.webp", type="webp", quality=80)
 
         await go(pg, 3)
-        ck("E1 saved view paginates at 12", await n(pg, ".m5-card") == 12, str(await n(pg, ".m5-card")))
-        ck("E2 pager present with 2 pages", await n(pg, ".m5-pager button") == 4, str(await n(pg, ".m5-pager button")))
+        ck("E1 saved view paginates at 6 (mock rhythm)", await n(pg, ".m5-card") == 6, str(await n(pg, ".m5-card")))
+        ck("E2 pager present with 3 pages", await n(pg, ".m5-pager button") == 5, str(await n(pg, ".m5-pager button")))
         ck("E3 updated filter radios", await n(pg, ".m5-radio input") == 4)
         await pg.locator(".m5-pager button").nth(2).click()
         await pg.wait_for_timeout(500)
-        ck("E4 page 2 shows the remainder", await n(pg, ".m5-card") == 2, str(await n(pg, ".m5-card")))
+        ck("E5 saved cards show creator + updated stamp", await n(pg, ".m5-card-meta") >= 1)
+        ck("E4 page 2 shows the next six", await n(pg, ".m5-card") == 6, str(await n(pg, ".m5-card")))
         ck("E5 only saved templates are listed", await pg.evaluate("""() => [...document.querySelectorAll('.m5-card')].every(c=>c.dataset.kind==='saved')"""))
 
         # ---------------- F · search + filters ----------------
@@ -201,8 +234,8 @@ async def main():
 
         # ---------------- H · insert: happy path ----------------
         await go(pg, 2)
-        await pg.locator(".m5-card").first.click()
-        await pg.wait_for_timeout(400)
+        await pg.click('[data-id="sec-sec-hero-split"]')
+        await pg.wait_for_timeout(500)
         before = await txt(pg, ".m5-count")
         await pg.click(".m5-insp-foot .btn-primary")
         await pg.wait_for_timeout(1300)
@@ -264,7 +297,7 @@ async def main():
         used = await pg.evaluate("""() => {
           const rows=[...document.querySelectorAll('.m5-card')];
           return rows.length; }""")
-        ck("K1 saved list renders after creation", used >= 12, str(used))
+        ck("K1 saved list renders after creation", used >= 6, str(used))
 
         # ---------------- L · inspector close / reopen ----------------
         await go(pg)

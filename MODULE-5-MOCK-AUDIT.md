@@ -111,3 +111,13 @@ as documented variants** of Text / Divider / FAQ / Feature Grid (no new types, c
 I would add them — you asked for a bigger library, and a 20-block catalogue that matches the
 mock 1:1 is easier to defend than "these five are variants, trust me". It costs one session
 because each new type needs a definition, content fields, a thumbnail, an AI mapping and QA.
+
+
+---
+
+## 7 · Status after the fidelity pass
+
+Rows 1–14 above are closed in this build except row 7 (thumbnails) and the per-row `⋯`
+menus of row 13. See `MODULE-5-DECISIONS.md` §23 for what changed and why the two
+remaining items are deliberate. The catalogue is now 25 blocks: the mock's twenty 1:1 plus
+the five domain blocks this workspace already shipped.
