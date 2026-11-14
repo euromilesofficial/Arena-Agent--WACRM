@@ -127,6 +127,8 @@ npm run build       # also regenerates the handover
   RBAC/tenancy, publishing with compare-and-swap, analytics, jobs, SLOs,
   security, build order (§7.19 covers the builder, §7.20 the CMS ⇄ CRM
   interlink).
+- `uploads/` — the reference mocks the product was specified against, kept in
+  Git with a manifest and a restore recipe (`uploads/README.md`).
 - `PUSH-TO-GIT.md` — the exact state of the GitHub push: what is on
   `origin/main`, what is local only, and the two credential-free routes.
 - `STATE-COVERAGE.md` — the state matrix for all four modules, with the trigger
