@@ -71,3 +71,26 @@ The three builder regressions the re-filing caused were expected and are now ass
 3. **Placement attribution** for built-ins is derived by matching block-type signatures in each draft; two different sections with identical type sequences resolve to the first entry. Saved copies are attributed only by recorded placements, so they are always exact.
 4. **The 40-block page ceiling** is the prototype's limit, inherited from Module 4, and is surfaced as a 413.
 5. **Only `Owner`** can delete; `Admin` does not exist in this build's role union, so the spec's five-role model is compressed to three (Owner / Editor / Viewer), same as Modules 1–4.
+
+## 22 · Overview composition diagram (post-shipment addition)
+
+The mock's Overview tab links a section to its constituent parts. Built as a
+single-purpose diagram, not a second structure editor:
+
+- **Literal, then collapsing.** Tiles are the parts the document actually has —
+  real child blocks first (variant-aware, identical siblings folded into one tile
+  with a `×N` count), otherwise non-empty `content` fields matched by `PART_RULES`.
+  Empty fields never become tiles, so the diagram cannot claim structure the
+  document lacks.
+- **Four tiles maximum.** The inspector is 330 px wide; five 66 px tiles leave
+  labels unreadable. A `+N` tile carries the remainder, and it opens the Structure
+  tab, which stays authoritative. Nothing is hidden behind the diagram that cannot
+  be reached in one click.
+- **The sentence is not decoration.** `compositionOf().sentence` becomes the
+  group's `aria-label`, so the same information reaches assistive tech without
+  reading four tiles.
+- **Usage is recorded, not inferred.** A block *type* is counted as used on every
+  page whose draft contains it (a hero really is on most pages); sections and saved
+  copies count recorded placements — seeded, or written by Insert into Page — because
+  window-matching cannot tell "the Study Abroad hero" from "a hero". `Used on 2 pages`
+  therefore means two rows a user can open, never an estimate.

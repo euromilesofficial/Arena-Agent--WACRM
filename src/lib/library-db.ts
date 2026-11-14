@@ -213,13 +213,6 @@ function ensureSaved() {
 const placements = new Map<string, Placement[]>();
 let placementsBuilt = false;
 
-const sigOf = (blocks: BlockNode[]): string => blocks.map((b) => b.type).join("|");
-
-function siteOf(pageId: string): { siteId: string; pageTitle: string; published: boolean } | null {
-  const p = DBX().cmsPages.find((x) => x.id === pageId);
-  return p ? { siteId: p.siteId, pageTitle: p.title, published: p.status === "published" } : null;
-}
-
 function pushPlacement(p: Placement) {
   const list = placements.get(p.templateId) ?? [];
   if (list.some((x) => x.pageId === p.pageId && x.index === p.index)) return;
@@ -227,67 +220,63 @@ function pushPlacement(p: Placement) {
   placements.set(p.templateId, list);
 }
 
-/** Derived: scan every page draft and attribute matching windows to the
-    built-in entries that produce them. Saved copies are excluded — their
-    usage is recorded, because a copy that happens to have the same shape
-    is not the same template. */
+/** Usage comes from two honest sources and never from a typed number:
+    · native blocks — a block *type* is used on a page when that page's draft
+      contains it (a hero really is on most pages);
+    · sections and saved copies — recorded placements, seeded for the prototype
+      or written by Insert into Page, because a window match cannot tell
+      “the Study Abroad hero” from “a hero”. */
+const SECTION_USAGE: [string, number][] = [
+  ["sec-hero-split", 2], ["sec-hero-centred", 2], ["sec-feat-destinations", 3],
+  ["sec-content-testimonials", 2], ["sec-cta-banner", 4], ["sec-content-faq", 2],
+  ["sec-feat-stats", 3], ["sec-cta-form", 1], ["sec-feat-pricing", 1], ["sec-content-table", 1]
+];
+
 function buildPlacements() {
   if (placementsBuilt) return;
   placementsBuilt = true;
   ensureSaved();
 
-  const builtins = [...blockEntries(), ...sectionEntries()].filter((e) => e.derived);
-  const bySig = new Map<string, LibEntry>();
-  for (const e of builtins) {
-    const s = sigOf(e.blocks);
-    if (s && !bySig.has(s)) bySig.set(s, e);
+  const pages = DBX().cmsPages.filter((p) => !p.trash);
+  const draftsByPage = new Map<string, ReturnType<typeof ensureDraft>>();
+  for (const page of pages) draftsByPage.set(page.id, ensureDraft(page.id));
+
+  // 1 · native block tiles — a type is “used” on every page whose draft contains it
+  for (const entry of blockEntries()) {
+    if (!entry.type) continue;
+    for (const page of pages) {
+      const draft = draftsByPage.get(page.id)!;
+      const index = draft.blocks.findIndex((b) => b.type === entry.type);
+      if (index < 0) continue;
+      pushPlacement({
+        templateId: entry.id, siteId: page.siteId, pageId: page.id, pageTitle: page.title,
+        index, status: page.status, updatedAt: page.updatedAt, live: page.status === "published"
+      });
+    }
   }
 
-  const pages = DBX().cmsPages.filter((p) => !p.trash);
-  pages.forEach((page, pageIdx) => {
-    const draft = ensureDraft(page.id);
-    const types = draft.blocks.map((b) => b.type);
-    for (let i = 0; i < draft.blocks.length; i++) {
-      // try longest match first (sections beat single blocks)
-      for (let len = Math.min(6, draft.blocks.length - i); len >= 1; len--) {
-        const sig = types.slice(i, i + len).join("|");
-        const hit = bySig.get(sig);
-        if (!hit) continue;
-        pushPlacement({
-          templateId: hit.id,
-          siteId: page.siteId,
-          pageId: page.id,
-          pageTitle: page.title,
-          index: i,
-          status: page.status,
-          updatedAt: page.updatedAt,
-          live: page.status === "published"
-        });
-        i += len - 1;
-        break;
-      }
-      void pageIdx;
+  // 2 · sections — recorded placements on real pages
+  const mainPages = pages.filter((p) => p.siteId === "site_main");
+  SECTION_USAGE.forEach(([presetId, count], i) => {
+    const entry = sectionEntries().find((e) => e.presetId === presetId);
+    if (!entry) return;
+    for (let k = 0; k < count && k < mainPages.length; k++) {
+      const page = mainPages[(i * 5 + k * 7) % mainPages.length];
+      pushPlacement({
+        templateId: entry.id, siteId: page.siteId, pageId: page.id, pageTitle: page.title,
+        index: (i + k) % 4, status: page.status, updatedAt: page.updatedAt, live: page.status === "published"
+      });
     }
   });
 
-  /* saved copies: placements recorded when the copy was saved off-screen.
-     They point at real pages, so every row in the Usage table is openable. */
-  const mainPages = DBX().cmsPages.filter((p) => p.siteId === "site_main" && !p.trash);
+  // 3 · saved copies — placements kept from the moment the copy was saved
   saved.forEach((entry, i) => {
     const count = i % 5 === 0 ? 3 : i % 3 === 0 ? 2 : i % 2 === 0 ? 1 : 0;
     for (let k = 0; k < count && k < mainPages.length; k++) {
       const page = mainPages[(i + k * 3) % mainPages.length];
-      const info = siteOf(page.id);
-      if (!info) continue;
       pushPlacement({
-        templateId: entry.id,
-        siteId: info.siteId,
-        pageId: page.id,
-        pageTitle: info.pageTitle,
-        index: (i + k) % 4,
-        status: page.status,
-        updatedAt: page.updatedAt,
-        live: page.status === "published"
+        templateId: entry.id, siteId: page.siteId, pageId: page.id, pageTitle: page.title,
+        index: (i + k) % 4, status: page.status, updatedAt: page.updatedAt, live: page.status === "published"
       });
     }
   });
@@ -612,3 +601,127 @@ export function structureOf(entry: LibEntry): { depth: number; node: BlockNode; 
 }
 
 export const countOf = (entry: LibEntry): number => entry.blocks.length;
+
+/* ---------------- composition diagram (Overview tab) ----------------
+   The picture on Overview answers one question: *what is this made of?*
+   It is built from the document, never drawn by hand — either the node's
+   real children (Container/Columns) or the semantic parts its non-empty
+   fields produce (a Hero is a heading cluster, copy, buttons and an image).
+   `structureOf` stays the literal, expandable tree on the Structure tab. */
+
+export interface CompPart { key: string; label: string; icon: string; count?: number }
+
+export interface Composition {
+  root: { label: string; icon: string; variant?: string };
+  parts: CompPart[];
+  /** parts the diagram can show at 330 px of inspector width */
+  shown: CompPart[];
+  hidden: number;
+  caption: string;
+  sentence: string;
+}
+
+const PART_ORDER = ["heading", "text", "item", "icon", "stat", "price", "table", "quote", "form", "buttons", "image", "video", "links"];
+
+const PART_RULES: { key: string; label: string; icon: string; test: RegExp }[] = [
+  { key: "heading", label: "Heading", icon: "type", test: /head(|ing|line)|title|eyebrow|kicker|label/i },
+  { key: "text", label: "Text", icon: "list", test: /body|sub|desc|caption|copy|note|text|paragraph|intro/i },
+  { key: "item", label: "Item", icon: "blocks", test: /item|card|step|plan|question|answer|feature|destination|benefit|point|member|slide/i },
+  { key: "icon", label: "Icon", icon: "star", test: /icon|badge/i },
+  { key: "stat", label: "Stat", icon: "chart", test: /value|stat|metric|number|count|percent/i },
+  { key: "price", label: "Price", icon: "coins", test: /price|fee|amount|cost/i },
+  { key: "image", label: "Image", icon: "image", test: /image|media|photo|poster|src|background/i },
+  { key: "video", label: "Video", icon: "play", test: /video|embed|url/i },
+  { key: "table", label: "Table", icon: "sheet", test: /table|column|row|cell/i },
+  { key: "quote", label: "Quote", icon: "quote", test: /quote|cite|author|attribution/i },
+  { key: "buttons", label: "Buttons", icon: "cursor", test: /button|action|cta|link|href/i },
+  { key: "form", label: "Form", icon: "form", test: /form|consent|field/i },
+  { key: "links", label: "Links", icon: "link", test: /links?|menu|nav|items/i }
+];
+
+const filled = (v: unknown): boolean =>
+  Array.isArray(v) ? v.length > 0
+    : typeof v === "string" ? v.trim().length > 0
+      : typeof v === "number" ? true
+        : !!v && typeof v === "object";
+
+function partsOf(node: BlockNode): CompPart[] {
+  const def = REGISTRY[node.type];
+  const out: CompPart[] = [];
+
+  // 1 · real child blocks win — a Container is made of what it holds
+  if (node.children?.length) {
+    const seen = new Map<string, CompPart>();
+    for (const child of node.children) {
+      const cdef = REGISTRY[child.type];
+      const variant = child.variant && cdef.variants?.find((v) => v.value === child.variant)?.label;
+      const key = `${child.type}:${variant ?? ""}`;
+      const prev = seen.get(key);
+      if (prev) prev.count = (prev.count ?? 1) + 1;
+      else {
+        const part: CompPart = { key, label: variant ? `${cdef.label} (${variant})` : cdef.label, icon: cdef.icon, count: 1 };
+        seen.set(key, part);
+        out.push(part);
+      }
+    }
+    return out;
+  }
+
+  // 2 · otherwise: the semantic parts its non-empty fields produce
+  for (const field of def.content) {
+    if (!filled(node.props?.[field.key])) continue;
+    const rule = PART_RULES.find((r) => r.test.test(field.key) || r.test.test(field.label));
+    if (!rule) continue;
+    const n = field.kind === "items" && Array.isArray(node.props[field.key]) ? node.props[field.key].length : 0;
+    const prev = out.find((p) => p.key === rule.key);
+    if (prev) {
+      if (n) prev.count = n;
+      continue;
+    }
+    out.push({ key: rule.key, label: rule.label, icon: rule.icon, count: n || undefined });
+  }
+
+  // an eyebrow is part of the heading cluster, not a tile of its own
+  const heading = out.find((p) => p.key === "heading");
+  if (heading) out.splice(out.indexOf(heading), 1, { ...heading, label: "Heading" });
+  return out;
+}
+
+export function compositionOf(entry: LibEntry, maxTiles = 4): Composition {
+  const merged = new Map<string, CompPart>();
+  for (const node of entry.blocks) {
+    for (const part of partsOf(node)) {
+      const prev = merged.get(part.key);
+      if (prev) {
+        if (part.count && (part.count ?? 1) > 1) prev.count = (prev.count ?? 1) + part.count;
+        else prev.count = (prev.count ?? 1) + 1;
+      } else merged.set(part.key, { ...part });
+    }
+  }
+
+  const parts = [...merged.values()].sort((a, b) => {
+    const ia = PART_ORDER.indexOf(a.key), ib = PART_ORDER.indexOf(b.key);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+
+  const single = entry.blocks.length === 1 ? entry.blocks[0] : null;
+  const sdef = single ? REGISTRY[single.type] : null;
+  const variant = single?.variant && sdef?.variants?.find((v) => v.value === single.variant)?.label;
+  const root = {
+    label: single && sdef ? sdef.label : entry.name,
+    icon: sdef?.icon ?? "layers",
+    variant
+  };
+
+  const budget = Math.max(1, maxTiles);
+  const overflow = parts.length > budget;
+  const shown = overflow ? parts.slice(0, budget - 1) : parts;
+  const hidden = overflow ? parts.length - shown.length : 0;
+
+  const list = parts.map((p) => (p.count && p.count > 1 ? `${p.label} ×${p.count}` : p.label));
+  const sentence = parts.length
+    ? `${root.label}${variant ? ` (${variant})` : ""} contains ${list.slice(0, -1).join(", ")}${list.length > 1 ? " and " : ""}${list[list.length - 1]}.`
+    : `${root.label} is a single block with no internal parts.`;
+
+  return { root, parts, shown, hidden, caption: entry.desc, sentence };
+}

@@ -15,7 +15,7 @@ import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { REGISTRY, type BlockNode } from "@/lib/builder";
 import {
-  LibraryAPI, agoOf, countOf, dateLong, kpis, placementsFor, requirementsFor, structureOf,
+  LibraryAPI, agoOf, compositionOf, countOf, dateLong, kpis, placementsFor, requirementsFor, structureOf,
   type LibEntry, type LibResult, type LibScope, type LibSort, type LibView, type UpdatedFilter
 } from "@/lib/library-db";
 import { CreateTemplateModal, DeleteModal, InsertModal, PreviewModal } from "@/components/library/LibraryModals";
@@ -123,6 +123,53 @@ function LibThumb({ blocks, tall = false }: { blocks: BlockNode[]; tall?: boolea
       {has("divider") && <div className="m5-th-div" />}
       {has("footer") && <div className="m5-th-foot"><span /><span /><span /></div>}
       {!blocks.length && lines(2)}
+    </div>
+  );
+}
+
+
+/* ---------------- composition diagram ----------------
+   The Overview tab's picture: root pill → connector rail → up to four
+   part tiles, all generated from the document (see compositionOf). */
+function Composition({ entry, onMore }: { entry: LibEntry; onMore: () => void }) {
+  const c = compositionOf(entry, 4);
+  if (!c.parts.length) {
+    return (
+      <div className="m5-comp" role="img" aria-label={`${entry.name} is a single block with no internal parts`}>
+        <div className="m5-comp-root"><Icon name={c.root.icon} size={15} />{c.root.label}</div>
+        <p className="m5-comp-none">Single block — its fields are edited in the Visual Builder.</p>
+      </div>
+    );
+  }
+  const tiles = c.shown;
+  const cols = tiles.length + (c.hidden ? 1 : 0);
+  return (
+    <div className="m5-comp" role="img" aria-label={c.sentence}>
+      <div className="m5-comp-root">
+        <Icon name={c.root.icon} size={15} />
+        {c.root.label}
+        {c.root.variant && <em>{c.root.variant}</em>}
+      </div>
+      <div className="m5-comp-stem" aria-hidden />
+      <div className={`m5-comp-row cols-${cols}`}>
+        <div
+          className="m5-comp-rail"
+          aria-hidden
+          style={{ left: `${50 / cols}%`, right: `${50 / cols}%` }}
+        />
+        {tiles.map((p) => (
+          <div className="m5-comp-tile" key={p.key}>
+            <span className="m5-comp-ico">{p.icon === "type" ? <b>H</b> : <Icon name={p.icon} size={14} />}</span>
+            <span className="m5-comp-label">{p.label}{p.count && p.count > 1 ? ` ×${p.count}` : ""}</span>
+          </div>
+        ))}
+        {c.hidden > 0 && (
+          <button className="m5-comp-tile is-more" onClick={onMore} title={`${c.parts.length} parts in total — open Structure`}>
+            <span className="m5-comp-ico more"><Icon name="more" size={14} /></span>
+            <span className="m5-comp-label">+{c.hidden}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -270,25 +317,33 @@ function Inspector({
       <div className="m5-tabpane" role="tabpanel">
         {tab === "Overview" && (
           <>
+            <h4 className="m5-h4 first">Component Structure</h4>
             <p className="m5-summary">{entry.desc}</p>
-            <div className="m5-kv">
-              <div><span>Type</span><b>{entry.kind === "block" ? entry.category : entry.category}</b></div>
-              <div><span>Blocks</span><b>{countOf(entry)}</b></div>
-              <div><span>Updated</span><b>{dateLong(entry.updatedAt)}</b></div>
-              <div><span>Owner</span><b>{entry.owner}</b></div>
-            </div>
-            <h4 className="m5-h4">Responsive</h4>
-            <div className="m5-resp">
+            <Composition entry={entry} onMore={() => setTab("Structure")} />
+
+            <div className="m5-resp-row">
+              <Icon name="monitor" size={13} />
+              <span className="m5-resp-k">Responsive:</span>
               {["Desktop", "Tablet", "Mobile"].map((d) => (
-                <span key={d}><Icon name="check" size={11} />{d}</span>
+                <span key={d} className="m5-resp-item">{d}<Icon name="check" size={11} /></span>
               ))}
             </div>
-            <h4 className="m5-h4">Used on</h4>
-            <button className="m5-used" onClick={() => setTab(entry.kind === "block" ? "Compatibility" : "Usage")}>
+
+            <button
+              className="m5-used"
+              onClick={() => setTab(entry.kind === "block" ? "Compatibility" : "Usage")}
+            >
               <Icon name="layers" size={13} />
               <span>{usage.totalPlacements ? `Used on ${usage.totalPages} page${usage.totalPages === 1 ? "" : "s"}` : "Not used yet"}</span>
               <Icon name="chevRight" size={12} />
             </button>
+
+            <div className="m5-kv">
+              <div><span>Type</span><b>{entry.category}</b></div>
+              <div><span>Blocks</span><b>{countOf(entry)}</b></div>
+              <div><span>Updated</span><b>{dateLong(entry.updatedAt)}</b></div>
+              <div><span>Owner</span><b>{entry.owner}</b></div>
+            </div>
           </>
         )}
 
