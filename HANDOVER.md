@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 07:06:33 UTC · **generated against commit** `283ad3c` · **working tree** 19 uncommitted file(s)
+**Generated** 2026-11-14 07:06:48 UTC · **generated against commit** `62beb06` · **working tree** 3 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,421 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,360 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ Product rules (non-negotiable, they came from the user):
 - Commit and tag every milestone; keep rollback tags; never persist the GitHub token; rebuild the zip on every change.
 - Every build ships a zip: `npm run build` ends with `scripts/package.mjs`, which rewrites /home/user/wacrm-app.zip and verifies the WACRM-CMS.html inside it matches the fresh build.
 - Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.
-- The reference mocks live in Git at `uploads/` and nowhere else: the files are committed and marked `skip-worktree`, so the 26 MB working copy is absent on purpose. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.
+- The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.
 
 Decisions already made — do not reopen without the user:
 
@@ -205,13 +205,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `283ad3c` — chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them.
-- Working tree: 19 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `62beb06` — assets: re-encode the reference mocks as WebP — 27.1 MB → 2.9 MB (10.8%).
+- Working tree: 3 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `62beb06` | 2026-11-14 | assets: re-encode the reference mocks as WebP — 27.1 MB → 2.9 MB (10.8%) |
 | `283ad3c` | 2026-11-14 | chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them |
 | `5d1a604` | 2026-11-14 | docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence |
 | `4e9aa0f` | 2026-11-14 | docs: point the workspace at Git for the mocks; record the sparse-checkout trap |
@@ -223,7 +224,6 @@ First tasks:
 | `9cac731` | 2026-11-14 | docs: record the packaging commands; bundle is now built on demand (workspace budget) |
 | `3eaad5e` | 2026-11-14 | chore: regenerate HANDOVER.md |
 | `c330068` | 2026-11-14 | polish: AI Copy toolbar pill contrast (violet tint, pressed-state fill) |
-| `070bc5a` | 2026-11-14 | module 4: AI mode in the builder — prompt-to-page generation, plan-then-compose, in-canvas rewrite |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

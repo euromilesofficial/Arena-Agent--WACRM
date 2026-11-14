@@ -19,12 +19,12 @@ Read access works — `git ls-remote` returns the real refs — so this is purel
 
 ```
 GitHub origin/main   d2dd7db   "Add Module 3 (Pages) spec review"
-local main           d821c8a   32 commits · 25 ahead · 0 behind  → clean fast-forward
+local main           62beb06   34 commits · 27 ahead · 0 behind  → clean fast-forward
                                107 tracked files · 5 tags · includes uploads/
 on GitHub now        module-1-and-2-import, module-2-complete  (nothing later)
 ```
 
-Everything from Module 3's build onward is local only: the Module 3 build, the whole Module 4 builder, the interlink plan, **AI mode**, the packaging automation, and the **reference mocks** (committed under `uploads/`, working copies hidden with `skip-worktree` so they cost nothing on disk).
+Everything from Module 3's build onward is local only: the Module 3 build, the whole Module 4 builder, the interlink plan, **AI mode**, the packaging automation, and the **reference mocks** (committed under `uploads/` as WebP — 27.1 MB of PNG re-encoded to 2.9 MB — with working copies hidden via `skip-worktree`).
 
 ## One command closes it
 
@@ -47,7 +47,7 @@ If you would rather not hand over a token at all, say so and I will regenerate `
 | `b71a563 → 2025d0a` | `MODULE-5-REVIEW.md` §11 — interlink spine + palette benchmark |
 | `2025d0a → c767062` | hook execute-bit fix + the matching handover trap |
 | `c767062 → c330068` | **AI mode** — prompt → page generation, plan-then-compose, in-canvas rewrite, `AI-BUILDER-SPEC.md`, `INTERLINK-PLAN.md`, `BACKEND-PLAN.md` §7.20, `qa_ai.py` |
-| `c330068 → d821c8a` | packaging automation (`scripts/package.mjs`), push tooling, **`uploads/` committed**, QA screenshots untracked |
+| `c330068 → 283ad3c` | packaging automation (`scripts/package.mjs`), push tooling, **`uploads/` committed as WebP**, QA screenshots untracked, history rewritten to purge the PNG blobs |
 
 ## After the push lands
 
