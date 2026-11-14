@@ -1,55 +1,61 @@
 {
-  "generatedAt": "2026-11-14 04:06:05 UTC",
+  "generatedAt": "2026-11-14 06:32:36 UTC",
   "node": "v20.20.2",
   "artifact": "WACRM-CMS.html",
   "suites": [
     {
+      "file": "qa_ai.py",
+      "passed": 60,
+      "failed": 0,
+      "seconds": 34.373
+    },
+    {
       "file": "qa_builder.py",
       "passed": 97,
       "failed": 0,
-      "seconds": 41.706
+      "seconds": 42.441
     },
     {
       "file": "qa_states_m4.py",
       "passed": 47,
       "failed": 0,
-      "seconds": 43.669
+      "seconds": 43.58
     },
     {
       "file": "qa_pages.py",
       "passed": 106,
       "failed": 0,
-      "seconds": 122.081
+      "seconds": 121.181
     },
     {
       "file": "qa_states_m3.py",
       "passed": 40,
       "failed": 0,
-      "seconds": 56.569
+      "seconds": 56.746
     },
     {
       "file": "qa_module2.py",
       "passed": 48,
       "failed": 0,
-      "seconds": 34.685
+      "seconds": 34.776
     },
     {
       "file": "qa_states_m1.py",
       "passed": 39,
       "failed": 0,
-      "seconds": 45.341
+      "seconds": 45.72
     },
     {
       "file": "qa_flows.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 55.92
+      "seconds": 59.087
     },
     {
       "file": "qa_react.py",
       "passed": null,
       "failed": 0,
-      "seconds": 4.117
+      "seconds": 4.429
     }
   ]
 }

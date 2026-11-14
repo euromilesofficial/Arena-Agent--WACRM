@@ -12,7 +12,7 @@
     ]
   },
   "rules": [
-    "One module at a time: the screen, every CTA/dropdown action, and every operation state \u2014 nothing ships half-wired.",
+    "One module at a time: the screen, every CTA/dropdown action, and every operation state — nothing ships half-wired.",
     "Every state must be reachable and code-backed: loading, empty, error, viewer/read-only, conflict, permission denied.",
     "The artifact must open by double-click: single HTML file, no build, no server, no node_modules, no network.",
     "Match the approved mock: typography, spacing, alignment, full-screen fit, no empty gaps.",
@@ -26,7 +26,7 @@
       "name": "Overview",
       "route": "#/overview",
       "status": "done",
-      "evidence": "qa_states_m1.py 39/39 \u00b7 qa_flows.py 38/0",
+      "evidence": "qa_states_m1.py 39/39 · qa_flows.py 38/0",
       "notes": "Dashboard grid, 6 KPI drawers, funnel, acquisition, site health, publishing rail, release wizard, rollback."
     },
     {
@@ -34,7 +34,7 @@
       "name": "Sites & Domains",
       "route": "#/sites",
       "status": "done",
-      "evidence": "qa_module2.py 48/48 \u00b7 state matrix in STATE-COVERAGE.md",
+      "evidence": "qa_module2.py 48/48 · state matrix in STATE-COVERAGE.md",
       "notes": "Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks."
     },
     {
@@ -42,7 +42,7 @@
       "name": "Pages & Routes",
       "route": "#/pages?site=&tab=&q=&page=&sel=",
       "status": "done",
-      "evidence": "qa_pages.py 106/106 \u00b7 qa_states_m3.py 40/40",
+      "evidence": "qa_pages.py 106/106 · qa_states_m3.py 40/40",
       "notes": "Registry + tree + inspector, 8 modals, slug/route guards, deep links, trash with restore window."
     },
     {
@@ -50,16 +50,16 @@
       "name": "Visual Builder",
       "route": "#/builder?site=&page=&sel=&lib=&insp=",
       "status": "done",
-      "evidence": "qa_builder.py 97/97 \u00b7 qa_states_m4.py 47/47",
+      "evidence": "qa_builder.py 97/97 · qa_states_m4.py 47/47",
       "notes": "3-panel editor, 19 blocks / 23 sections / 5 templates, drag with refusal reasons, token-bounded style, autosave 2 s + CAS, revisions with block diff + restore, AI copy stream, publish handoff into M1."
     },
     {
       "id": "M5",
       "name": "Block library expansion + CRM integration",
       "route": "builder",
-      "status": "review delivered \u2014 awaiting approval",
+      "status": "review delivered — awaiting approval",
       "evidence": "MODULE-5-REVIEW.md (nothing implemented)",
-      "notes": "Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 \u2192 38 offered blocks in 8 chips, 23 \u2192 32 sections, 5 \u2192 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists \u2014 there is a WhatsApp Flows builder, a custom-fields registry (19 types \u00d7 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM. \u00a711 of the review explains D1\u2013D6 mechanically and proposes flipping the order: forms/lead-capture spine first, interlink surfaces second, palette expansion third."
+      "notes": "Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 → 38 offered blocks in 8 chips, 23 → 32 sections, 5 → 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists — there is a WhatsApp Flows builder, a custom-fields registry (19 types × 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM. §11 of the review explains D1–D6 mechanically and proposes flipping the order: forms/lead-capture spine first, interlink surfaces second, palette expansion third."
     }
   ],
   "decisions": [
@@ -102,20 +102,33 @@
       "id": "D8",
       "decision": "Deep links are the QA contract: every screen must restore from its hash on a cold load.",
       "status": "locked"
+    },
+    {
+      "id": "D13",
+      "label": "AI mode is a composer over the canvas",
+      "detail": "Three tasks (build a page / add a section / rewrite copy), one docked panel, one commit per action. Generation plans first, composes registry blocks, never invents a stat, and binds a generated form to a saved form. See AI-BUILDER-SPEC.md."
+    },
+    {
+      "id": "D14",
+      "label": "One AI surface at a time",
+      "detail": "While the composer is open the in-canvas AI Copy popover is suppressed (ai: aiPanel ? null : ai); two AI bubbles at once reads as a bug."
     }
   ],
   "next": {
-    "headline": "Approve MODULE-5-REVIEW.md \u00a711 (four confirmations), then build Module 5 = Forms & lead capture (the spine), not the palette.",
+    "headline": "Build the forms spine — the CMS form row, the public submit endpoint contract, consent records and the cms_form source filter on trigger.lead.created. Decisions are closed: see INTERLINK-PLAN.md.",
     "blockedOn": [
-      "User approval of D1\u2013D6 in MODULE-5-REVIEW.md \u00a76 \u2014 nothing is implemented by design.",
       "Push to GitHub still needs a fresh PAT (Contents: write); local commits and tags are complete."
     ],
     "tasks": [
-      "On approval: build Module 5 \u2014 forms list + 3-panel form builder + public submit + consent + source attribution + submissions table.",
-      "Ship the Form (CRM) and WhatsApp CTA blocks with it: together they complete the capture\u2192CRM\u2192automation story.",
-      "Write BACKEND-PLAN.md \u00a77.20 (forms, consent, WhatsApp CTA, widget embed, booking, products) before the code.",
-      "Module 6: Integrations panel (widgets, CTA token, booking, forms) + 'captured on this page' read-only panel.",
-      "Module 7: palette 19 \u2192 38 in 8 chips, sections 23 \u2192 32, templates 5 \u2192 7."
+      "Build Module 5 forms: forms list + 3-panel form builder + consent block + public submit + source attribution + submissions index (counts only, no PII in the CMS).",
+      "Ship the Form and WhatsApp CTA blocks with it: together they complete capture → CRM → automation.",
+      "Write BACKEND-PLAN.md §7.20 (cms_forms, submit, consent, page stats, automation suggestions, publish snapshot) before the code.",
+      "Extend the Automation group in the inspector: per-block declared contract + 'Suggest a workflow' handoff into Module 2.",
+      "Module 6: Integrations pane."
+    ],
+    "decided": [
+      "INTERLINK-PLAN.md holds D1–D8 — CMS owns pages/forms, CRM owns people/consent/automation, one writer per fact.",
+      "AI mode is built and QA'd (qa_ai.py 60/60); AI-BUILDER-SPEC.md is the record."
     ]
   },
   "environment": {
@@ -131,6 +144,10 @@
   "qa": {
     "runner": "npm run qa",
     "suites": [
+      {
+        "file": "qa_ai.py",
+        "covers": "AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip"
+      },
       {
         "file": "qa_builder.py",
         "covers": "M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths"
@@ -168,17 +185,17 @@
   "contracts": [
     {
       "doc": "BACKEND-PLAN.md",
-      "section": "\u00a77.1\u2013\u00a77.18",
-      "covers": "every screen surface of M1\u2013M3 mapped to an endpoint"
+      "section": "§7.1–§7.18",
+      "covers": "every screen surface of M1–M3 mapped to an endpoint"
     },
     {
       "doc": "BACKEND-PLAN.md",
-      "section": "\u00a77.19",
+      "section": "§7.19",
       "covers": "builder draft CAS, revisions, library, AI stream, publish handoff"
     },
     {
       "doc": "BACKEND-PLAN.md",
-      "section": "\u00a78",
+      "section": "§8",
       "covers": "publishing pipeline, compare-and-swap, rollback"
     },
     {
@@ -188,12 +205,12 @@
     },
     {
       "doc": "MODULE-5-REVIEW.md",
-      "section": "\u00a72, \u00a74, \u00a78",
+      "section": "§2, §4, §8",
       "covers": "forms verdict, block benchmark, proposed palette and endpoints"
     },
     {
       "doc": "MODULE-4-REVIEW.md",
-      "section": "\u00a7F, \u00a7J",
+      "section": "§F, §J",
       "covers": "the binding builder contract and what shipped"
     },
     {
@@ -203,24 +220,40 @@
     }
   ],
   "traps": [
-    "Chrome/Chromium will not launch without the apt batch in environment.bootstrap \u2014 that is the container, not the app.",
+    "Chrome/Chromium will not launch without the apt batch in environment.bootstrap — that is the container, not the app.",
     "A hash-only goto does not reload; deep-link assertions must goto() then reload().",
     "The store rewrites #/<screen> from its own filters after child effects; a screen owning query params must re-assert them on a short timer (builder uses 220 ms).",
-    "The builder's global key handler re-registers dialog listeners mid-dispatch \u2014 it must stand down while an overlay owns Escape.",
+    "The builder's global key handler re-registers dialog listeners mid-dispatch — it must stand down while an overlay owns Escape.",
     "QA counts that depend on a library tab are only valid after switching to that tab (#wb-tab-blocks).",
     "Screenshots are WebP only; the workspace is capped at 128 MB and pruned dependency folders do not persist.",
     "The zip must be built with: zip -rq wacrm-app.zip wacrm-app -x 'wacrm-app/node_modules/*' 'wacrm-app/dist/*' 'wacrm-app/.git/*'.",
     "git commit fails with 'Author identity unknown' until a repo-local user.name/user.email is set.",
     "The sandbox drops .git/config between turns, so the origin URL has to be re-added before a push.",
-    "The clean CRM copy (commit c07cbb6) has no CMS module and no GrapesJS \u2014 do not look for cms routes or a second editor; the React builder here is the only CMS.",
-    "Workspace snapshots and copies drop the execute bit on .githooks/pre-commit \u2014 after any restore run chmod +x .githooks/pre-commit and git update-index --chmod=+x .githooks/pre-commit, or git silently ignores the hook."
+    "The clean CRM copy (commit c07cbb6) has no CMS module and no GrapesJS — do not look for cms routes or a second editor; the React builder here is the only CMS.",
+    "Workspace snapshots and copies drop the execute bit on .githooks/pre-commit — after any restore run chmod +x .githooks/pre-commit and git update-index --chmod=+x .githooks/pre-commit, or git silently ignores the hook.",
+    {
+      "trap": "Two AI surfaces open at once",
+      "detail": "The in-canvas popover is driven by `ai` state and the composer by `aiPanel`; pass `ai: aiPanel ? null : ai` to Canvas or both render over the same selection."
+    },
+    {
+      "trap": "Streamed generation must not touch the document",
+      "detail": "streamPlan only reports rows; insertAiPanel does the single commit(). Anything that commits mid-stream breaks undo granularity and the 'page is untouched while it runs' assertion."
+    },
+    {
+      "trap": "A generated form block with no formId renders 'No form attached'",
+      "detail": "Bind BuilderAPI.forms(siteId)[0] at insert time; if there is none, say 'form needs a saved form' in the toast instead of shipping an empty shell."
+    },
+    {
+      "trap": "The cbar is a 3-part flex row",
+      "detail": "A pill added to .wb-cbar-l overlaps the centred device group (pointer events intercepted, click times out). Put new toolbar actions in .wb-cbar-r with flex:0 0 auto."
+    }
   ],
   "continuation": {
     "firstTenMinutes": [
-      "Read HANDOVER.md (this file), then MODULE-4-REVIEW.md \u00a7J and STATE-COVERAGE.md.",
-      "Open WACRM-CMS.html and walk #/overview \u2192 #/sites \u2192 #/pages \u2192 #/builder.",
+      "Read HANDOVER.md (this file), then MODULE-4-REVIEW.md §J and STATE-COVERAGE.md.",
+      "Open WACRM-CMS.html and walk #/overview → #/sites → #/pages → #/builder.",
       "Run npm run qa and confirm the tallies match the table below.",
-      "Read handover.config.json \u2014 that is where intent, decisions and next steps live."
+      "Read handover.config.json — that is where intent, decisions and next steps live."
     ],
     "definitionOfDone": [
       "The screen works for every CTA and dropdown, in every state listed in STATE-COVERAGE.md.",

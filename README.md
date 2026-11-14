@@ -118,10 +118,15 @@ npm run build       # also regenerates the handover
 - `MODULE-5-REVIEW.md` — block library vs the industry (Elementor / Webflow /
   Gutenberg / HubSpot), the WACRM CRM integration map, and the form-builder
   verdict: what the CRM has, what it lacks, and the three ways to close it.
+- `AI-BUILDER-SPEC.md` — AI mode in the visual builder: the three tasks, the
+  plan-then-compose pipeline, every state, and the endpoint contract behind it.
+- `INTERLINK-PLAN.md` — the decided CMS ⇄ CRM architecture (D1–D8), the
+  block → trigger → action automation matrix, and the loop end to end.
 - `MODULE-2-SPEC.md` — the accepted v2 layout for Sites & Domains.
 - `BACKEND-PLAN.md` — the backend contract: data model, every endpoint and CTA,
   RBAC/tenancy, publishing with compare-and-swap, analytics, jobs, SLOs,
-  security, build order (§7.19 covers the builder).
+  security, build order (§7.19 covers the builder, §7.20 the CMS ⇄ CRM
+  interlink).
 - `STATE-COVERAGE.md` — the state matrix for all four modules, with the trigger
   and the contract for each state.
 - `SPEC-AUDIT.md` — dissection of the reference mockups.

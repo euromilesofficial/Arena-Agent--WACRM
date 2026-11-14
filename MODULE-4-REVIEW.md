@@ -170,3 +170,15 @@ The four delegated decisions were taken as follows and are in the build: **in-do
 **Verification** — `qa_builder.py` 97/97, `qa_states_m4.py` 47/47, `qa_pages.py` 106/106, `qa_states_m3.py` 40/40, `qa_module2.py` 48/48, `qa_states_m1.py` 39/39, `qa_flows.py` 38 ok / 0 failed, `qa_react.py` clean. No horizontal overflow at 1280 / 1440 / 1920 (library 250 px and inspector 292 px fixed, stage absorbs 560 / 674 / 1146). `tsc --noEmit` clean; single-file build 1,021,528 B, gzip 370,130 B, md5 `812d821d5ac8f1e5ba752a9dcbc58528`.
 
 **What it still does not do** — no co-editing (presence is advisory, a shared block is a conflict not a merge), no page-level SEO, no repeaters, no staging or scheduling, no marketplace, no raw HTML/CSS/JS. Each has a contract row in `BACKEND-PLAN.md` §7.19.
+
+## K. AI mode, as built (round 4)
+
+The mock's **AI Copy** chip was the visible half of the requirement; the other half — *"even on the blank page… the landing page will be generated"* — needed a second entry point. Both are now one surface: a composer docked over the canvas with three tasks (**Build a page**, **Add a section**, **Rewrite copy**), reached from the empty-canvas card, the toolbar's `✦ AI Copy`, or the mock's in-canvas chip. Full spec: `AI-BUILDER-SPEC.md`.
+
+**How it generates.** `planFor(prompt)` matches intent against six curated plans (booking / funding / programme / about / event / contact, plus a default) with fixed precedence; `streamPlan` reveals the plan row by row with a one-line reason per section; each row then becomes a real `REGISTRY[type].defaults()` node — the same node the library would insert by hand — and one `commit()` lands them. A generated `form` block is bound to the site's first saved form, so the page is live rather than a picture of a form.
+
+**What it refuses.** It never writes prose the workspace cannot verify: copy is the library's draft copy, the only prompt-derived text is a three-word hero eyebrow (`topicFrom`), and the UI says so in the plan footer, the hint and the toast. The rewrite path (`streamCopy` + `transform`) only edits the author's own words; when the rules would change nothing, the panel says *"This line is already that short — nothing to cut"* instead of manufacturing a difference.
+
+**States covered** — idle · no selection (rewrite) · over budget · running (with *Stop*) · ready · truncated by the 40-block limit · no-op rewrite · provider error (+ retry) · no provider · quota · abort via `Escape`. One AI surface at a time: the in-canvas popover is suppressed while the composer is open.
+
+**Verification** — `qa_ai.py` **60/60**: entry points, prompt composer, running state, plan content and intent precedence, insert, single-step undo, section mode, the no-selection guard, a real rewrite on a `heading`, the no-op message, all three failure states plus recovery, and the blank-page → generated page → undo round trip (`qa/ai-01…ai-12`). No regressions: `qa_builder` 97, `qa_states_m4` 47, `qa_pages` 106, `qa_states_m3` 40, `qa_module2` 48, `qa_states_m1` 39, `qa_flows` 38, `qa_react` clean.
