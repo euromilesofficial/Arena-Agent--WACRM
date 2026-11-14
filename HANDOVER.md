@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 06:59:14 UTC · **generated against commit** `d821c8a` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 07:02:11 UTC · **generated against commit** `8ff416f` · **working tree** 5 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,042,053 B (1018 kB) · gzip 367 kB |
 | md5 | `119b71ca861482e33f3ea468629dd44a` |
 | sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 06:57:02 |
+| Built | 2026-11-14 07:01:20 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **50 source files, 15,858 lines** of TS/TSX/CSS (22,416 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,360 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ Product rules (non-negotiable, they came from the user):
 - Commit and tag every milestone; keep rollback tags; never persist the GitHub token; rebuild the zip on every change.
 - Every build ships a zip: `npm run build` ends with `scripts/package.mjs`, which rewrites /home/user/wacrm-app.zip and verifies the WACRM-CMS.html inside it matches the fresh build.
 - Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.
-- The reference mocks live in Git at `uploads/` (manifest + README inside it). Read one straight out of git (`git -C repo show HEAD:uploads/<file> > /tmp/<file>`); never re-add a second workspace copy.
+- The reference mocks live in Git at `uploads/` and nowhere else: the files are committed and marked `skip-worktree`, so the 26 MB working copy is absent on purpose. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.
 
 Decisions already made — do not reopen without the user:
 
@@ -201,16 +201,18 @@ First tasks:
 - [object Object]
 - Never run `git sparse-checkout init` in repo/ — with this git build (2.47) it writes `/*` + `!/*/` and removes every directory (src, qa, uploads…) from the working tree, then `set` fails with 'specify directories rather than patterns'. Recover with `git sparse-checkout disable`. Nothing is lost (the objects are in .git), but the tree has to be re-materialised.
 - uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.
+- uploads/ is skip-worktree — do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done.
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `d821c8a` — docs: point the workspace at Git for the mocks; record the sparse-checkout trap.
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `8ff416f` — docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence.
+- Working tree: 5 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `8ff416f` | 2026-11-14 | docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence |
 | `d821c8a` | 2026-11-14 | docs: point the workspace at Git for the mocks; record the sparse-checkout trap |
 | `62665e9` | 2026-11-14 | chore: stop tracking generated QA screenshots |
 | `307a294` | 2026-11-14 | chore: restore execute bits (lost on copy) |
@@ -222,7 +224,6 @@ First tasks:
 | `3eaad5e` | 2026-11-14 | chore: regenerate HANDOVER.md |
 | `c330068` | 2026-11-14 | polish: AI Copy toolbar pill contrast (violet tint, pressed-state fill) |
 | `070bc5a` | 2026-11-14 | module 4: AI mode in the builder — prompt-to-page generation, plan-then-compose, in-canvas rewrite |
-| `c767062` | 2026-11-14 | Handover: record the hook execute-bit trap |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
