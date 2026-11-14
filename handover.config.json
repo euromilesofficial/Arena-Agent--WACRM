@@ -23,7 +23,7 @@
     "Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.",
     "The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.",
     "END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes — run `/home/user/checkpoint.sh \"what changed\"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.",
-    "The GitHub credential lives at /home/user/.gh-token (0600, gitignored). Scripts read GH_TOKEN → the file, in that order; it is passed inline to a single push and never written into .git/config or the repo."
+    "The GitHub credential is at /home/user/.gh-token (mode 0600, re-applied by the scripts because snapshots drop file modes). It is never committed — the pre-commit gate blocks any staged github_pat_/ghp_/gho_/ghs_ pattern. It is, however, in the chat transcript and in the platform snapshot bundle, so it must be treated as exposed and rotated; PUSH-TO-GIT.md §Credential has the exact steps."
   ],
   "modules": [
     {

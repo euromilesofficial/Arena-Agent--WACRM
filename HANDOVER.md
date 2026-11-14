@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 19:25:39 UTC · **generated against commit** `b354de2` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 19:29:54 UTC · **generated against commit** `e018019` · **working tree** 5 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,042,053 B (1018 kB) · gzip 367 kB |
 | md5 | `119b71ca861482e33f3ea468629dd44a` |
 | sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 19:24:33 |
+| Built | 2026-11-14 19:29:19 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,352 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,373 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -148,7 +148,7 @@ Product rules (non-negotiable, they came from the user):
 - Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.
 - The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.
 - END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes — run `/home/user/checkpoint.sh "what changed"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.
-- The GitHub credential lives at /home/user/.gh-token (0600, gitignored). Scripts read GH_TOKEN → the file, in that order; it is passed inline to a single push and never written into .git/config or the repo.
+- The GitHub credential is at /home/user/.gh-token (mode 0600, re-applied by the scripts because snapshots drop file modes). It is never committed — the pre-commit gate blocks any staged github_pat_/ghp_/gho_/ghs_ pattern. It is, however, in the chat transcript and in the platform snapshot bundle, so it must be treated as exposed and rotated; PUSH-TO-GIT.md §Credential has the exact steps.
 
 Decisions already made — do not reopen without the user:
 
@@ -209,13 +209,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `b354de2` — docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules.
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `e018019` — chore: checkpoints never move an existing milestone tag; tags are create-only.
+- Working tree: 5 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `e018019` | 2026-11-14 | chore: checkpoints never move an existing milestone tag; tags are create-only |
 | `b354de2` | 2026-11-14 | docs: GitHub is in sync — record the end-of-task routine, the credential location and the rules |
 | `95d3f16` | 2026-11-14 | docs: automate the end-of-task push (checkpoint.sh) and record where the credential lives |
 | `39716da` | 2026-11-14 | docs: record the range-limited rewrite rule |
@@ -227,7 +228,6 @@ First tasks:
 | `4b870b8` | 2026-11-14 | chore: stop tracking generated QA screenshots |
 | `d57c613` | 2026-11-14 | chore: restore execute bits (lost on copy) |
 | `e741b9a` | 2026-11-14 | docs: ship PUSH-TO-GIT.md inside the deliverable and index it in the README |
-| `e6d8f58` | 2026-11-14 | chore: restore pre-commit hook execute bit (mode is lost by every copy) |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

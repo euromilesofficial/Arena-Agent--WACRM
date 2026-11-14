@@ -1,9 +1,28 @@
 #!/bin/sh
-# Keeps HANDOVER.md in lock-step with the tree: regenerate, stage, and refuse the
-# commit if the artifact or the handover could not be produced.
+# Pre-commit gate for this repo. Runs before every commit; exit 1 aborts it.
+#   1) uploads/ is skip-worktree — refuse to commit its deletion
+#   2) never let a credential reach the history
+#   3) keep HANDOVER.md in lock-step with the tree
 set -e
 root=$(git rev-parse --show-toplevel)
 cd "$root"
+
+# 1 · the 19 reference mocks live in .git only; if the skip-worktree flags are lost,
+#     a `git add -A` would stage 26 MB of deletions — refuse that instead
+if git diff --cached --name-status | grep -qE '^D[[:space:]]+uploads/'; then
+  echo "pre-commit: refusing to commit deletions under uploads/ (skip-worktree flags lost?)" >&2
+  echo "            restore with: git update-index --no-skip-worktree \$(git ls-files uploads)" >&2
+  exit 1
+fi
+
+# 2 · a GitHub token must never be committed, however it got staged
+if git diff --cached -U0 | grep -qE '(github_pat_|ghp_|gho_|ghs_|ghu_)[A-Za-z0-9_]{20,}'; then
+  echo "pre-commit: a GitHub credential pattern is staged — refusing to commit it" >&2
+  echo "            unstage it: git restore --staged <file>" >&2
+  exit 1
+fi
+
+# 3 · regenerate the handover so the committed document never lags the tree
 if command -v node >/dev/null 2>&1; then
   node scripts/handover.mjs
   git add HANDOVER.md

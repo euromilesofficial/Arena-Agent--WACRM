@@ -30,11 +30,32 @@ It does, in order:
 
 Two smaller entry points do one half each: `push-to-github.sh` (push only) and `npm run package` (zip only).
 
-## Credential
+## Credential — what is stored, where, and what I cannot protect
 
-The token lives at **`/home/user/.gh-token`**, mode `0600`, outside the repository, and `.gh-token` / `*.token` are in `.gitignore`. Scripts resolve `GITHUB_TOKEN` → `GH_TOKEN` → that file, and the value is only ever interpolated into the single `git push` / `git ls-remote` URL for that command: it is never written into `.git/config`, a remote URL, a log, or a commit. Every command that prints the URL scrubs the token to `***` first.
+The token is at **`/home/user/.gh-token`** (mode `0600`, outside the repository). Scripts resolve `GITHUB_TOKEN` → `GH_TOKEN` → that file, and enforce the `0600` on every run because file modes are **not preserved** by the workspace snapshot — it came back as `0644` once already.
 
-Since a token has now been shared in a chat window, treat it as exposed: rotate it at **Settings → Developer settings → Fine-grained tokens** when convenient, and drop the new value into the same file — nothing else needs to change. Scope it to this one repository with **Contents: Read and write**; nothing here needs more.
+**Where the string exists right now — all of it:**
+
+| Location | Consequence |
+|---|---|
+| `/home/user/.gh-token` | readable by anything running in this sandbox; the only copy I control |
+| **the conversation transcript** | it was pasted in chat — this is the exposure that matters, and it cannot be undone |
+| **the platform's snapshot bundle** (`/tmp/arena-workspace/hydrate.zip` contains `.gh-token`) | any workspace snapshot includes it, because it is a file in the workspace |
+| the git repository, the zip, HANDOVER, logs | **not present** — verified by grep; a pre-commit gate now blocks any commit containing a `github_pat_`/`ghp_`/`gho_`/`ghs_` pattern |
+
+That is the honest picture: I never send the token anywhere except `github.com`, never print it (every command scrubs it to `***`), and never write it into the repo — but **I cannot make a token that has already transited a chat "safe from the outside world."** Once it is in a transcript and a snapshot, it should be treated as known.
+
+### The fix, and it takes a minute
+
+1. **Settings → Developer settings → Fine-grained tokens → revoke** the current token.
+2. Create a new one: **repository access: only `euromilesofficial/Arena-Agent--WACRM`**, **permissions: Contents = Read and write** (nothing else), **expiration: 30–90 days**.
+3. Paste it once; it replaces the file. `checkpoint.sh` keeps working unchanged.
+
+Rotating means the copy in this transcript, in old snapshots, and in anyone's shell history stops being able to do anything at all. That is the only durable protection; everything else is damage reduction.
+
+### If you would rather I never store it
+
+Say so and I will delete `/home/user/.gh-token` after this session and stop writing it. The cost is that `checkpoint.sh` cannot push on its own — you would re-supply the token once per session (`GH_TOKEN=… ./checkpoint.sh "msg"`), and everything else — build, mirror, commit, verify — still runs automatically.
 
 ## Rules this repository follows
 
