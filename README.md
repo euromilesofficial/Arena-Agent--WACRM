@@ -95,7 +95,9 @@ time last time.
 ```bash
 npm run handover    # regenerate from handover.config.json + live repo facts
 npm run qa          # run every suite → qa/last-run.json → regenerate the handover
-npm run qa:check    # exit 1 when HANDOVER.md is stale (CI gate)
+npm run qa:check    # exit 1 when HANDOVER.md is stale (CI gate); masks the
+                    # commit ids, timestamps and the git section, which are one
+                    # commit behind by construction
 npm run build       # also regenerates the handover
 ```
 
