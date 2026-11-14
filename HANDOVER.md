@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 07:06:48 UTC · **generated against commit** `62beb06` · **working tree** 3 uncommitted file(s)
+**Generated** 2026-11-14 07:06:54 UTC · **generated against commit** `8585206` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,360 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,361 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -202,16 +202,18 @@ First tasks:
 - Never run `git sparse-checkout init` in repo/ — with this git build (2.47) it writes `/*` + `!/*/` and removes every directory (src, qa, uploads…) from the working tree, then `set` fails with 'specify directories rather than patterns'. Recover with `git sparse-checkout disable`. Nothing is lost (the objects are in .git), but the tree has to be re-materialised.
 - uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.
 - uploads/ is skip-worktree — do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done.
+- History rewrites must be range-limited: `git filter-branch --index-filter … -- d2dd7db..main` keeps the branch base (and therefore the fast-forward to origin) intact. A bare `--all` rewrites the root as well, and the push stops being a fast-forward — recover by re-cloning the pre-rewrite bundle, never by forcing.
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `62beb06` — assets: re-encode the reference mocks as WebP — 27.1 MB → 2.9 MB (10.8%).
-- Working tree: 3 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `8585206` — docs: mocks are WebP now; handover and push notes follow.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `8585206` | 2026-11-14 | docs: mocks are WebP now; handover and push notes follow |
 | `62beb06` | 2026-11-14 | assets: re-encode the reference mocks as WebP — 27.1 MB → 2.9 MB (10.8%) |
 | `283ad3c` | 2026-11-14 | chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them |
 | `5d1a604` | 2026-11-14 | docs: PUSH-TO-GIT records the credential probe and the exact remote/local divergence |
@@ -223,7 +225,6 @@ First tasks:
 | `67aa7ea` | 2026-11-14 | build: every build now ships a verified zip; add push tooling |
 | `9cac731` | 2026-11-14 | docs: record the packaging commands; bundle is now built on demand (workspace budget) |
 | `3eaad5e` | 2026-11-14 | chore: regenerate HANDOVER.md |
-| `c330068` | 2026-11-14 | polish: AI Copy toolbar pill contrast (violet tint, pressed-state fill) |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
