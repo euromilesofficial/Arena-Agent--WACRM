@@ -1,70 +1,56 @@
 # Pushing this to `euromilesofficial/Arena-Agent--WACRM`
 
-**Status: not pushed.** GitHub's `main` is at **`d2dd7db`** — *"Add Module 3 (Pages) spec review"*. Everything from Module 3 onward exists **only in this workspace**.
+**Status: still not pushed — the token did not arrive in this sandbox.** I probed every place it could have landed before writing this:
 
-| | |
+| Where a token would be | Result |
 |---|---|
-| Local `repo/` HEAD | `main` — **18 commits ahead of GitHub**, 0 behind → a clean **fast-forward** |
-| Pushed so far | up to `module-2-complete` (`203abcf`) — the two tags GitHub has |
-| Local only | `module-3-complete`, `module-4-complete`, `module-4-ai` + 18 commits, 83 changed files, +11,622 lines |
-| Blocking issue | pushing needs a **write credential**. The repo is public to read (`git ls-remote` works), but `git push` stops at `could not read Username for 'https://github.com'`. No token exists in this sandbox, and I will not ask you to paste one into chat. |
+| `GITHUB_TOKEN` / `GH_TOKEN` in the environment | not set (`env` has 15 entries, none of them a credential) |
+| `~/.git-credentials`, `~/.netrc` | do not exist |
+| `git config --global` / `--system` credential helper | none configured |
+| a token file anywhere in the workspace or `/tmp` | none (`grep` for `ghp_*` / `github_pat_*` finds nothing) |
+| Arena **GitHub connector** | `list_connector_tools("github")` → `unsupported` (not an available connector) |
+| platform-injected credential (`push --dry-run`) | `fatal: could not read Username for 'https://github.com'` |
 
-Nothing of yours is rewritten: my commits sit on top of your `main`, so the merge is `--ff-only`.
-
----
-
-## Option A — you run one command with your own token (fastest)
-
-In a terminal that has this workspace (or after downloading `wacrm-app.bundle` + copying it next to the repo):
-
-```bash
-GITHUB_TOKEN=ghp_xxx ./push-to-github.sh
-```
-
-`push-to-github.sh` is in the workspace root and does exactly five things: restores the git identity (this sandbox does not persist `.gitconfig`), refuses to push a dirty tree, fetches `origin`, **refuses any non-fast-forward** (never `--force`), then pushes `main` + all tags and verifies that the remote head equals the local head. The token is used for a single command — it is never written to `.git/config`, to the remote URL, or to a file. Required scope: **Contents: Read and write**.
-
-## Option B — no token leaves your machine
-
-```bash
-git clone https://github.com/euromilesofficial/Arena-Agent--WACRM.git
-cd Arena-Agent--WACRM
-
-# wacrm-app.bundle (9.2 MB) is in the workspace root
-git fetch /path/to/wacrm-app.bundle main:agent/main
-git log --oneline agent/main        # 18 commits to inspect
-git diff main..agent/main --stat    # 83 files, +11,622 / -117
-
-git merge --ff-only agent/main      # fast-forward, no merge commit
-git push origin main
-git push origin --tags              # module-3-complete, module-4-complete, module-4-ai
-```
-
-## Option C — you'd rather review it as a PR
-
-Same as B, but stop before the merge:
-
-```bash
-git push origin agent/main
-# open a PR from agent/main → main
-```
+Read access works — `git ls-remote` returns the real refs — so this is purely a missing write credential, not a network or permissions problem with the repository.
 
 ---
 
-## What is in those 18 commits
+## Where the two sides stand
+
+```
+GitHub origin/main   d2dd7db   "Add Module 3 (Pages) spec review"
+local main           d821c8a   32 commits · 25 ahead · 0 behind  → clean fast-forward
+                               107 tracked files · 5 tags · includes uploads/
+on GitHub now        module-1-and-2-import, module-2-complete  (nothing later)
+```
+
+Everything from Module 3's build onward is local only: the Module 3 build, the whole Module 4 builder, the interlink plan, **AI mode**, the packaging automation, and now the **reference mocks**.
+
+## One command closes it
+
+```bash
+GH_TOKEN=github_pat_xxx ./push-to-github.sh      # or GITHUB_TOKEN=…
+```
+
+What the script does, in order: restores the git identity and `core.hooksPath` (this sandbox does not persist `.gitconfig`), refuses to push a dirty tree, fetches `origin`, **refuses any non-fast-forward** (no `--force` anywhere), pushes `main` **and all tags**, then compares the remote head with the local head and fails loudly if they differ. The token is passed inline to those two commands only — never written to `.git/config`, a remote URL, a log file, or shell history. Required scope: **Contents: Read and write**.
+
+If you would rather not hand over a token at all, say so and I will regenerate `wacrm-app.bundle` (9 MB) so you can `git fetch`/`merge --ff-only` from it locally — that artefact was deleted during the clean-up because `repo/` already holds the same history.
+
+---
+
+## What is in the 25 unpushed commits
 
 | Range | Contents |
 |---|---|
-| `d2dd7db → 6e8749e` | Module 3 build (Pages & Routes): registry, tree, inspector, modals, deep links, 106 + 40 checks |
-| `6e8749e → b71a563` | Module 4 build (Visual Builder): three panels, drag, autosave + CAS conflict, revisions, publish handoff, 97 + 47 checks |
-| `b71a563 → 2025d0a` | `MODULE-5-REVIEW.md` §11 — the interlink spine and the palette benchmark |
-| `2025d0a → c767062` | Hook execute-bit fix and the matching handover trap |
-| `c767062 → c330068` | **AI mode**: prompt → page generation, plan-then-compose, in-canvas rewrite, `AI-BUILDER-SPEC.md`, `INTERLINK-PLAN.md`, `BACKEND-PLAN.md` §7.20, `qa_ai.py` 60 checks |
+| `d2dd7db → 6e8749e` | Module 3 build (Pages & Routes) — registry, tree, inspector, modals, deep links |
+| `6e8749e → b71a563` | Module 4 build (Visual Builder) — three panels, drag, autosave + CAS conflict, revisions, publish handoff |
+| `b71a563 → 2025d0a` | `MODULE-5-REVIEW.md` §11 — interlink spine + palette benchmark |
+| `2025d0a → c767062` | hook execute-bit fix + the matching handover trap |
+| `c767062 → c330068` | **AI mode** — prompt → page generation, plan-then-compose, in-canvas rewrite, `AI-BUILDER-SPEC.md`, `INTERLINK-PLAN.md`, `BACKEND-PLAN.md` §7.20, `qa_ai.py` |
+| `c330068 → d821c8a` | packaging automation (`scripts/package.mjs`), push tooling, **`uploads/` committed**, QA screenshots untracked |
 
-## Kept out of the repo on purpose
+## After the push lands
 
-`node_modules/`, `dist/`, `*.zip`, `*.bundle` — all four are rebuildable, and the repo is meant to be a checkout that runs immediately: source + the built `WACRM-CMS.html` + the QA harnesses + the reviews.
-
-## After the push
-
-- Delete `wacrm-app.bundle` (9 MB) — it only exists to carry history off this machine.
-- Every subsequent `npm run build` refreshes `wacrm-app.zip` automatically (`scripts/package.mjs`), so the artefact and the commit never drift.
+- Delete nothing — `repo/` is already the minimal copy.
+- Every `npm run build` rewrites `wacrm-app.zip` and fails if the app inside it differs from the build, so the artefact and the commit cannot drift.
+- The mocks stay in Git only; read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`, verify the folder with `sha256sum -c MANIFEST.sha256` inside `repo/uploads/`.
