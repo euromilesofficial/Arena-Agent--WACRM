@@ -11,6 +11,7 @@ import { Btn, Tip } from "@/components/ui";
 import { Canvas, DEVICE_W, type Device, type DropTarget } from "@/components/builder/Canvas";
 import { Library, type LibTab } from "@/components/builder/Library";
 import { Inspector, type InspTab } from "@/components/builder/Inspector";
+import { AiPanel, type AiMode, type AiPanelState } from "@/components/builder/AiPanel";
 import {
   BlocksPreview, ConflictModal, LeaveWithUnsaved, LinkPicker, MediaPicker, PublishModal,
   RevisionsModal, SaveTemplateModal, TemplateUseModal
@@ -19,10 +20,10 @@ import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { takeHandoff } from "@/lib/builder-handoff";
 import type { CmsPage } from "@/lib/cms-pages";
-import { BuilderAPI, PAGE_TOO_LARGE, streamCopy } from "@/lib/builder-db";
+import { BuilderAPI, PAGE_TOO_LARGE, streamCopy, streamPlan, topicFrom } from "@/lib/builder-db";
 import {
   canNest, docIssues, duplicateNode, findNode, insertNode, labelOf, moveNode,
-  PAGE_TEMPLATES, removeNode, replaceNode, SECTION_PRESETS,
+  PAGE_TEMPLATES, REGISTRY, removeNode, replaceNode, SECTION_PRESETS,
   type BlockDef, type BlockNode, type PageTemplate, type SectionPreset
 } from "@/lib/builder";
 
@@ -274,6 +275,113 @@ export function Builder() {
     return () => window.clearTimeout(t);
   }, [writeHash]);
 
+  /* ---------- AI mode (composer over the canvas) ---------- */
+  const [aiPanel, setAiPanel] = useState<AiPanelState | null>(null);
+  const panelHandle = useRef<{ cancel: () => void } | null>(null);
+
+  const selectedText = useCallback(() => {
+    if (!selId || !selEl) return "";
+    return String(findNode(docRef.current, selId)?.props?.[selEl] ?? "");
+  }, [selId, selEl]);
+
+  const openAiPanel = useCallback((mode: AiMode = "page") => {
+    const src = selectedText();
+    const m: AiMode = mode === "copy" && !src.trim() ? "page" : mode;
+    setAiPanel({
+      mode: m, prompt: "", stage: "idle", plan: [], planDone: false, text: "",
+      source: m === "copy" ? src : undefined,
+      label: m === "copy" ? src.slice(0, 42) : undefined
+    });
+  }, [selectedText]);
+
+  const closeAiPanel = useCallback(() => { panelHandle.current?.cancel(); setAiPanel(null); }, []);
+
+  const runAiPanel = useCallback(() => {
+    const s = aiPanel;
+    if (!s || s.stage === "running") return;
+    const prompt = s.prompt.trim();
+    if (!prompt) return;
+    panelHandle.current?.cancel();
+
+    if (s.mode === "copy") {
+      const src = s.source ?? "";
+      if (!src.trim()) { setAiPanel({ ...s, stage: "error", message: "There is no text to rewrite in this element." }); return; }
+      /* the prompt picks the rewrite rule; the rewrite itself only touches the author's words */
+      const action = /short|concise|trim|one sentence|cut/i.test(prompt) ? "shorten"
+        : /formal|professional|corporate/i.test(prompt) ? "formal"
+        : /punch|bold|strong|hook|engag/i.test(prompt) ? "punchier" : "improve";
+      setAiPanel({ ...s, stage: "running", text: "", message: undefined });
+      panelHandle.current = streamCopy(src, action as any,
+        (t) => setAiPanel((p) => (p ? { ...p, stage: "running", text: t } : p)),
+        (final) => setAiPanel((p) => (p ? { ...p, stage: "ready", text: final, planDone: true } : p)),
+        (msg) => setAiPanel((p) => (p ? { ...p, stage: "error", message: msg } : p)));
+      return;
+    }
+
+    setAiPanel({ ...s, stage: "running", plan: [], planDone: false, text: "", message: undefined });
+    panelHandle.current = streamPlan(prompt,
+      (rows) => setAiPanel((p) => (p ? { ...p, plan: rows } : p)),
+      (rows) => setAiPanel((p) => (p ? { ...p, plan: rows, planDone: true, stage: "ready" } : p)),
+      (msg) => setAiPanel((p) => (p ? { ...p, stage: "error", message: msg } : p)),
+      s.mode === "section" ? 1 : 6);
+  }, [aiPanel]);
+
+  const insertAiPanel = useCallback(() => {
+    const s = aiPanel;
+    if (!s || s.stage !== "ready") return;
+
+    if (s.mode === "copy") {
+      if (!selId || !selEl) return;
+      const node = findNode(docRef.current, selId);
+      commit(replaceNode(docRef.current, selId, (n) => ({ ...n, props: { ...n.props, [selEl]: s.text } })));
+      setAiPanel(null);
+      setSelEl(null);
+      app.toast({ type: "success", title: "Copy replaced", sub: `${node ? labelOf(node) : "Block"} · ⌘Z to undo` });
+      return;
+    }
+
+    const wanted = s.mode === "section" ? s.plan.slice(0, 1) : s.plan;
+    const room = Math.max(0, PAGE_LIMIT - docRef.current.length);
+    const take = wanted.slice(0, room);
+    if (!take.length) { app.toast({ type: "warn", title: "Page is at the block limit", sub: PAGE_TOO_LARGE }); return; }
+
+    const topic = topicFrom(s.prompt);
+    /* a generated form block must be wired to a real saved form, not left
+       as an empty shell — the visitor's submission has to reach the CRM */
+    const savedForm = BuilderAPI.forms(siteId)[0];
+    const blocks = take.map((g, i) => {
+      const node = REGISTRY[g.type].defaults();
+      if (g.variant) node.variant = g.variant;
+      if (i === 0 && topic && node.props.eyebrow !== undefined) node.props = { ...node.props, eyebrow: topic };
+      if (g.type === "form" && savedForm && !node.props.formId) node.props = { ...node.props, formId: savedForm.id };
+      return node;
+    });
+    const unboundForm = take.some((g) => g.type === "form") && !savedForm;
+
+    const replacing = docRef.current.length === 0;
+    if (s.mode === "section") {
+      const at = selId ? docRef.current.findIndex((n) => n.id === selId) + 1 : docRef.current.length;
+      let next = docRef.current;
+      blocks.forEach((b, k) => { next = insertNode(next, b, { parentId: null, index: at + k }); });
+      commit(next);
+      setSelId(blocks[0].id);
+    } else if (replacing) {
+      commit(blocks);
+      setSelId(blocks[0]?.id ?? null);
+    } else {
+      let next = docRef.current;
+      blocks.forEach((b, k) => { next = insertNode(next, b, { parentId: null, index: docRef.current.length + k }); });
+      commit(next);
+      setSelId(blocks[0]?.id ?? null);
+    }
+    setAiPanel(null);
+    app.toast({
+      type: "success",
+      title: s.mode === "section" ? "Section generated" : replacing ? "Page generated" : "Sections added below your page",
+      sub: `${blocks.length} block${blocks.length === 1 ? "" : "s"}${unboundForm ? " · form needs a saved form" : ""} · draft copy, editable · ⌘Z to undo`
+    });
+  }, [aiPanel, commit, selId, selEl, siteId, app]);
+
   /* ---------- AI ---------- */
   const [ai, setAi] = useState<{ stage: "idle" | "streaming" | "ready" | "error"; text: string; message?: string } | null>(null);
   const [aiAction, setAiAction] = useState<string | null>(null);
@@ -288,7 +396,8 @@ export function Builder() {
         /* never swallow Escape while a dialog or popover owns it — state churn here
            re-registers the dialog's own listener mid-dispatch and it never fires */
         if (document.querySelector(".overlay, .modal, .drawer, .wb-pub-menu")) return;
-        if (ai) { aiHandle.current?.cancel(); setAi(null); setSelEl(null); }
+        if (aiPanel) { panelHandle.current?.cancel(); setAiPanel(null); }
+        else if (ai) { aiHandle.current?.cancel(); setAi(null); setSelEl(null); }
         else if (selEl) setSelEl("");
         else if (selId) setSelId(null);
       }
@@ -296,7 +405,7 @@ export function Builder() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
     /* eslint-disable-next-line */
-  }, [undo, redo, saveNow, ai, selEl, selId]);
+  }, [undo, redo, saveNow, ai, aiPanel, selEl, selId]);
 
   const askAi = useCallback((action: string) => {
     if (!selId || !selEl) return;
@@ -583,6 +692,12 @@ export function Builder() {
               ))}
             </div>
             <div className="wb-cbar-r">
+              <button className={`wb-aicb${aiPanel ? " is-on" : ""}`} data-ai-open="1" title="AI Copy — rewrite a line or build a page"
+                aria-label="AI Copy" aria-pressed={!!aiPanel}
+                onClick={() => (aiPanel ? closeAiPanel() : openAiPanel(selEl ? "copy" : "page"))}>
+                <Icon name="sparkles" size={12} /> AI Copy
+              </button>
+              <span className="wb-cbar-sep" />
               <button className="wb-toolbar-btn" onClick={undo} disabled={!past.length} aria-label="Undo" title="Undo (⌘Z)"><Icon name="refresh" size={13} className="flip" /></button>
               <button className="wb-toolbar-btn" onClick={redo} disabled={!future.length} aria-label="Redo" title="Redo (⌘⇧Z)"><Icon name="refresh" size={13} /></button>
               <label className="wb-zoom">
@@ -614,9 +729,14 @@ export function Builder() {
               <div className="wb-empty-canvas" data-empty-canvas="1" data-slot-end="1">
                 <div className="wb-cs-ico"><Icon name="blocks" size={18} /></div>
                 <b>This page has no blocks yet</b>
-                <span>Add your first block, or start from a section.</span>
+                <span>Describe the page and let AI draft it, or build it block by block.</span>
+                <button className="wb-empty-ai" data-empty-ai="1" onClick={() => openAiPanel("page")}>
+                  <span className="wb-ea-ico"><Icon name="sparkles" size={13} /></span>
+                  <span className="wb-ea-txt"><b>Build this page with AI</b><i>One sentence is enough — you edit every block after.</i></span>
+                  <span className="wb-ea-go"><Icon name="chevRight" size={12} /></span>
+                </button>
                 <div className="flex gap8">
-                  <Btn variant="primary" icon="plus" onClick={() => { setLibTab("blocks"); setLibOpen(true); }}>Add your first block</Btn>
+                  <Btn icon="plus" onClick={() => { setLibTab("blocks"); setLibOpen(true); }}>Add your first block</Btn>
                   <Btn icon="layers" onClick={() => { setLibTab("sections"); setLibOpen(true); }}>Browse sections</Btn>
                   <Btn icon="file" onClick={() => { setLibTab("pages"); setLibOpen(true); }}>Use a template</Btn>
                 </div>
@@ -626,7 +746,8 @@ export function Builder() {
               <Canvas doc={doc} ctl={{
                 selId, selEl, device, zoom, scale: fitScale,
                 drop,
-                ai,
+                /* one AI surface at a time: the composer owns the screen while open */
+                ai: aiPanel ? null : ai,
                 aiAction,
                 onSelect: (id) => { setSelId(id); if (!id) setSelEl(null); setAi(null); },
                 onSelectEl: (id, el) => { setSelId(id); setSelEl(el); setAi({ stage: "idle", text: "" }); },
@@ -647,6 +768,21 @@ export function Builder() {
             )}
             {drag && <div className="wb-ghost" ref={ghost}><Icon name="blocks" size={12} /> {drag.label}</div>}
           </div>
+
+          {aiPanel && (
+            <AiPanel
+              state={aiPanel}
+              maxBlocks={PAGE_LIMIT}
+              room={Math.max(0, PAGE_LIMIT - doc.length)}
+              hasSelection={!!(selId && selEl && selectedText().trim())}
+              onMode={(m) => setAiPanel({ ...aiPanel, mode: m, stage: "idle", plan: [], planDone: false, text: "", message: undefined, source: m === "copy" ? selectedText() : undefined, label: selectedText().slice(0, 42) })}
+              onPrompt={(v) => setAiPanel({ ...aiPanel, prompt: v })}
+              onRun={runAiPanel}
+              onStop={() => { panelHandle.current?.cancel(); setAiPanel({ ...aiPanel, stage: "idle", plan: [], planDone: false, text: "" }); }}
+              onInsert={insertAiPanel}
+              onClose={closeAiPanel}
+            />
+          )}
         </div>
 
         {/* ---------------- inspector ---------------- */}

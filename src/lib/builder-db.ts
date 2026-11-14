@@ -8,7 +8,7 @@
    ============================================================ */
 import { DBX } from "./data";
 import { SAMPLE_IMAGES } from "./builder-images";
-import { PAGE_TEMPLATES, seedStudyAbroad, uid, type BlockNode } from "./builder";
+import { PAGE_TEMPLATES, seedStudyAbroad, uid, type BlockNode, type BlockType } from "./builder";
 
 export interface Draft {
   pageId: string;
@@ -151,7 +151,7 @@ function summarise(prev: BlockNode[], next: BlockNode[]): string {
 export const PAGE_TOO_LARGE = "This page has 40 blocks, the prototype limit.";
 
 export const BuilderAPI = {
-  mode: { fail: false, emptyLibrary: false, conflict: false, aiError: false },
+  mode: { fail: false, emptyLibrary: false, conflict: false, aiError: false, noAiProvider: false, aiQuota: false },
 
   async getDraft(pageId: string): Promise<Draft> {
     await wait(180, 380);
@@ -314,7 +314,10 @@ export function transform(text: string, action: AiAction): string {
       if (one.split(" ").length > 6 && one.includes(",")) one = one.split(",")[0];
       const words = one.split(" ");
       if (words.length > 8) one = words.slice(0, 7).join(" ");
-      return `${cap(tidy(one)).replace(/[.,;:]$/, "")}.`;
+      /* a short line is already its own short version — don't staple a full stop
+         onto a heading that never had one */
+      const tail = /[.!?]$/.test(src) ? "." : "";
+      return `${cap(tidy(one)).replace(/[.,;:]$/, "")}${tail}`;
     }
     case "formal":
       return cap(tidy(src
@@ -346,5 +349,111 @@ export function streamCopy(text: string, action: AiAction, onToken: (soFar: stri
     window.setTimeout(step, 22 + Math.random() * 34);
   };
   window.setTimeout(step, 260);
+  return h;
+}
+
+
+/* ---------------- AI: page generation (deterministic, fact-free) ----------------
+
+   The prototype never calls a model. It plans sections from the words the editor
+   typed, then composes real blocks from the registry, so what lands on the canvas
+   is inspectable, editable and undoable — and it cannot invent a number, a claim
+   or a testimonial. The real endpoint keeps this contract (see BACKEND-PLAN §7.19)
+   and the UI does not change. */
+
+export type AiScope = "element" | "block" | "section" | "page";
+
+export const AI_PROVIDER = {
+  label: "Gemini 2.5 Flash",
+  source: "Workspace AI provider",
+  model: "google/gemini-2.5-flash"
+};
+
+/** Mirrors `ai_usage_daily` — the workspace's daily budget, not a global one. */
+export const AI_BUDGET = { used: 34, cap: 200 };
+
+export interface GenSection { type: BlockType; variant?: string; label: string; why: string }
+
+const PLANS: { match: RegExp; plan: GenSection[] }[] = [
+  { match: /book|consult|counsel|appointment|call|demo/i, plan: [
+    { type: "hero", label: "Hero", why: "states the offer in one line" },
+    { type: "featureGrid", variant: "steps", label: "Three-step booking", why: "removes friction before the form" },
+    { type: "form", label: "Booking form", why: "the conversion point, above the fold on mobile" },
+    { type: "faq", label: "FAQ", why: "answers the four objections that stop a booking" }
+  ] },
+  { match: /scholar|fund|grant|fee|tuition/i, plan: [
+    { type: "hero", label: "Hero", why: "names the funding outcome" },
+    { type: "table", label: "Awards table", why: "compares what a reader can actually get" },
+    { type: "faq", label: "Eligibility FAQ", why: "pre-empts the eligibility question" },
+    { type: "ctaSection", label: "Closing CTA", why: "one action at the end of the read" }
+  ] },
+  { match: /program|course|univers|degree|study|master/i, plan: [
+    { type: "hero", label: "Hero", why: "leads with the programme promise" },
+    { type: "featureGrid", variant: "stats", label: "Proof strip", why: "four numbers a parent can scan" },
+    { type: "featureGrid", variant: "media", label: "Destinations", why: "shows where students actually go" },
+    { type: "pricing", label: "Packages", why: "puts a price next to the promise" },
+    { type: "form", label: "Enquiry form", why: "captures the lead at the decision point" }
+  ] },
+  { match: /about|team|story|who we are|company/i, plan: [
+    { type: "heading", label: "Section intro", why: "frames the story" },
+    { type: "text", label: "Body copy", why: "the narrative itself" },
+    { type: "testimonials", label: "Student voices", why: "proof that the story is real" },
+    { type: "quote", label: "Pull quote", why: "one line that survives a screenshot" }
+  ] },
+  { match: /event|fair|webinar|workshop|seminar/i, plan: [
+    { type: "hero", label: "Hero", why: "date and place first" },
+    { type: "list", label: "Agenda", why: "someone decides to attend from the running order" },
+    { type: "form", label: "Registration", why: "register while intent is highest" },
+    { type: "faq", label: "Logistics FAQ", why: "venue, cost, children, parking" }
+  ] },
+  { match: /contact|reach|support|talk/i, plan: [
+    { type: "heading", label: "Section intro", why: "sets the response expectation" },
+    { type: "form", label: "Contact form", why: "the one action on the page" },
+    { type: "faq", label: "Support FAQ", why: "deflects what the form would otherwise receive" }
+  ] }
+];
+
+const DEFAULT_PLAN: GenSection[] = [
+  { type: "hero", label: "Hero", why: "one promise, one action" },
+  { type: "featureGrid", variant: "icons", label: "Benefits", why: "three reasons to keep reading" },
+  { type: "testimonials", label: "Testimonials", why: "someone else says it for you" },
+  { type: "form", label: "Lead form", why: "the conversion point" }
+];
+
+/** Intent matching over the editor's own words — deterministic, inspectable. */
+export function planFor(prompt: string): GenSection[] {
+  const hit = PLANS.find((p) => p.match.test(prompt));
+  return (hit ? hit.plan : DEFAULT_PLAN).slice(0, 6);
+}
+
+/** Derives a 3-word eyebrow from the editor's own words — nothing is invented. */
+const STOP = new Set(["a","an","the","to","for","of","in","on","with","and","or","my","our","your","that","this","is","are","be","it","we","i","free","page","landing"]);
+export function topicFrom(prompt: string): string {
+  const words = prompt.toLowerCase().replace(/[^\p{L}\p{N}\s'-]/gu, " ").split(/\s+/).filter(Boolean);
+  const keep = words.filter((w) => !STOP.has(w));
+  const pick = (keep.length ? keep : words).slice(0, 3).join(" ");
+  return pick.toUpperCase();
+}
+
+export const AI_PROMPT_MIN = 3;
+export const AI_PROMPT_MAX = 240;
+
+/** Streams the plan in, section by section. Same shape the real SSE endpoint returns. */
+export function streamPlan(prompt: string, onStep: (rows: GenSection[]) => void, onDone: (rows: GenSection[]) => void, onError: (msg: string) => void, limit = 6): StreamHandle {
+  const rows = planFor(prompt).slice(0, limit);
+  let i = 0;
+  let alive = true;
+  const h: StreamHandle = { text: "", done: false, cancel: () => { alive = false; h.done = true; } };
+  const step = () => {
+    if (!alive) return;
+    if (BuilderAPI.mode.noAiProvider) { onError("No AI provider is connected to this workspace."); h.done = true; return; }
+    if (BuilderAPI.mode.aiQuota) { onError("The workspace used its daily AI budget. It resets at midnight UTC."); h.done = true; return; }
+    if (BuilderAPI.mode.aiError) { onError("The assistant could not be reached. Nothing was added to the page."); h.done = true; return; }
+    if (i >= rows.length) { h.done = true; onDone(rows); return; }
+    i += 1;
+    onStep(rows.slice(0, i));
+    window.setTimeout(step, 300 + Math.random() * 220);
+  };
+  window.setTimeout(step, 380);
   return h;
 }

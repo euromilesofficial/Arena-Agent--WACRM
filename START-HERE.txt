@@ -37,7 +37,9 @@ Which file is which
                     disk it shows a notice and forwards to WACRM-CMS.html.
   src/              React 19 + TypeScript source (what npm run dev serves)
   serve.py          zero-dependency static server (Python 3, no packages)
-  BACKEND-PLAN.md   the backend contract (§7.19 covers the builder)
+  BACKEND-PLAN.md   the backend contract (§7.19 the builder, §7.20 the interlink)
+  AI-BUILDER-SPEC.md  AI mode: build a page / add a section / rewrite copy
+  INTERLINK-PLAN.md   CMS ↔ CRM decisions (D1–D8) + the automation matrix
   MODULE-1..4-REVIEW.md  build-vs-spec review per module, with the defects found
   MODULE-5-REVIEW.md  block library vs the industry + the WACRM CRM integration plan
   MODULE-2-SPEC.md  the Sites & Domains UI/UX architecture specification

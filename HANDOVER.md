@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 05:43:18 UTC · **generated against commit** `4e5b188` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 06:33:42 UTC · **generated against commit** `c767062` · **working tree** 27 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -42,10 +42,10 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 1,021,844 B (998 kB) · gzip 361 kB |
-| md5 | `e5853efc3fd48af73798c280f017f585` |
-| sha256 (first 16) | `4f927f9573c7c7d6` |
-| Built | 2026-11-14 05:42:22 |
+| Size | 1,042,053 B (1018 kB) · gzip 367 kB |
+| md5 | `6989d490fac01c280a77840483ad7557` |
+| sha256 (first 16) | `1f8935aa925ca49d` |
+| Built | 2026-11-14 06:21:58 |
 
 Packaged deliverables: `wacrm-app.zip` · `wacrm-app.bundle` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -58,18 +58,19 @@ npm run dev        # http://localhost:5173 while developing
 
 ## 4. Verification (last recorded run)
 
-Recorded 2026-11-14 04:06:05 UTC · node v20.20.2. Re-run with `npm run qa`.
+Recorded 2026-11-14 06:32:36 UTC · node v20.20.2. Re-run with `npm run qa`.
 
 | Suite | Passed | Failed | Time | Covers |
 | --- | --- | --- | --- | --- |
-| `qa_builder.py` | 97 | 0 | 41.7 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
-| `qa_states_m4.py` | 47 | 0 | 43.7 s | M4 state matrix |
-| `qa_pages.py` | 106 | 0 | 122.1 s | M3 registry, tree, inspector, modals, deep links |
-| `qa_states_m3.py` | 40 | 0 | 56.6 s | M3 state matrix |
-| `qa_module2.py` | 48 | 0 | 34.7 s | M2 layout, geometry, data consistency |
-| `qa_states_m1.py` | 39 | 0 | 45.3 s | M1 state matrix |
-| `qa_flows.py` | 38 | 0 | 55.9 s | cross-module interaction script |
-| `qa_react.py` | — | 0 | 4.1 s | full-page render, console clean, no overflow |
+| `qa_ai.py` | 60 | 0 | 34.4 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
+| `qa_builder.py` | 97 | 0 | 42.4 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
+| `qa_states_m4.py` | 47 | 0 | 43.6 s | M4 state matrix |
+| `qa_pages.py` | 106 | 0 | 121.2 s | M3 registry, tree, inspector, modals, deep links |
+| `qa_states_m3.py` | 40 | 0 | 56.7 s | M3 state matrix |
+| `qa_module2.py` | 48 | 0 | 34.8 s | M2 layout, geometry, data consistency |
+| `qa_states_m1.py` | 39 | 0 | 45.7 s | M1 state matrix |
+| `qa_flows.py` | 38 | 0 | 59.1 s | cross-module interaction script |
+| `qa_react.py` | — | 0 | 4.4 s | full-page render, console clean, no overflow |
 
 > All recorded suites are green.
 
@@ -85,24 +86,24 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (21,066 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,263 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 10 | 3,218 | data seams, registries, formatting, no JSX |
-| `src/components/` | 28 | 6,549 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 5 | 2,400 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 3,066 | one tokenised stylesheet (design system) |
-| `qa/` | 44 | — | 44 WebP captures of audited states (evidence, not fixtures) |
+| `src/lib/` | 10 | 3,327 | data seams, registries, formatting, no JSX |
+| `src/components/` | 29 | 6,747 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/views/` | 5 | 2,536 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 3,160 | one tokenised stylesheet (design system) |
+| `qa/` | 56 | — | 56 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 3,066 |
-| `BACKEND-PLAN.md` | 1,317 |
+| `src/styles/app.css` | 3,160 |
+| `BACKEND-PLAN.md` | 1,338 |
+| `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
-| `src/views/Builder.tsx` | 882 |
 | `src/lib/builder.ts` | 824 |
 | `src/views/Pages.tsx` | 789 |
 | `src/lib/store.tsx` | 569 |
@@ -110,7 +111,7 @@ Top files by size:
 | `src/views/Sites.tsx` | 538 |
 | `src/components/builder/Blocks.tsx` | 520 |
 | `src/components/Shell.tsx` | 501 |
-| `qa_pages.py` | 431 |
+| `src/lib/builder-db.ts` | 460 |
 
 ## 6. Data seam and contracts
 
@@ -156,23 +157,24 @@ Decisions already made — do not reopen without the user:
 | D6 | Backend is not built now; every contract is written into BACKEND-PLAN.md instead. | locked |
 | D7 | Prototype states are reachable from the beaker menu (Default / Empty / Error / Publish conflict / Viewer). | locked |
 | D8 | Deep links are the QA contract: every screen must restore from its hash on a cold load. | locked |
+| D13 | undefined | undefined |
+| D14 | undefined | undefined |
 
 ## 8. What is next
 
-**Approve MODULE-5-REVIEW.md §11 (four confirmations), then build Module 5 = Forms & lead capture (the spine), not the palette.**
+**Build the forms spine — the CMS form row, the public submit endpoint contract, consent records and the cms_form source filter on trigger.lead.created. Decisions are closed: see INTERLINK-PLAN.md.**
 
 Blocked on:
 
-- User approval of D1–D6 in MODULE-5-REVIEW.md §6 — nothing is implemented by design.
 - Push to GitHub still needs a fresh PAT (Contents: write); local commits and tags are complete.
 
 First tasks:
 
-1. On approval: build Module 5 — forms list + 3-panel form builder + public submit + consent + source attribution + submissions table.
-2. Ship the Form (CRM) and WhatsApp CTA blocks with it: together they complete the capture→CRM→automation story.
-3. Write BACKEND-PLAN.md §7.20 (forms, consent, WhatsApp CTA, widget embed, booking, products) before the code.
-4. Module 6: Integrations panel (widgets, CTA token, booking, forms) + 'captured on this page' read-only panel.
-5. Module 7: palette 19 → 38 in 8 chips, sections 23 → 32, templates 5 → 7.
+1. Build Module 5 forms: forms list + 3-panel form builder + consent block + public submit + source attribution + submissions index (counts only, no PII in the CMS).
+2. Ship the Form and WhatsApp CTA blocks with it: together they complete capture → CRM → automation.
+3. Write BACKEND-PLAN.md §7.20 (cms_forms, submit, consent, page stats, automation suggestions, publish snapshot) before the code.
+4. Extend the Automation group in the inspector: per-block declared contract + 'Suggest a workflow' handoff into Module 2.
+5. Module 6: Integrations pane.
 
 ## 9. Traps that cost time last time
 
@@ -187,16 +189,21 @@ First tasks:
 - The sandbox drops .git/config between turns, so the origin URL has to be re-added before a push.
 - The clean CRM copy (commit c07cbb6) has no CMS module and no GrapesJS — do not look for cms routes or a second editor; the React builder here is the only CMS.
 - Workspace snapshots and copies drop the execute bit on .githooks/pre-commit — after any restore run chmod +x .githooks/pre-commit and git update-index --chmod=+x .githooks/pre-commit, or git silently ignores the hook.
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `4e5b188` — Restore the pre-commit hook's execute bit.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `c767062` — Handover: record the hook execute-bit trap.
+- Working tree: 27 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `c767062` | 2026-11-14 | Handover: record the hook execute-bit trap |
 | `4e5b188` | 2026-11-14 | Restore the pre-commit hook's execute bit |
 | `2025d0a` | 2026-11-14 | Module 5 review: explain D1-D6 mechanically and propose the spine-first order |
 | `a8b0229` | 2026-11-14 | Handover: regenerate at the review commit |
@@ -208,7 +215,6 @@ First tasks:
 | `1ff3cd8` | 2026-11-14 | Automate the handover: generated HANDOVER.md, QA evidence, pre-commit gate |
 | `f2ff414` | 2026-11-14 | Builder: draw a real monitor / tablet / phone icon family for the device switch |
 | `6e8749e` | 2026-11-14 | Module 4: Visual Builder — 3-panel editor, autosave + CAS, revisions, AI copy |
-| `5add3bb` | 2026-11-14 | Add Module 4 (Visual Builder) review: contract defects, 13 decisions, 12 gaps, cross-module wiring |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
