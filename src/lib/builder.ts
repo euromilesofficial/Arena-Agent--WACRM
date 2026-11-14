@@ -14,9 +14,10 @@ export type BlockType =
   | "container" | "columns" | "divider"
   | "form" | "ctaSection" | "footer";
 
-export type BlockGroup = "Content" | "Media" | "Actions" | "Layout" | "Form & Engagement";
-/** The library's chip row. `Form` spans Actions + Form & Engagement: the
-    approved mock has five chips and no separate Actions chip. */
+export type BlockGroup = "Content" | "Media" | "Layout" | "Form";
+/** The library's chip row — one chip per group, so the chip counts and the
+    KPI counts can never disagree. Module 5 §20 fixes the four categories:
+    Content 10 · Media 2 · Layout 5 · Form 3 = 20. */
 export type LibChip = "All" | "Content" | "Media" | "Layout" | "Form";
 
 export type FieldKind =
@@ -351,7 +352,7 @@ export const REGISTRY: Record<BlockType, BlockDef> = {
   },
 
   button: {
-    type: "button", label: "Button", group: "Actions", icon: "cursor", offered: true,
+    type: "button", label: "Button", group: "Form", icon: "cursor", offered: true,
     hint: "A single call to action with a typed link.",
     content: [
       { key: "label", label: "Label", kind: "text" },
@@ -364,7 +365,7 @@ export const REGISTRY: Record<BlockType, BlockDef> = {
   },
 
   alert: {
-    type: "alert", label: "Alert", group: "Actions", icon: "alert", offered: true,
+    type: "alert", label: "Alert", group: "Content", icon: "alert", offered: true,
     hint: "An inline notice for deadlines and intake cut-offs.",
     content: [
       { key: "tone", label: "Tone", kind: "segmented", options: [{ value: "info", label: "Info" }, { value: "success", label: "Success" }, { value: "warn", label: "Warning" }, { value: "danger", label: "Danger" }] },
@@ -412,7 +413,7 @@ export const REGISTRY: Record<BlockType, BlockDef> = {
   },
 
   form: {
-    type: "form", label: "Form", group: "Form & Engagement", icon: "form", offered: true,
+    type: "form", label: "Form", group: "Form", icon: "form", offered: true,
     hint: "Embeds a published form from Forms & Leads. Fields are owned there, not here.",
     content: [
       { key: "formId", label: "Form", kind: "select", options: [] },
@@ -428,7 +429,7 @@ export const REGISTRY: Record<BlockType, BlockDef> = {
   },
 
   ctaSection: {
-    type: "ctaSection", label: "CTA Section", group: "Form & Engagement", icon: "megaphone", offered: true,
+    type: "ctaSection", label: "CTA Section", group: "Form", icon: "megaphone", offered: true,
     hint: "A closing call to action with one or two buttons.",
     content: [
       { key: "title", label: "Title", kind: "text" },
@@ -448,22 +449,23 @@ export const REGISTRY: Record<BlockType, BlockDef> = {
   },
 
   footer: {
-    type: "footer", label: "Footer", group: "Layout", icon: "sheet", offered: false,
-    hint: "Master-layout footer. Rendered on every page and edited in Layouts & Templates.",
+    type: "footer", label: "Footer", group: "Layout", icon: "sheet", offered: true,
+    paletteLabel: "Footer (master layout)",
+    hint: "Master-layout footer. Inserts into the page footer slot, not the page body.",
     content: [{ key: "note", label: "Note", kind: "text" }],
     style: coreStyle({ padTop: "48", padBottom: "32", bg: "dark", align: "left" }),
     defaults: () => ({ id: uid("ft"), type: "footer", style: {}, props: { note: "" } })
   }
 };
 
-export const GROUP_ORDER: BlockGroup[] = ["Content", "Media", "Actions", "Layout", "Form & Engagement"];
+export const GROUP_ORDER: BlockGroup[] = ["Content", "Media", "Layout", "Form"];
 
 export const CHIPS: { id: LibChip; label: string; groups: BlockGroup[] }[] = [
   { id: "All", label: "All", groups: GROUP_ORDER },
   { id: "Content", label: "Content", groups: ["Content"] },
   { id: "Media", label: "Media", groups: ["Media"] },
   { id: "Layout", label: "Layout", groups: ["Layout"] },
-  { id: "Form", label: "Form", groups: ["Actions", "Form & Engagement"] }
+  { id: "Form", label: "Form", groups: ["Form"] }
 ];
 
 export const ARCHETYPES: BlockDef[] = GROUP_ORDER.flatMap((g) =>
@@ -484,10 +486,12 @@ export const labelOf = (node: BlockNode): string => {
 };
 
 /* ---------------- section presets (23 configurations) ---------------- */
+export type SectionCategory = "Hero" | "Content" | "Features" | "CTA" | "Forms";
+
 export interface SectionPreset {
   id: string;
   name: string;
-  category: "Hero" | "Content" | "Features" | "CTA";
+  category: SectionCategory;
   desc: string;
   build: () => BlockNode[];
 }
@@ -565,7 +569,7 @@ export const SECTION_PRESETS: SectionPreset[] = [
   /* CTA — 6 */
   { id: "sec-cta-banner", name: "CTA Banner", category: "CTA", desc: "Full-width closing call to action",
     build: () => [REGISTRY.ctaSection.defaults()] },
-  { id: "sec-cta-form", name: "Lead Form", category: "CTA", desc: "Enquiry form with a photo",
+  { id: "sec-cta-form", name: "Lead Form", category: "Forms", desc: "Enquiry form with a photo",
     build: () => [REGISTRY.form.defaults()] },
   { id: "sec-cta-buttons", name: "Button Pair", category: "CTA", desc: "Two side-by-side actions",
     build: () => [
@@ -574,7 +578,7 @@ export const SECTION_PRESETS: SectionPreset[] = [
     ] },
   { id: "sec-cta-alert", name: "Deadline Alert", category: "CTA", desc: "A dated intake notice",
     build: () => [REGISTRY.alert.defaults()] },
-  { id: "sec-cta-split", name: "Split CTA with Form", category: "CTA", desc: "Copy on the left, form on the right",
+  { id: "sec-cta-split", name: "Split CTA with Form", category: "Forms", desc: "Copy on the left, form on the right",
     build: () => [
       { ...REGISTRY.heading.defaults(), props: { eyebrow: "NEXT STEPS", text: "Talk to a counsellor this week", sub: "Thirty minutes, no cost, no obligation.", level: "h2" }, style: { align: "left" } },
       REGISTRY.form.defaults()
@@ -588,7 +592,7 @@ export const SECTION_PRESETS: SectionPreset[] = [
     }] }
 ];
 
-export const SECTION_CATEGORIES: ("All" | "Hero" | "Content" | "Features" | "CTA")[] = ["All", "Hero", "Content", "Features", "CTA"];
+export const SECTION_CATEGORIES: ("All" | SectionCategory)[] = ["All", "Hero", "Content", "Features", "CTA", "Forms"];
 export const sectionCount = (cat: string): number =>
   cat === "All" ? SECTION_PRESETS.length : SECTION_PRESETS.filter((s) => s.category === cat).length;
 

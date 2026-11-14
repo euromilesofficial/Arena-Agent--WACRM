@@ -23,7 +23,9 @@
     "Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.",
     "The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.",
     "END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes — run `/home/user/checkpoint.sh \"what changed\"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.",
-    "GitHub credential: /home/user/.gh-token (0600, outside the repo). Expiry date in /home/user/.gh-token-expiry — currently 2026-11-17; checkpoint.sh warns when under 12h remain and prints the regenerate link. Never committed: a pre-commit gate refuses token patterns. If it lapses, the push fails with 401 and nothing is lost — commits stay local until the next checkpoint."
+    "GitHub credential: /home/user/.gh-token (0600, outside the repo). Expiry date in /home/user/.gh-token-expiry — currently 2026-11-17; checkpoint.sh warns when under 12h remain and prints the regenerate link. Never committed: a pre-commit gate refuses token patterns. If it lapses, the push fails with 401 and nothing is lost — commits stay local until the next checkpoint.",
+    "Catalogue counts are computed from the registry (20 types · 23 sections · 14 saved). If a number appears twice in the source, one of them is a defect, not a default.",
+    "Only Insert into Page may mutate a page from Module 5, and it must pass `expectRevision` so a stale modal gets a 409."
   ],
   "modules": [
     {
@@ -60,11 +62,11 @@
     },
     {
       "id": "M5",
-      "name": "Block library expansion + CRM integration",
-      "route": "builder",
-      "status": "review delivered — awaiting approval",
-      "evidence": "MODULE-5-REVIEW.md (nothing implemented)",
-      "notes": "Industry block-library comparison (19 offered vs ~40 Elementor free / ~60 Webflow / 90+ Gutenberg / 25+ HubSpot) + the CRM integration map. Proposal: 19 → 38 offered blocks in 8 chips, 23 → 32 sections, 5 → 7 templates, plus a Forms module (Module 6). Verdict on the CRM: no web form builder exists — there is a WhatsApp Flows builder, a custom-fields registry (19 types × 6 entities) and four narrow capture points; recommended path is a CMS-side Forms module writing leads + consent into the CRM. §11 of the review explains D1–D6 mechanically and proposes flipping the order: forms/lead-capture spine first, interlink surfaces second, palette expansion third."
+      "name": "Block Library",
+      "route": "#/library",
+      "status": "done",
+      "evidence": "qa_library.py 72/72 · qa_builder.py 98/98",
+      "notes": "Four views (All · Native 20 · Sections 23 · Saved 14), computed KPI/in-use counts, filter rail, grouped grid + list, inspector (Overview/Properties/Compatibility · Overview/Structure/Usage), Insert into Page with six outcomes, Create from page section, duplicate, guarded delete."
     }
   ],
   "decisions": [
@@ -120,20 +122,17 @@
     }
   ],
   "next": {
-    "headline": "Build the forms spine — the CMS form row, the public submit endpoint contract, consent records and the cms_form source filter on trigger.lead.created. Decisions are closed: see INTERLINK-PLAN.md.",
+    "headline": "Module 5 (Block Library) is complete: four views, computed counts, inspector tab sets and the single Insert-into-Page mutation path. Nothing is blocked.",
     "blockedOn": [
-      "Push to GitHub: needs a write credential (run /home/user/push-to-github.sh with GITHUB_TOKEN, or merge wacrm-app.bundle by hand — see PUSH-TO-GIT.md). Local history is complete: 18 commits ahead of origin/main, 0 behind."
+      "Module 6 (Forms & Leads) waits on the next specification or on a go-ahead to use the shape recorded in MODULE-5-REVIEW.md §5.",
+      "Import Template stays disabled until the v1 native interchange format is written (deferred to Module 7).",
+      "The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost)."
     ],
     "tasks": [
-      "Build Module 5 forms: forms list + 3-panel form builder + consent block + public submit + source attribution + submissions index (counts only, no PII in the CMS).",
-      "Ship the Form and WhatsApp CTA blocks with it: together they complete capture → CRM → automation.",
-      "Write BACKEND-PLAN.md §7.20 (cms_forms, submit, consent, page stats, automation suggestions, publish snapshot) before the code.",
-      "Extend the Automation group in the inspector: per-block declared contract + 'Suggest a workflow' handoff into Module 2.",
-      "Module 6: Integrations pane."
-    ],
-    "decided": [
-      "INTERLINK-PLAN.md holds D1–D8 — CMS owns pages/forms, CRM owns people/consent/automation, one writer per fact.",
-      "AI mode is built and QA'd (qa_ai.py 60/60); AI-BUILDER-SPEC.md is the record."
+      "Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.",
+      "Write the Module 6 spec (Forms & Leads): form builder, public submit endpoint, consent snapshot, crm_form:<slug> lead source. The shape is already in MODULE-5-REVIEW.md §5 and BACKEND-PLAN.md.",
+      "Only then: Import Template's v1 interchange validator (Module 5 §16), and the deferred 19 → 38 palette expansion if it is still wanted.",
+      "Keep the count contract: the library, the builder palette and the KPI strip must return the same numbers after every change."
     ]
   },
   "environment": {
@@ -184,6 +183,11 @@
       {
         "file": "qa_react.py",
         "covers": "full-page render, console clean, no overflow"
+      },
+      {
+        "file": "qa_library.py",
+        "name": "Module 5 — Block Library",
+        "assertions": 72
       }
     ]
   },
@@ -268,7 +272,11 @@
     "uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.",
     "uploads/ is skip-worktree — do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done.",
     "History rewrites must be range-limited: `git filter-branch --index-filter … -- d2dd7db..main` keeps the branch base (and therefore the fast-forward to origin) intact. A bare `--all` rewrites the root as well, and the push stops being a fast-forward — recover by re-cloning the pre-rewrite bundle, never by forcing.",
-    "Push state as of the token handover: origin/main was d2dd7db (Module 3 spec only). Everything from Module 3's build onward — 30 commits — was local until the first successful push; if a session ever finds origin behind again, run checkpoint.sh rather than assuming the work is safe."
+    "Push state as of the token handover: origin/main was d2dd7db (Module 3 spec only). Everything from Module 3's build onward — 30 commits — was local until the first successful push; if a session ever finds origin behind again, run checkpoint.sh rather than assuming the work is safe.",
+    "Module 4's builder palette already owns the `lb-*` CSS namespace. Module 5 shipped as `m5-*` after a half-rendered grid exposed the collision — never reuse `lb-` for a new screen.",
+    "A card grid whose items are flex columns needs `align-items:start`; with the default `stretch`, Chrome resolves the cyclic height and collapses every card to one text line (thumb computed to 1px).",
+    "The section category `Forms` is separate from the block group `Form` (singular). Both are real and are asserted separately in qa_builder.py (C3/C3b) and qa_library.py (C5).",
+    "Playwright needs `LD_LIBRARY_PATH=/tmp/libs/root/usr/lib/x86_64-linux-gnu` after scripts/qa-env.sh — /tmp is wiped between sessions and the libs must be re-fetched with `apt-get download` (no root available)."
   ],
   "continuation": {
     "firstTenMinutes": [

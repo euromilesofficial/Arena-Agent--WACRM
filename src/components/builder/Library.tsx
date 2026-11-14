@@ -259,5 +259,5 @@ export function Library(p: LibraryProps) {
 }
 
 const GROUP_ICON: Record<string, string> = {
-  Content: "type", Media: "image", Actions: "cursor", Layout: "columns", "Form & Engagement": "form"
+  Content: "type", Media: "image", Layout: "columns", Form: "form"
 };

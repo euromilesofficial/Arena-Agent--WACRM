@@ -2,6 +2,8 @@
 
 **Reviewed** your specification v1.0 (31 sections, 14 Nov 2026) · 11 reference mocks · the shipped codebase at `725c9da`
 **Method** every claim below is checked against a file line or a mock pixel, not against memory
+**Status** decisions taken and built — see `MODULE-5-DECISIONS.md`. This review is kept as the record of what was wrong with the specification, not as a to-do list.
+
 **Verdict** the spec is buildable, but **nine decisions are open and three of them are blocking** — the headline numbers, the taxonomy, and the fact that Saved Templates does not exist as data anywhere yet. Nothing was built. Findings first, as you asked.
 
 ---

@@ -75,7 +75,7 @@ async def main():
         ck("4.3 content fields are disabled", await pg.eval_on_selector('.wb-insp-body [data-field]', "e => e.disabled") is True)
         await pg.click("#wb-tab-blocks")
         await pg.wait_for_timeout(250)
-        ck("4.4 tiles still render for a viewer", await n(pg, ".wb-tile") == 19)
+        ck("4.4 tiles still render for a viewer", await n(pg, ".wb-tile") == 20)
         await forced(pg, "Default")
         await pg.wait_for_timeout(600)
 
