@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 05:43:13 UTC · **generated against commit** `2025d0a` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 05:43:18 UTC · **generated against commit** `4e5b188` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -85,7 +85,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (21,065 lines across all tracked text files).
+Source inventory: **48 source files, 15,301 lines** of TS/TSX/CSS (21,066 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -186,16 +186,18 @@ First tasks:
 - git commit fails with 'Author identity unknown' until a repo-local user.name/user.email is set.
 - The sandbox drops .git/config between turns, so the origin URL has to be re-added before a push.
 - The clean CRM copy (commit c07cbb6) has no CMS module and no GrapesJS — do not look for cms routes or a second editor; the React builder here is the only CMS.
+- Workspace snapshots and copies drop the execute bit on .githooks/pre-commit — after any restore run chmod +x .githooks/pre-commit and git update-index --chmod=+x .githooks/pre-commit, or git silently ignores the hook.
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `2025d0a` — Module 5 review: explain D1-D6 mechanically and propose the spine-first order.
-- Working tree: 1 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `4e5b188` — Restore the pre-commit hook's execute bit.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `4e5b188` | 2026-11-14 | Restore the pre-commit hook's execute bit |
 | `2025d0a` | 2026-11-14 | Module 5 review: explain D1-D6 mechanically and propose the spine-first order |
 | `a8b0229` | 2026-11-14 | Handover: regenerate at the review commit |
 | `b71a563` | 2026-11-14 | Module 5 review: block library vs the industry, and what the CRM actually has |
@@ -207,7 +209,6 @@ First tasks:
 | `f2ff414` | 2026-11-14 | Builder: draw a real monitor / tablet / phone icon family for the device switch |
 | `6e8749e` | 2026-11-14 | Module 4: Visual Builder — 3-panel editor, autosave + CAS, revisions, AI copy |
 | `5add3bb` | 2026-11-14 | Add Module 4 (Visual Builder) review: contract defects, 13 decisions, 12 gaps, cross-module wiring |
-| `d32dfc1` | 2026-11-14 | Module 3: Pages & Routes — 3-pane registry, 8 modals, guards, deep links |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
