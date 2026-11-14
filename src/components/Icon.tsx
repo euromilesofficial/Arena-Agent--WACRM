@@ -84,6 +84,9 @@ const P: Record<string, string> = {
     logout: '<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M16 8l4 4-4 4"/><path d="M20 12H9"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="8" r=".8" fill="currentColor" stroke="none"/>',
     key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8"/><path d="m16 4 3 3"/><path d="m13.5 6.5 3 3"/>',
+    monitor: '<rect x="2.5" y="4" width="19" height="12.6" rx="2"/><path d="M8.5 20.4h7"/><path d="M12 16.6v3.8"/>',
+    tablet: '<rect x="4.6" y="2.4" width="14.8" height="19.2" rx="2.4"/><path d="M10.8 18.6h2.4"/>',
+    phone: '<rect x="7.4" y="2.4" width="9.2" height="19.2" rx="2.4"/><path d="M10.8 18.6h2.4"/>',
     pricing: '<path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5v-7Z"/><path d="M4 11h16"/>'
   };
 
