@@ -92,3 +92,33 @@ Ordered by how quickly they'd bite. Each has a cheap fix; none require new conce
 3. **Go/no-go on D1–D9** as written above (I've defaulted to the safest reading in each case; if you don't object I'll build to them).
 
 Everything else is decided and documented above, so building can start the moment you answer — and it will land as one commit with `qa_pages.py` + `qa_states_m3.py` green and a `module-3-complete` tag, exactly like Module 2.
+
+---
+
+## G. As built — what shipped against this contract
+
+| Decision | Landed as |
+| --- | --- |
+| D1 partition | 48 pages = **42 published + 6 draft-only**; `hasUnpublishedChanges` is a separate amber chip + dot on 3 published pages; tabs never double-count |
+| D2 gauge | `round(42/48×100) = 88 %`, `—` when a website has no pages (verified in the empty state) |
+| D3 types | `Standard page` / `Landing page` only; the column, the `All Types` select and the "Landing pages only" switch all read the same field (3 landing pages seeded) |
+| D4 routes | Pages are real route nodes; no folder entity; Home is the root at `/` and its children are top-level routes |
+| D5 children | trashing a parent is refused per page with the children named; the bulk path reports it one-by-one and still lands the successes |
+| D6 homepage | exactly one; `Set as Homepage` disappears on Home itself; Move/Trash are disabled with a `homepage` note; the trash dialog explains the rule |
+| D7 issues | 6 concrete issue instances (missing SEO title ×2, unpublished changes older than a week ×3, orphan ×1); the inspector lists them per page and the funnel filter narrows the registry to those pages |
+| D8 analytics | performance block renders only when the page has views; otherwise `Analytics not available for this page yet` — no fabricated zeros |
+| D9 locale | `English · default`, read-only |
+| D10 builder | full placeholder screen: block rail, document outline, hand-over context (page / route / website / template / layout / blocks / revision), `Preview draft` + `Back to Pages` |
+| D11 colour | violet primary throughout |
+| D12 deep links | `#/pages?site=&tab=&q=&page=&sel=` parsed before first paint and kept in sync; covers cold load, refresh and back/forward |
+
+**Beyond the contract** (each was a hole a user would find in a week):
+
+- Modals carry their own target page — the earlier version acted on whatever was selected before.
+- Detail requests are sequenced, so a fast tree click can never leave the wrong page in the inspector.
+- Bulk selection is pruned to the visible result set.
+- Creation clears filters, lands on page 1 and focuses the new row.
+- Delete permanently is a separate, explicitly irreversible confirm (`DELETE /v1/pages/{id}?hard=1`).
+- Trashed pages get their own inspector (restore window, `Restore Page` / `Delete`) instead of an editor that would fail.
+
+**Verification:** `qa_pages.py` **105/105**, `qa_states_m3.py` **40/40**, plus Module 1–2 regression (`qa_module2.py` 48/48, `qa_states_m1.py` 39/39, `qa_flows.py` 38/38) — all green against `WACRM-CMS.html`. Screenshots: `qa/m3-*.webp` (15 frames: registry, trash, row menu, create steps 1 & 4, bulk, filters, preview, builder, empty, error, viewer, conflict, 1280).

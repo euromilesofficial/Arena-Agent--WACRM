@@ -1,4 +1,4 @@
-# State coverage — Modules 1 & 2
+# State coverage — Modules 1, 2 & 3
 
 Every state below is code-backed in `WACRM-CMS.html` (React 19 + TS build; all reads go through `src/lib/data.ts`, which adds latency and failure paths, so nothing is a static mock in the view layer).
 
@@ -8,6 +8,8 @@ Every state below is code-backed in `WACRM-CMS.html` (React 19 + TS build; all r
 | `qa_states.py` | Module 2 — Sites & Domains states | **25/25** |
 | `qa_module2.py` | Module 2 layout, geometry, data consistency, overflow | **48/48** |
 | `qa_flows.py` | cross-module flows: navigation, publish wizard, palette, drawers | **38 ok / 0 failed** |
+| `qa_pages.py` | Module 3 — Pages & Routes: registry, tree, inspector, 8 modals, guards, deep links, 3 widths | **105/105** |
+| `qa_states_m3.py` | Module 3 — loading, empty, 503, conflict, viewer, empty trash, stale inspector, bulk partial failure, undo | **40/40** |
 
 **Triggering states by hand:** open `WACRM-CMS.html`, then use the `Prototype states` menu (beaker icon, top-right) for Default / Empty (no data in range) / Error / Publish conflict / Permission denied (Viewer). Everything else happens by clicking.
 
@@ -83,3 +85,57 @@ Every state below is code-backed in `WACRM-CMS.html` (React 19 + TS build; all r
 - **TLS `expiring` / renewal failure** — label and colour exist, no seed reaches them.
 
 Each gap has a contract row in `BACKEND-PLAN.md` §7.17, so they are additions rather than redesigns.
+
+---
+
+## Module 3 — Pages & Routes
+
+48 pages on EuroMiles Main: **42 published / 6 drafts / 2 in trash**, gauge `42/48 → 88 %`. Three pages carry unpublished changes (`Home`, `Study Abroad`, `Available Scholarships`); 6 issue instances across the site.
+
+| # | State | What you see | How to reach it | Backend contract |
+| --- | --- | --- | --- | --- |
+| 1 | Loading | 48 skeleton cells in the registry, 8 in the tree, skeleton in the inspector, tab counts show `·` | first paint (~0.6 s) or `Prototype states → Loading` | `GET /v1/pages`, `/v1/page-tree` |
+| 2 | Refresh | rows stay, `syncing…` in the status bar, `Synced just now` on resolve | any mutation, `Refresh Structure` | revalidation |
+| 3 | Service down | red strip `Pages service unavailable (503) — the hierarchy and registry below hold their last known state.` + `Retry` | `Prototype states → Error` | `503` |
+| 4 | Empty website | KPI zeros, gauge `—`, `No pages yet · Create your first page`, tree `No pages yet.`, inspector hint | `Prototype states → Empty` | empty collection |
+| 5 | No search results | `No pages match your search` + `Try a different keyword…` | type `zzz` | client-side |
+| 6 | Empty trash | `The trash is empty · Deleted pages stay recoverable here for 30 days` | a website with nothing deleted | `?tab=trash` |
+| 7 | Tree no-match | `No page matches that search. Clear search` | tree search `zzz` | client-side |
+| 8 | Viewer / read-only | violet strip, `New Page` + every edit/restore/delete control disabled, row menus inert, inspector note | `Prototype states → Permission denied (Viewer)` | `403` |
+| 9 | Selected page gone | inspector replaces itself with `This page is no longer available` + `Refresh list` | `#/pages?sel=pg_does_not_exist`, or deleting the page in another tab | `404` |
+| 10 | Slug taken | inline `This URL is already used by “About Us” on this website.`, `Continue` disabled | create a page with `about-us` | `409 PATH_TAKEN` |
+| 11 | Invalid / reserved slug | inline rule from `slugify` / `validateSlug` (`api`, `cms`, `preview` are reserved) | type `API` | `422 VALIDATION` |
+| 12 | Route change | `Route change: /a → /b · N internal links point here. A 301 redirect will be proposed` inside the edit modal | change the slug of a page with inbound links | `409` + redirect proposal |
+| 13 | Stale save | conflict banner naming the other editor, `Reload theirs` / `Keep mine` | `Prototype states → Publish conflict`, then save any edit | `409 REVISION_CONFLICT` |
+| 14 | Homepage guards | `Set as Homepage` hidden on the homepage itself; `Move`/`Trash` disabled with a `homepage` note; trash modal explains the one-homepage rule | open the menu on `Home` | `422 HOME` |
+| 15 | Parent with children | trash refuses per page: `3 child pages must be moved first: Study in Italy, …` | bulk-trash `Study Abroad` | `422 CHILDREN` |
+| 16 | Move cycle | the page's own subtree is not offered as a new parent; the move button stays disabled until the parent changes | `Move Page…` on any branch | `422 CYCLE` |
+| 17 | Bulk partial failure | confirm lists every selected page, failures are reported one by one, successes still land | select a branch + a leaf → `Move to Trash` | per-page result |
+| 18 | Delete permanently | separate confirm (`Delete Page Permanently? · This cannot be undone`), no undo offered, links warned about | trash tab → `Delete` | `DELETE /v1/pages/{id}?hard=1` |
+| 19 | Restore | modal states the recoverable-until date (`Jun 29, 2025`), restored page returns as a **draft**, `Undo` on the trash toast | trash tab → `Restore Page` | `POST /v1/pages/{id}:restore` |
+| 20 | Preview | signed `pv_…` URL, `noindex, nofollow`, 15-minute life; expired token renders `The preview token expired` + `Regenerate` | toolbar `Preview` (8 % of calls expire on purpose) | `POST /v1/pages/{id}:preview` |
+| 21 | Builder handoff | Module 4 screen: block rail, document outline, hand-over context (page, route, template, layout, revision), `Preview draft` / `Back to Pages` | `Edit Page` on any row | Module 4 scope |
+| 22 | Deep links | `#/pages?site=&tab=&q=&page=&sel=` restore the exact view on a cold load; the URL tracks every change | paste a link | — |
+| 23 | Layout | no horizontal overflow at 1280 / 1440 / 1920; the route column and author filter collapse below 1360 px; the inspector is inline at ≥ 1200 px | resize | — |
+
+### Fixed in this audit (Module 3)
+
+- **A trashed row acted on the previously selected page.** Restore/trash/edit modals read `selectedPage`, so opening the row menu on a trashed row restored whatever page was selected before. Modals now carry their own target (`{ kind, page }`).
+- **A stale detail response could overwrite the newest selection.** `loadDetail` had no request token; switching pages quickly (or creating a page) could leave the inspector on the previous page. Responses are now sequenced and only the newest wins.
+- **Trashing a page reported “deleted permanently”.** The API mutates the page object in place, so `modal.page.trash` was already true by the time the toast was built. The modal reports the mode it ran in.
+- **Bulk actions could touch a page you had filtered away.** The selection is now pruned to the visible result set on every load.
+- **Creating a page left the inspector on the old page and could hide the new one.** Creation clears every narrowing filter, jumps to page 1 and focuses the new row.
+- **The site registry said 48 pages while Pages said 49.** The seed and `sites.pages` now agree (48 live + 2 trashed, counts exclude trash).
+- **`Expand All` / `Collapse All` were toasts only.** They now drive the tree through explicit signals.
+- **Deep links were documented but not parsed.** `#/pages?…` is read before first paint and kept in sync afterwards.
+
+### Still not modelled in Module 3
+
+- **Multi-select drag on the tree** — moving pages is a dialog, not drag-and-drop.
+- **Scheduled publishing per page** — publishing stays a release-level action (Module 6).
+- **Per-page revision history** — the menu item names the module that owns it.
+- **Locale switcher** — single locale by decision (D9); the row is read-only.
+- **Search across websites** — search is scoped to the selected website.
+- **Unsaved-changes prompt** in the builder handoff — there is nothing to lose yet (Module 4).
+
+Each gap has a contract row in `BACKEND-PLAN.md` §8.
