@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 19:45:20 UTC · **generated against commit** `a41df35` · **working tree** 1 uncommitted file(s)
+**Generated** 2026-11-14 19:45:23 UTC · **generated against commit** `22c68d8` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -209,13 +209,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `a41df35` — chore: the handover hook no longer manufactures a commit on every checkpoint.
+- Repo: that git directory is `.`; branch `main`; HEAD `22c68d8` — noop.
 - Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `22c68d8` | 2026-11-14 | noop |
 | `a41df35` | 2026-11-14 | chore: the handover hook no longer manufactures a commit on every checkpoint |
 | `a572c7c` | 2026-11-14 | noop |
 | `28838cc` | 2026-11-14 | security: rotated the credential — 2-day token stored 0600, scope-probed, with an expiry warning at 40h |
@@ -227,7 +228,6 @@ First tasks:
 | `39716da` | 2026-11-14 | docs: record the range-limited rewrite rule |
 | `8585206` | 2026-11-14 | docs: mocks are WebP now; handover and push notes follow |
 | `62beb06` | 2026-11-14 | assets: re-encode the reference mocks as WebP — 27.1 MB → 2.9 MB (10.8%) |
-| `283ad3c` | 2026-11-14 | chore: stop paying twice for the mocks — skip-worktree, plus a guard against losing them |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
