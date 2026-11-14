@@ -204,7 +204,7 @@ if (side.length) {
 }
 w("```bash");
 w("npm ci");
-w("npm run build      # tsc --noEmit && vite build, then copies the single file and regenerates this document");
+w("npm run build      # tsc --noEmit && vite build, copies the single file, regenerates this document, rebuilds wacrm-app.zip");
 w("npm run qa         # every Playwright suite, then rewrites qa/last-run.json and this document");
 w("npm run dev        # http://localhost:5173 while developing");
 w("```");

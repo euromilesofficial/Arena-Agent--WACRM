@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 06:43:30 UTC · **generated against commit** `3eaad5e` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 06:47:00 UTC · **generated against commit** `9cac731`
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,13 +45,13 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,042,053 B (1018 kB) · gzip 367 kB |
 | md5 | `119b71ca861482e33f3ea468629dd44a` |
 | sha256 (first 16) | `904cf420c6e5e625` |
-| Built | 2026-11-14 06:42:00 |
+| Built | 2026-11-14 06:46:59 |
 
-Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
+Packaged deliverables: `wacrm-app.zip` · `wacrm-app.bundle` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
 ```bash
 npm ci
-npm run build      # tsc --noEmit && vite build, then copies the single file and regenerates this document
+npm run build      # tsc --noEmit && vite build, copies the single file, regenerates this document, rebuilds wacrm-app.zip
 npm run qa         # every Playwright suite, then rewrites qa/last-run.json and this document
 npm run dev        # http://localhost:5173 while developing
 ```
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,280 lines across all tracked text files).
+Source inventory: **49 source files, 15,838 lines** of TS/TSX/CSS (22,295 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -144,6 +144,8 @@ Product rules (non-negotiable, they came from the user):
 - Never present generated copy as verified fact; no invented claims, no fake analytics.
 - Dropdown panels must never span the screen. Non-goals: raw HTML/CSS/JS, repeaters, page-level SEO, marketplace, staging, co-editing.
 - Commit and tag every milestone; keep rollback tags; never persist the GitHub token; rebuild the zip on every change.
+- Every build ships a zip: `npm run build` ends with `scripts/package.mjs`, which rewrites /home/user/wacrm-app.zip and verifies the WACRM-CMS.html inside it matches the fresh build.
+- Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.
 
 Decisions already made — do not reopen without the user:
 
@@ -166,7 +168,7 @@ Decisions already made — do not reopen without the user:
 
 Blocked on:
 
-- Push to GitHub still needs a fresh PAT (Contents: write); local commits and tags are complete.
+- Push to GitHub: needs a write credential (run /home/user/push-to-github.sh with GITHUB_TOKEN, or merge wacrm-app.bundle by hand — see PUSH-TO-GIT.md). Local history is complete: 18 commits ahead of origin/main, 0 behind.
 
 First tasks:
 
@@ -193,16 +195,20 @@ First tasks:
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `3eaad5e` — chore: regenerate HANDOVER.md.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `../repo`; branch `main`; HEAD `9cac731` — docs: record the packaging commands; bundle is now built on demand (workspace budget).
+- Working tree: clean.
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `9cac731` | 2026-11-14 | docs: record the packaging commands; bundle is now built on demand (workspace budget) |
 | `3eaad5e` | 2026-11-14 | chore: regenerate HANDOVER.md |
 | `c330068` | 2026-11-14 | polish: AI Copy toolbar pill contrast (violet tint, pressed-state fill) |
 | `070bc5a` | 2026-11-14 | module 4: AI mode in the builder — prompt-to-page generation, plan-then-compose, in-canvas rewrite |
@@ -214,7 +220,6 @@ First tasks:
 | `e8b3e7b` | 2026-11-14 | Handover: make the document self-reference-free |
 | `0eb8e03` | 2026-11-14 | Handover: regenerate after the amend |
 | `ea0fd16` | 2026-11-14 | Handover: keep --check stable across amends |
-| `ae3441c` | 2026-11-14 | Handover: label the header 'generated against commit' and prove --check is stable |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
