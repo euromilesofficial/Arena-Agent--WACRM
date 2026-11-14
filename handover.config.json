@@ -21,7 +21,7 @@
     "Commit and tag every milestone; keep rollback tags; never persist the GitHub token; rebuild the zip on every change.",
     "Every build ships a zip: `npm run build` ends with `scripts/package.mjs`, which rewrites /home/user/wacrm-app.zip and verifies the WACRM-CMS.html inside it matches the fresh build.",
     "Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.",
-    "The reference mocks live in Git at `uploads/` (manifest + README inside it). Read one straight out of git (`git -C repo show HEAD:uploads/<file> > /tmp/<file>`); never re-add a second workspace copy."
+    "The reference mocks live in Git at `uploads/` and nowhere else: the files are committed and marked `skip-worktree`, so the 26 MB working copy is absent on purpose. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`."
   ],
   "modules": [
     {
@@ -263,7 +263,8 @@
       "detail": "push-to-github.sh passes the token inline to a single `git push` and never writes it to .git/config, a remote URL or a file; PUSH-TO-GIT.md documents the bundle route for anyone who would rather not share one."
     },
     "Never run `git sparse-checkout init` in repo/ — with this git build (2.47) it writes `/*` + `!/*/` and removes every directory (src, qa, uploads…) from the working tree, then `set` fails with 'specify directories rather than patterns'. Recover with `git sparse-checkout disable`. Nothing is lost (the objects are in .git), but the tree has to be re-materialised.",
-    "uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate."
+    "uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.",
+    "uploads/ is skip-worktree — do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done."
   ],
   "continuation": {
     "firstTenMinutes": [

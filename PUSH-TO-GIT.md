@@ -24,7 +24,7 @@ local main           d821c8a   32 commits · 25 ahead · 0 behind  → clean fas
 on GitHub now        module-1-and-2-import, module-2-complete  (nothing later)
 ```
 
-Everything from Module 3's build onward is local only: the Module 3 build, the whole Module 4 builder, the interlink plan, **AI mode**, the packaging automation, and now the **reference mocks**.
+Everything from Module 3's build onward is local only: the Module 3 build, the whole Module 4 builder, the interlink plan, **AI mode**, the packaging automation, and the **reference mocks** (committed under `uploads/`, working copies hidden with `skip-worktree` so they cost nothing on disk).
 
 ## One command closes it
 
@@ -53,4 +53,4 @@ If you would rather not hand over a token at all, say so and I will regenerate `
 
 - Delete nothing — `repo/` is already the minimal copy.
 - Every `npm run build` rewrites `wacrm-app.zip` and fails if the app inside it differs from the build, so the artefact and the commit cannot drift.
-- The mocks stay in Git only; read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`, verify the folder with `sha256sum -c MANIFEST.sha256` inside `repo/uploads/`.
+- The mocks stay in Git only (`skip-worktree`, so no 26 MB working copy); read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`, verify the folder with `sha256sum -c MANIFEST.sha256` inside `repo/uploads/`.
