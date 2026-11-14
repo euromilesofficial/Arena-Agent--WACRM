@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 04:06:25 UTC · **generated against commit** `3865916` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-14 04:06:25 UTC · **generated against commit** `b71a563` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -189,14 +189,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `3865916` — Module 5 review: block library vs the industry, and what the CRM actually has.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `b71a563` — Module 5 review: block library vs the industry, and what the CRM actually has.
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
-| `3865916` | 2026-11-14 | Module 5 review: block library vs the industry, and what the CRM actually has |
+| `b71a563` | 2026-11-14 | Module 5 review: block library vs the industry, and what the CRM actually has |
 | `e8b3e7b` | 2026-11-14 | Handover: make the document self-reference-free |
 | `0eb8e03` | 2026-11-14 | Handover: regenerate after the amend |
 | `ea0fd16` | 2026-11-14 | Handover: keep --check stable across amends |
