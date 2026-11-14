@@ -4,6 +4,9 @@
    failure injection and permission gates. Pure TypeScript, no DOM.
    ============================================================ */
 
+import { seedCmsPages, type CmsPage, type PageQuery, type PageCounts, type PageSummary, type TreeNode, type PageType, issuesFor, rePath, descendants, joinPath, validateSlug } from './cms-pages';
+export type { CmsPage, PageQuery, PageCounts, PageSummary, TreeNode, PageType };
+
 export type SiteStatus = 'published' | 'draft' | 'archived';
 export type ThemeKey = 'main' | 'rewards' | 'portal' | 'blank';
 
@@ -64,7 +67,7 @@ export interface Permissions { role: string; canCreate: boolean; canPublish: boo
 export interface Org { id: string; name: string; legal: string; plan: string; role: string; initials: string; orgs: { id: string; name: string; initials: string; sites: number; current?: boolean }[] }
 export interface User { name: string; initials: string; email: string; role: string }
 export interface DB {
-  version: number; org: Org; user: User; sites: Site[]; domains: Domain[]; pages: PageRow[];
+  version: number; org: Org; user: User; sites: Site[]; domains: Domain[]; pages: PageRow[]; cmsPages: CmsPage[];
   notifications: Notif[]; activity: ActivityRow[]; forms: FormStats; goals: Goal[]; vitals: Vitals;
   publishing: Publishing; banner: Banner; issues: Issue[]; permissions: Permissions; activityLog: unknown[];
 }
@@ -193,6 +196,7 @@ function seedDB(): DB {
         ]
       }
     ],
+    cmsPages: seedCmsPages(),
     pages: [
       { id: 'pg_1', siteId: 'site_main', title: 'Study in Italy', slug: '/study-in-italy', views: 2814, leads: 14, status: 'published', updated: '6h ago', author: 'John D.' },
       { id: 'pg_2', siteId: 'site_main', title: 'IMAT Medicine', slug: '/imat-medicine', views: 1620, leads: 8, status: 'published', updated: '2d ago', author: 'Anita N.' },
@@ -240,6 +244,7 @@ try {
 } catch (e) { db = seedDB(); }
 if (!db || !db.sites) db = seedDB();
 if (!db.issues) db.issues = seedDB().issues;
+if (!db.cmsPages || !db.cmsPages.length) db.cmsPages = seedCmsPages();
 if (!db.domains) db.domains = seedDB().domains;
 if (db.publishing && !db.publishing.publishedAt) db.publishing.publishedAt = 'May 29, 2025';
 
@@ -427,7 +432,7 @@ function overview(opts: OverviewOpts) {
 }
 
 /* ---------- API surface ---------- */
-const FAIL = { fail: false, empty: false };
+const FAIL = { fail: false, empty: false, conflict: false };
 const latency = (min = 320, max = 620): Promise<void> => new Promise(r => setTimeout(r, min + Math.random() * (max - min)));
 
 export const API = {
@@ -594,6 +599,323 @@ export const API = {
     if (site) site.host = dom.hostname;
     persist();
     return true;
+  },
+  /* ---------- Module 3 · Pages & Routes ---------- */
+  getPages: async (q: PageQuery) => {
+    await latency(220, 460);
+    if (FAIL.fail) throw Object.assign(new Error('Pages service unavailable (503).'), { code: 'SERVICE_DOWN' });
+    const all = db.cmsPages.filter((p) => p.siteId === q.siteId);
+    const active = all.filter((p) => !p.trash);
+    const trashed = all.filter((p) => !!p.trash);
+    const counts: PageCounts = {
+      all: active.length,
+      published: active.filter((p) => p.status === 'published').length,
+      drafts: active.filter((p) => p.status === 'draft').length,
+      trash: trashed.length,
+      changes: active.filter((p) => p.hasChanges).length,
+      issues: active.reduce((n, p) => n + issuesFor(p).length, 0)
+    };
+    const summary: PageSummary = {
+      total: counts.all,
+      published: counts.published,
+      drafts: counts.drafts,
+      issues: counts.issues,
+      changes: counts.changes,
+      gauge: counts.all ? Math.round((counts.published / counts.all) * 100) : null,
+      countsAsOf: 'Synced just now'
+    };
+
+    let rows = q.tab === 'trash' ? trashed : active;
+    if (q.tab === 'published') rows = rows.filter((p) => p.status === 'published');
+    if (q.tab === 'drafts') rows = rows.filter((p) => p.status === 'draft');
+    if (q.type && q.type !== 'all') rows = rows.filter((p) => p.type === q.type);
+    if (q.status === 'changes') rows = rows.filter((p) => p.hasChanges);
+    else if (q.status && q.status !== 'all') rows = rows.filter((p) => p.status === q.status);
+    if (q.author && q.author !== 'all') rows = rows.filter((p) => p.author === q.author);
+    if (q.onlyIssues) rows = rows.filter((p) => issuesFor(p).length > 0);
+    if (q.onlyLanding) rows = rows.filter((p) => p.type === 'landing');
+    const needle = (q.q ?? '').trim().toLowerCase();
+    if (needle) {
+      rows = rows.filter((p) =>
+        p.title.toLowerCase().includes(needle) ||
+        p.path.toLowerCase().includes(needle) ||
+        p.template.toLowerCase().includes(needle) ||
+        p.author.toLowerCase().includes(needle));
+    }
+    const sort = q.sort ?? 'updated';
+    const dir = q.dir ?? 'desc';
+    const key = (p: CmsPage) =>
+      sort === 'title' ? p.title.toLowerCase() : sort === 'path' ? p.path :
+      sort === 'type' ? p.type : sort === 'status' ? p.status : p.updatedAt;
+    rows = [...rows].sort((a, b) => {
+      const ka = key(a), kb = key(b);
+      if (ka === kb) return a.id.localeCompare(b.id);
+      return (ka < kb ? -1 : 1) * (dir === 'asc' ? 1 : -1);
+    });
+    const pageSize = q.pageSize ?? 8;
+    const page = Math.max(1, q.page ?? 1);
+    const start = (page - 1) * pageSize;
+    return {
+      rows: rows.slice(start, start + pageSize),
+      total: rows.length,
+      page,
+      pageSize,
+      counts,
+      summary,
+      authors: Array.from(new Set(active.map((p) => p.author))).sort()
+    };
+  },
+  getPageTree: async (siteId: string) => {
+    await latency(180, 380);
+    if (FAIL.fail) throw Object.assign(new Error('Page structure unavailable (503).'), { code: 'SERVICE_DOWN' });
+    const all = db.cmsPages.filter((p) => p.siteId === siteId && !p.trash);
+    const nodes: TreeNode[] = [];
+    const walk = (parentId: string | null, depth: number) => {
+      all.filter((p) => p.parentId === parentId).sort((a, b) => a.order - b.order).forEach((p) => {
+        nodes.push({
+          id: p.id, title: p.title, path: p.path, parentId: p.parentId, isHome: p.isHome,
+          status: p.status, hasChanges: p.hasChanges, depth,
+          hasChildren: all.some((c) => c.parentId === p.id), type: p.type
+        });
+        walk(p.id, depth + 1);
+      });
+    };
+    walk(null, 0);
+    return nodes;
+  },
+  getPage: async (id: string) => {
+    await latency(160, 340);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p) throw Object.assign(new Error('This page is no longer available.'), { code: 'NOT_FOUND' });
+    const all = db.cmsPages.filter((x) => x.siteId === p.siteId);
+    const parent = p.parentId ? all.find((x) => x.id === p.parentId) ?? null : null;
+    return { page: p, parent, issues: issuesFor(p), children: all.filter((x) => x.parentId === p.id && !x.trash) };
+  },
+  checkPageSlug: async (siteId: string, slug: string, parentId: string | null, isHome: boolean, excludeId?: string) => {
+    await latency(260, 520);
+    const invalid = validateSlug(slug, isHome);
+    if (invalid) return { ok: false, error: invalid };
+    const all = db.cmsPages.filter((p) => p.siteId === siteId && !p.trash && p.id !== excludeId);
+    const parent = parentId ? all.find((p) => p.id === parentId) : null;
+    const path = isHome ? '/' : joinPath(parent?.path ?? '/', slug);
+    const clash = all.find((p) => p.path === path);
+    if (clash) return { ok: false, error: `This URL is already used by “${clash.title}” on this website.`, path };
+    return { ok: true, path };
+  },
+  createPage: async (input: { siteId: string; title: string; slug: string; parentId: string | null; type: PageType; template: string; layout: string }) => {
+    await latency(700, 1100);
+    if (FAIL.fail) return { ok: false as const, error: 'We could not save the page. The pages service timed out.' };
+    if (!input.title.trim()) return { ok: false as const, error: 'Page title is required.' };
+    const clash = await API.checkPageSlug(input.siteId, input.slug, input.parentId, false);
+    if (!clash.ok) return { ok: false as const, error: clash.error! };
+    const all = db.cmsPages.filter((p) => p.siteId === input.siteId);
+    const parent = input.parentId ? all.find((p) => p.id === input.parentId) : null;
+    const page: CmsPage = {
+      id: `pg_new_${Date.now().toString(36)}`,
+      siteId: input.siteId,
+      title: input.title.trim(),
+      slug: input.slug,
+      path: joinPath(parent?.path ?? '/', input.slug),
+      parentId: input.parentId,
+      type: input.type,
+      status: 'draft',
+      hasChanges: true,
+      isHome: false,
+      locale: 'en',
+      template: input.template,
+      layout: input.layout,
+      order: all.length + 1,
+      blocks: 1,
+      views: 0,
+      leads: 0,
+      createdAt: 'Just now',
+      createdBy: db.user.name,
+      updatedAt: '2025-05-30',
+      updated: 'Just now',
+      author: db.user.name.split(' ')[0] + ' ' + (db.user.name.split(' ')[1]?.[0] ?? '') + '.',
+      seo: { title: '', description: '' },
+      revision: 1,
+      trash: null,
+      inbound: 0
+    };
+    db.cmsPages = [...db.cmsPages, page];
+    db.cmsPages = rePath(db.cmsPages);
+    const site = db.sites.find((s) => s.id === input.siteId);
+    if (site) site.pages = db.cmsPages.filter((p) => p.siteId === site.id && !p.trash).length;
+    persist();
+    return { ok: true as const, page };
+  },
+  updatePageDetails: async (id: string, input: { title: string; slug: string; parentId: string | null; layout: string; expectRevision: number }) => {
+    await latency(650, 1000);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p) return { ok: false as const, error: 'This page is no longer available.' };
+    if (!input.title.trim()) return { ok: false as const, error: 'Page title is required.' };
+    if (p.revision !== input.expectRevision || FAIL.conflict) {
+      return { ok: false as const, conflict: true, error: `${p.author} saved this page while you were editing. Reload their version or keep yours.` };
+    }
+    if (input.parentId === id) return { ok: false as const, error: 'A page cannot be its own parent.' };
+    if (input.parentId && descendants(db.cmsPages, id).some((d) => d.id === input.parentId)) {
+      return { ok: false as const, error: 'Choose a parent outside this page’s own subtree — that would create a cycle.' };
+    }
+    const check = await API.checkPageSlug(p.siteId, input.slug, input.parentId, p.isHome, id);
+    if (!check.ok) return { ok: false as const, error: check.error! };
+    const before = p.path;
+    p.title = input.title.trim();
+    p.slug = input.slug;
+    p.parentId = input.parentId;
+    p.layout = input.layout;
+    p.hasChanges = true;
+    p.revision += 1;
+    p.updatedAt = '2025-05-30';
+    p.updated = 'Just now';
+    db.cmsPages = rePath(db.cmsPages);
+    persist();
+    return { ok: true as const, page: db.cmsPages.find((x) => x.id === id)!, movedFrom: before };
+  },
+  duplicatePage: async (id: string, input: { title: string; slug: string; parentId: string | null; includeSeo: boolean }) => {
+    await latency(700, 1100);
+    const src = db.cmsPages.find((x) => x.id === id);
+    if (!src) return { ok: false as const, error: 'This page is no longer available.' };
+    const check = await API.checkPageSlug(src.siteId, input.slug, input.parentId, false);
+    if (!check.ok) return { ok: false as const, error: check.error! };
+    const all = db.cmsPages.filter((p) => p.siteId === src.siteId);
+    const parent = input.parentId ? all.find((p) => p.id === input.parentId) : null;
+    const copy: CmsPage = {
+      ...src,
+      id: `pg_copy_${Date.now().toString(36)}`,
+      title: input.title.trim() || `${src.title} copy`,
+      slug: input.slug,
+      path: joinPath(parent?.path ?? '/', input.slug),
+      parentId: input.parentId,
+      isHome: false,
+      status: 'draft',
+      hasChanges: true,
+      blocks: src.blocks,
+      views: 0,
+      leads: 0,
+      createdAt: 'Just now',
+      createdBy: db.user.name,
+      updated: 'Just now',
+      updatedAt: '2025-05-30',
+      author: db.user.name,
+      seo: input.includeSeo ? { ...src.seo } : { title: '', description: '' },
+      revision: 1,
+      trash: null,
+      inbound: 0,
+      order: all.length + 1
+    };
+    db.cmsPages = rePath([...db.cmsPages, copy]);
+    const site = db.sites.find((s) => s.id === src.siteId);
+    if (site) site.pages = db.cmsPages.filter((p) => p.siteId === site.id && !p.trash).length;
+    persist();
+    return { ok: true as const, page: copy };
+  },
+  movePage: async (id: string, parentId: string | null) => {
+    await latency(550, 900);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p) return { ok: false as const, error: 'This page is no longer available.' };
+    if (p.isHome) return { ok: false as const, error: 'The homepage always sits at the root of the tree.' };
+    if (parentId === id) return { ok: false as const, error: 'A page cannot be its own parent.' };
+    if (parentId && descendants(db.cmsPages, id).some((d) => d.id === parentId)) {
+      return { ok: false as const, error: 'That destination is inside this page’s own subtree.' };
+    }
+    const parent = parentId ? db.cmsPages.find((x) => x.id === parentId) : null;
+    if (parentId && (!parent || parent.siteId !== p.siteId)) return { ok: false as const, error: 'Choose a page from this website.' };
+    const before = p.path;
+    p.parentId = parentId;
+    p.hasChanges = true;
+    p.updated = 'Just now';
+    p.revision += 1;
+    db.cmsPages = rePath(db.cmsPages);
+    persist();
+    const after = db.cmsPages.find((x) => x.id === id)!;
+    return { ok: true as const, from: before, to: after.path, affected: descendants(db.cmsPages, id).length };
+  },
+  setHomepage: async (id: string) => {
+    await latency(600, 950);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p) return { ok: false as const, error: 'This page is no longer available.' };
+    if (p.trash) return { ok: false as const, error: 'Restore this page before making it the homepage.' };
+    const siblings = db.cmsPages.filter((x) => x.siteId === p.siteId);
+    const previous = siblings.find((x) => x.isHome) ?? null;
+    siblings.forEach((x) => { if (x.isHome) { x.isHome = false; x.hasChanges = true; } });
+    p.isHome = true;
+    p.parentId = null;
+    p.slug = '';
+    p.hasChanges = true;
+    p.updated = 'Just now';
+    db.cmsPages = rePath(db.cmsPages);
+    persist();
+    return { ok: true as const, previous: previous?.title ?? null, page: db.cmsPages.find((x) => x.id === id)! };
+  },
+  purgePage: async (id: string) => {
+    await latency(500, 900);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p) return { ok: false as const, error: 'This page has already been deleted.' };
+    if (p.isHome) return { ok: false as const, error: 'A website needs a homepage — designate another page first.' };
+    if (!p.trash) return { ok: false as const, error: 'Only pages in the Trash can be deleted permanently.' };
+    const kids = db.cmsPages.filter((x) => x.parentId === id && !x.trash);
+    if (kids.length) return { ok: false as const, error: `${kids.length} page(s) still sit under this one — move them first.` };
+    db.cmsPages = db.cmsPages.filter((x) => x.id !== id);
+    const site = db.sites.find((s) => s.id === p.siteId);
+    if (site) site.pages = db.cmsPages.filter((x) => x.siteId === site.id && !x.trash).length;
+    persist();
+    return { ok: true as const };
+  },
+  trashPage: async (id: string, reason?: string) => {
+    await latency(550, 900);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p) return { ok: false as const, error: 'This page is no longer available.' };
+    if (p.isHome) return { ok: false as const, code: 'HOME', error: 'The homepage cannot be deleted. Set another page as the homepage first.' };
+    const kids = db.cmsPages.filter((x) => x.parentId === id && !x.trash);
+    if (kids.length) return { ok: false as const, code: 'CHILDREN', error: `${kids.length} child page${kids.length === 1 ? '' : 's'} must be moved first: ${kids.map((k) => k.title).join(', ')}.` };
+    p.trash = { at: 'Just now', by: db.user.name, until: 'Jun 29, 2025', daysLeft: 30 };
+    p.updated = 'Just now';
+    const site = db.sites.find((s) => s.id === p.siteId);
+    if (site) site.pages = db.cmsPages.filter((x) => x.siteId === site.id && !x.trash).length;
+    persist();
+    return { ok: true as const, page: p, reason };
+  },
+  restorePage: async (id: string, newSlug?: string) => {
+    await latency(600, 950);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p || !p.trash) return { ok: false as const, error: 'This page is no longer in the trash.' };
+    const active = db.cmsPages.filter((x) => x.siteId === p.siteId && !x.trash);
+    if (newSlug) {
+      const check = await API.checkPageSlug(p.siteId, newSlug, p.parentId, false, id);
+      if (!check.ok) return { ok: false as const, error: check.error! };
+      p.slug = newSlug;
+    } else if (active.some((x) => x.path === p.path)) {
+      return { ok: false as const, code: 'PATH_TAKEN', error: `${p.path} is now used by another page. Choose a new URL to restore this one.`, taken: true };
+    }
+    p.trash = null;
+    p.status = 'draft';
+    p.hasChanges = true;
+    db.cmsPages = rePath(db.cmsPages);
+    const site = db.sites.find((s) => s.id === p.siteId);
+    if (site) site.pages = db.cmsPages.filter((x) => x.siteId === p.siteId && !x.trash).length;
+    persist();
+    return { ok: true as const, page: p };
+  },
+  bulkTrash: async (ids: string[]) => {
+    await latency(700, 1100);
+    const failed: { id: string; title: string; reason: string }[] = [];
+    let trashed = 0;
+    for (const id of ids) {
+      const res = await API.trashPage(id);
+      if (res.ok) trashed += 1;
+      else failed.push({ id, title: db.cmsPages.find((p) => p.id === id)?.title ?? id, reason: res.error });
+    }
+    return { ok: failed.length === 0, trashed, failed };
+  },
+  previewPage: async (id: string) => {
+    await latency(600, 1000);
+    const p = db.cmsPages.find((x) => x.id === id);
+    if (!p) throw Object.assign(new Error('Preview is unavailable for this page.'), { code: 'NOT_FOUND' });
+    if (Math.random() < 0.08) throw Object.assign(new Error('The preview token expired before the page rendered.'), { code: 'TOKEN_EXPIRED' });
+    const token = `pv_${Math.random().toString(36).slice(2, 10)}`;
+    persist();
+    return { token, url: `https://preview.wacrm.site/${token}${p.path}`, expiresIn: '15 minutes' };
   },
   verifyDomainRecord: async (siteId: string, domainId: string) => {
     await latency(900, 1500);

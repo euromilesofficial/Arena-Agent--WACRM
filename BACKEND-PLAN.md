@@ -451,7 +451,8 @@ Site status semantics: `draft` = never published; `published` = has a live relea
 | `PUT` | `/v1/pages/{id}/draft` | replaces draft `blocks`, creates a new `page_revision`; returns `{revisionId, etag}` |
 | `POST` | `/v1/pages/{id}:publish` | single-page publish (creates a release scoped to that page) |
 | `POST` | `/v1/pages/{id}:duplicate` | |
-| `POST` | `/v1/pages/{id}:archive` / `:restore` | |
+| `POST` | `/v1/pages/{id}:archive` / `:restore` | restore always returns the page as a **draft** |
+| `DELETE` | `/v1/pages/{id}?hard=1` | only for pages already trashed; `409 HOME` / `409 CHILDREN` otherwise; writes an audit entry and a `redirects` tombstone |
 | `GET` | `/v1/pages/{id}/revisions` | history for the drawer |
 | `POST` | `/v1/pages/{id}/revisions/{revId}:restore` | restores into draft (never publishes) |
 
@@ -768,6 +769,45 @@ One row per element of `MODULE-2-SPEC.md`; each maps to exactly one read or one 
 **States the screen must handle** (each maps to a contract): loading skeleton (`GET /v1/sites` in flight), error strip + retry (`5xx`, keeping last valid rows), empty workspace (`200 []`), no-results (client filter), Viewer (`403` on writes → controls disabled with reason), DNS unverified/pending/failed, TLS provisioning/active/failed, no-domain site (`primaryHostname: null`).
 
 **Known prototype gaps.** `Site` still carries `host` rather than the server-derived `liveUrl`/`previewUrl`; the UI composes `https://${hostname}` for *Open site* and hides it when the primary hostname is not fully live. The five KPI deltas are seeded strings in `data.ts` (`DOMAIN_TRENDS`) — the API returns real monthly snapshots or omits the delta entirely.
+
+### 7.18 Module 3 — Pages & Routes screen surfaces
+
+One row per element of the Pages screen; each maps to exactly one read or one mutation.
+
+| UI element | Endpoint | Notes |
+| --- | --- | --- |
+| Website switcher | `GET /v1/sites` | `{id,name,pageCount,latestRelease}`; a website without a release disables *View Live Site* |
+| *View Live Site* | `liveUrl` from `GET /v1/sites/{id}` | never composed client-side; disabled when `latestRelease` is null |
+| *Preview* (toolbar) | `POST /v1/pages/{id}:preview` | `{token, url, expiresIn}`; tokens are single-use, 15 min, `noindex` |
+| *New Page* | `POST /v1/pages` | 4-step wizard; step 1 calls `GET /v1/pages:slug-available` on every keystroke (debounced 260 ms) |
+| KPI cards (4) + gauge | `GET /v1/pages/summary` | `{total, published, drafts, trash, changes, issues, gauge}`; gauge is `round(published/active×100)` and `null` at 0 |
+| Registry tabs | client-side over the scoped page | counts come from the summary, never from the visible rows |
+| Registry search | `GET /v1/pages?q=` | debounced 250 ms; matches title, path, template and author |
+| Registry selects (type / status / author) | `GET /v1/pages?type&status&author` | author list comes back with every list response |
+| Filter panel switches | `GET /v1/pages?onlyIssues&onlyLanding` | compose with the selects; the funnel button shows an active dot |
+| Sortable headers | `GET /v1/pages?sort&dir` | `title`, `path`, `type`, `status`, `updated`; `aria-sort` mirrors the state |
+| Pagination + page size | `GET /v1/pages?cursor|page&pageSize` | 8 / 16 / 25 per page |
+| Bulk bar | `POST /v1/pages:bulk-archive` | returns per-page results; the selection is pruned to the visible page so a filtered-away row can never be touched |
+| Page structure tree | `GET /v1/pages/tree?siteId` | flat list with `parentId` + `depth`; trashed pages excluded |
+| Tree menu | client-side + `GET /v1/pages/tree` | *Expand all* / *Collapse all* are view state, *Refresh* re-reads |
+| Row menu (open page) | `GET /v1/pages/{id}` | supplies `parent`, `children[]`, `issues[]` |
+| Row menu → Edit Page Details | `PATCH /v1/pages/{id}` | `If-Match: revision`; `409 REVISION_CONFLICT` returns the other editor's name |
+| Row menu → Duplicate | `POST /v1/pages/{id}:duplicate` | `{title, slug, parentId, includeSeo}` |
+| Row menu → Set as Homepage | `POST /v1/sites/{id}:homepage` | `{pageId}`; exactly one homepage, `409 HOME` when the target is trashed |
+| Row menu → Move Page | `PATCH /v1/pages/{id}` with `parentId` | cycles and subtree moves are rejected server-side (`422 CYCLE`), not just hidden |
+| Row menu → Move to Trash | `POST /v1/pages/{id}:archive` | `409 HOME`, `409 CHILDREN` (lists the children by name); 30-day window |
+| Trash tab → Restore | `POST /v1/pages/{id}:restore` | returns to **draft**; a taken slug forces a rename first |
+| Trash tab → Delete permanently | `DELETE /v1/pages/{id}?hard=1` | separate confirm, no undo |
+| Inspector | `GET /v1/pages/{id}` | performance block only renders when `views30d > 0`; otherwise `Analytics not available` |
+| Inspector *Unpublished changes* chip | route to Module 6 | `#/publishing?page=` |
+| Inspector *Edit Page* / row pencil | Module 4 | the handoff carries `{pageId, siteId, revision}` |
+| Status bar | `GET /v1/meta/freshness` | plus client-side keyboard hints |
+
+**Ordering and rate rules.** Slug availability is throttled to 10/s per user; the list refetches on window focus when older than 30 s; every mutation returns the mutated row so the view never guesses; `If-Match` is mandatory on `PATCH` and missing it is `428 PRECONDITION_REQUIRED`.
+
+**States the screen must handle** (each maps to a contract): loading skeletons (list + tree + inspector), error strip keeping last good state (`5xx`), empty website (`200 []`), empty trash, no search results, tree no-match, stale selection (`404` on the inspector), Viewer (`403` → controls disabled with a reason), slug taken (`409`), reserved slug (`422`), route change with inbound links (301 proposal), revision conflict (`409` with the competing editor), homepage and parent-with-children guards, move cycle, bulk partial failure, preview token expiry, permanent delete.
+
+**Known prototype gaps.** `sites.pages` is a denormalised counter in the seed; the API derives it. `views30d` / `leads30d` are seeded per page — the real numbers come from `analytics.page_metrics` and the UI must render `Analytics not available` when the window has no rows. The issue list (`issuesFor`) is computed client-side from page fields; the server version is a `GET /v1/pages/{id}/issues` read so the copy can change without a release.
 
 ## 8. Publishing pipeline (the hard part)
 

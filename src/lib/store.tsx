@@ -484,7 +484,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (s === "denied") setRole("Viewer");
     if (s === "default") setRole("Owner");
     if (s === "conflict") setModal({ kind: "conflict" });
-    if (s === "error") setError(screen === "sites" ? "Sites and domains service unavailable (503)" : "Analytics service unavailable (502)");
+    /* the prototype's conflict state also makes the pages API reject a stale save,
+       so the editor's Reload/Keep-mine path is reachable without two browsers */
+    API.mode.conflict = s === "conflict";
+    if (s === "error") setError(
+      screen === "sites" ? "Sites and domains service unavailable (503)"
+        : screen === "pages" ? "Pages service unavailable (503)"
+          : "Analytics service unavailable (502)");
     if (s !== "error") setError(null);
     if (s === "loading") {
       setLoading(true);
