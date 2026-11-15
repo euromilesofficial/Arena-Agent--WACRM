@@ -157,6 +157,7 @@
       "The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost)."
     ],
     "tasks": [
+      "Decide the M6.1 scope proposed in THEME-STUDIO-BENCHMARK.md (Tier A: G1 type scale, G2 border/ring/muted/link roles, G3 specimen sheet, G4 revisions drawer). Tier B — dark mode G5, palette generator G6, DTCG export G7, APCA column G8, partial presets G9 — is researched but unapproved; do not build before the go-ahead.",
       "Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.",
       "Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.",
       "Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.",

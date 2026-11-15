@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 02:58:21 UTC · **generated against commit** `aa904b7` · **working tree** 19 uncommitted file(s)
+**Generated** 2026-11-15 03:13:45 UTC · **generated against commit** `b41bf3e` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -47,7 +47,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,599,794 B (1562 kB) · gzip 665 kB |
 | md5 | `52dc60291425c064ce56672be812531e` |
 | sha256 (first 16) | `cc95d4975cbe6d5c` |
-| Built | 2026-11-15 02:58:20 |
+| Built | 2026-11-15 03:12:34 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -90,7 +90,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **59 source files, 22,359 lines** of TS/TSX/CSS (32,210 lines across all tracked text files).
+Source inventory: **59 source files, 22,359 lines** of TS/TSX/CSS (32,428 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -187,10 +187,11 @@ Blocked on:
 
 First tasks:
 
-1. Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.
-2. Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.
-3. Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.
-4. Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md — implementing it is what unblocks 'Requires ingestion'.
+1. Decide the M6.1 scope proposed in THEME-STUDIO-BENCHMARK.md (Tier A: G1 type scale, G2 border/ring/muted/link roles, G3 specimen sheet, G4 revisions drawer). Tier B — dark mode G5, palette generator G6, DTCG export G7, APCA column G8, partial presets G9 — is researched but unapproved; do not build before the go-ahead.
+2. Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.
+3. Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.
+4. Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.
+5. Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md — implementing it is what unblocks 'Requires ingestion'.
 
 ## 9. Traps that cost time last time
 
@@ -224,13 +225,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `aa904b7` — docs(module-6): persist the Theme Studio spec and the gap review — 31 findings, 10 decisions.
-- Working tree: 19 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `b41bf3e` — feat(module-6): Theme Studio — tokens, typography, presets, computed contrast, draft-only save.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
-- Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
+- Tags: `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `b41bf3e` | 2026-11-15 | feat(module-6): Theme Studio — tokens, typography, presets, computed contrast, draft-only save |
 | `aa904b7` | 2026-11-15 | docs(module-6): persist the Theme Studio spec and the gap review — 31 findings, 10 decisions |
 | `942b600` | 2026-11-15 | docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST |
 | `f5f0309` | 2026-11-15 | fix(module-5): restore the mock's responsive strip; verify uploads manifest |
@@ -242,7 +244,6 @@ First tasks:
 | `fe6b36d` | 2026-11-14 | feat(module-5): desktop block library — four views, computed counts, insert path |
 | `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
 | `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
-| `d53dbd3` | 2026-11-14 | chore: the mirror no longer carries HANDOVER.md — the hook owns that file |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
