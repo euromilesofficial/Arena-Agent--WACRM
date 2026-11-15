@@ -56,6 +56,10 @@ That file is the complete, self-contained app as it shipped at that checkpoint �
 | `module-3-complete` | Module 3 (Pages & Routes) verified: 105/105 module checks, 40/40 state checks, Module 1–2 regressions still green |
 | `module-4-ai` | AI mode in the builder (prompt → page, in-canvas rewrite) verified: `qa_ai.py` 60/60, all suites 475/475 |
 | `module-4-complete` | Module 4 (Visual Builder) verified: 97/97 builder checks, 47/47 state checks, 106/106 Module 3, 40/40 + 39/39 + 48/48 state/layout, 38/38 flows |
+| `module-5-complete` | Module 5 (Block Library) merged into the builder: 90/90 library checks, 98/98 builder, all suites green |
+| `m6-theme-studio` | Module 6 (Theme Studio) verified: `qa_theme.py` 127/127, all 11 suites green, single file 1,599,790 B |
+| `m6-theme-studio-benchmark` | The competitive study only (`THEME-STUDIO-BENCHMARK.md`, 35-point matrix, gaps G1–G9). No code beyond the eight comparison `divider` rows and the advisory `ContrastRow` plumbing — safe to sit between two builds |
+| `m6.1-theme-studio` | Module 6.1: type scale, 13 colour roles + 14 contrast pairs, specimen sheet, revision diffs with restore-into-working-copy, 247 embedded + 1,746 indexed Google Fonts. `qa_theme.py` **189/189**, 11/11 suites. Artifact 15,487,295 B; zip 32,106,180 B |
 
 Going forward: a commit per logical change, and a `module-N-complete` tag the moment a module passes its checks — so "roll back to the last good module" is always one command.
 
