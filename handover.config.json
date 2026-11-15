@@ -75,6 +75,14 @@
       "status": "done",
       "evidence": "qa_theme.py 127/127",
       "notes": "Three tabs (Brand Tokens · Typography · Presets), nine colour roles + derived on-primary, computed WCAG pairs, discrete geometry, six embedded self-hosted font families (242 KB woff2 in the artifact), live read-only preview through the M4 renderer at 1440/768/375, preset library with import/export, CAS draft save, conflict + unsaved guards, publish hand-off into M4's release flow."
+    },
+    {
+      "id": "M6.1",
+      "name": "Theme Studio completion + Google Fonts library",
+      "route": "#/theme",
+      "status": "done",
+      "evidence": "qa_theme.py 189/189",
+      "notes": "Closes the four Tier-A gaps from THEME-STUDIO-BENCHMARK.md: (G1) a derived six-step type scale with ratio, leadings, trackings and fluid clamp(), edited in a Type Scale card and obeyed by the preview; (G2) 13 colour roles adding muted/link/border/ring, 14 measured contrast pairs with per-role thresholds and the divider advisory floor; (G3) a 1:1 specimen sheet covering type, palette, buttons in four states, four field states, alerts, pills, card, table, radius and spacing; (G4) a Revisions rail + diff modal whose restore fills the working copy and never saves. Fonts: 247 embedded families (10.49 MB woff2, variable-first) plus the full 1,746-family Google Fonts index, searchable with category counts and an embedded-only default; locked rows state the reason. Document schema is now version 2 with a stated v1 migration."
     }
   ],
   "decisions": [
@@ -147,17 +155,63 @@
       "id": "D18",
       "decision": "Fonts ship inside the artifact as subsetted woff2 (6 families, OFL 1.1); families without an asset stay visible in the catalogue as Requires ingestion and cannot be selected.",
       "status": "locked"
+    },
+    {
+      "id": "D19",
+      "decision": "\"Almost all Google Fonts\" = 247 families embedded (10.5 MB woff2 budget, popularity order, variable-first) + all 1,746 families indexed with real metadata and locked, never silently offered. A single offline HTML cannot carry the whole library; the budget is a generator flag.",
+      "status": "locked"
+    },
+    {
+      "id": "D20",
+      "decision": "Brand fonts (Google Sans, Product Sans, Material Symbols…) are excluded from the catalogue entirely — by the metadata flag and an explicit denylist — because they are not licensed for redistribution.",
+      "status": "locked"
+    },
+    {
+      "id": "D21",
+      "decision": "Font faces are registered lazily per family; M6 built one 14 MB stylesheet on mount.",
+      "status": "locked"
+    },
+    {
+      "id": "D22",
+      "decision": "The divider role is measured against an advisory 1.5:1 legibility floor, not SC 1.4.11's 3:1, because decorative rules are exempt; the focus ring is held to 3:1 because it identifies a control.",
+      "status": "locked"
+    },
+    {
+      "id": "D23",
+      "decision": "`link` is its own role, measured from itself. M6 measured link pairs against primary while no link token existed — the editor and the audit disagreed.",
+      "status": "locked"
+    },
+    {
+      "id": "D24",
+      "decision": "Type sizes are derived (base × ratio^n), never stored; fluid clamp() applies to h1–h3 only so body copy never shrinks with the viewport.",
+      "status": "locked"
+    },
+    {
+      "id": "D25",
+      "decision": "Restore never writes: it loads a revision into the working copy, marks it dirty and pushes an undo entry. Save remains the only write path, so CAS and the audit log stay honest.",
+      "status": "locked"
+    },
+    {
+      "id": "D26",
+      "decision": "Token document is version 2; the reader accepts 1 and 2, derives the four new roles and the default scale for a v1 file, and reports every derived field in the import review.",
+      "status": "locked"
+    },
+    {
+      "id": "D27",
+      "decision": "The specimen renders 1:1 at the studio width rather than scaled inside the 1440 px device frame — a specimen scaled to 42% is unreadable and therefore useless.",
+      "status": "locked"
     }
   ],
   "next": {
-    "headline": "Module 6 (Theme Studio) is complete: three tabs, a computed contrast engine, an embedded font catalogue, a real draft/release split and a read-only preview that renders the site through Module 4's renderer. Nothing is blocked.",
+    "headline": "Module 6.1 is complete: the four Tier-A gaps from the competitive benchmark are closed (type scale, 13 role pairs, specimen sheet, revisions) and the Theme Studio carries 247 embedded Google Fonts families with a searchable 1,746-family index. 11/11 suites green. Tier B of the benchmark is researched but unapproved.",
     "blockedOn": [
       "Module 7 (Layouts & Templates) waits on its specification; the theme contract already reserves the layout/navigation import fields and keeps them switched off.",
       "Module 11 (Publishing & Releases) is the future owner of the publish surface — until then the theme draft rides Module 4's release dialog.",
       "The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost)."
     ],
     "tasks": [
-      "Decide the M6.1 scope proposed in THEME-STUDIO-BENCHMARK.md (Tier A: G1 type scale, G2 border/ring/muted/link roles, G3 specimen sheet, G4 revisions drawer). Tier B — dark mode G5, palette generator G6, DTCG export G7, APCA column G8, partial presets G9 — is researched but unapproved; do not build before the go-ahead.",
+      "Module 7 (Layouts & Templates) is the next build; the theme's layout/navigation import fields stay switched off until it lands.",
+      "Decide Tier B of THEME-STUDIO-BENCHMARK.md: dark mode/modes (G5), palette generation (G6), DTCG export (G7), APCA column (G8), partial presets (G9). All researched and ranked; none approved.",
       "Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.",
       "Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.",
       "Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.",

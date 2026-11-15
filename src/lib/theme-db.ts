@@ -13,26 +13,97 @@
 import { DBX } from "./data";
 import { SECTION_PRESETS, REGISTRY, type BlockNode, type BlockType } from "./builder";
 import { ensureDraft } from "./builder-db";
-import { FONT_ASSETS, type EmbeddedFamily } from "./theme-font-data";
+import { FONT_ASSETS, EMBEDDED_COUNT, EMBEDDED_TOTAL_BYTES } from "./theme-font-data";
+import { GOOGLE_FONT_ROWS, CATALOG_COUNT, type FontCategory } from "./theme-font-catalog";
+
+export type { FontCategory };
 
 /* ---------------- vocabulary ---------------- */
 
 export type ColorRole =
   | "primary" | "secondary" | "accent" | "success" | "warning" | "error"
-  | "background" | "surface" | "text";
+  | "background" | "surface" | "text"
+  /* M6.1 — the four roles every mature system carries and M6 was missing:
+     a line colour, a focus ring, de-emphasised text and a distinct link colour.
+     `link` is not `primary` because a site can use a brand colour for buttons
+     that is unreadable as text, and holding both to 4.5:1 forces honest values. */
+  | "border" | "ring" | "muted" | "link";
 
 export interface FontChoice { family: string; weight: number; fallback: string }
 export type Density = "compact" | "comfortable" | "spacious";
 
+/** The modular scale (G1). Sizes are derived, never stored per step, so a ratio
+    change re-rhythms the whole page instead of editing six numbers. */
+export interface TypeScale {
+  /** body size in px — every other step is derived from it */
+  basePx: number;
+  /** modular ratio between steps */
+  ratio: number;
+  leadingHeading: number;
+  leadingBody: number;
+  /** em units, negative for display type */
+  trackingHeading: number;
+  trackingBody: number;
+  /** emit clamp() so type breathes between 420px and 1180px */
+  fluid: boolean;
+}
+
 export interface ThemeTokens {
   colors: Record<ColorRole, string>;
-  typography: { heading: FontChoice; body: FontChoice };
+  typography: { heading: FontChoice; body: FontChoice; scale: TypeScale };
   geometry: {
     radiusPx: 0 | 4 | 8 | 12 | 16 | 24;
     spacing: { base: 4 | 8; density: Density };
     containerWidthPx: 960 | 1080 | 1200 | 1280;
   };
   blockStyling: { cardDensity: "compact" | "comfortable"; elevation: "flat" | "soft" };
+}
+
+/* ---------------- the type scale ---------------- */
+
+export const TYPE_STEPS = ["h1", "h2", "h3", "body", "small", "caption"] as const;
+export type TypeStep = (typeof TYPE_STEPS)[number];
+
+export const SCALE_RATIOS: { value: number; label: string; use: string }[] = [
+  { value: 1.2, label: "1.200", use: "Minor third — dense, product-like" },
+  { value: 1.25, label: "1.250", use: "Major third — the safe marketing default" },
+  { value: 1.333, label: "1.333", use: "Perfect fourth — editorial contrast" },
+  { value: 1.5, label: "1.500", use: "Perfect fifth — loud, landing-page" }
+];
+
+export const BASE_SIZES = [14, 15, 16, 17, 18] as const;
+
+const round1 = (n: number): number => Math.round(n * 10) / 10;
+
+/** Derived sizes in px.  h1 = base·r³ … caption = base/r². */
+export function typeSizes(t: ThemeTokens): Record<TypeStep, number> {
+  const { basePx: b, ratio: r } = t.typography.scale;
+  return {
+    h1: Math.round(b * r ** 3),
+    h2: Math.round(b * r ** 2),
+    h3: Math.round(b * r),
+    body: b,
+    small: Math.round(b / r),
+    caption: Math.round(b / r ** 2)
+  };
+}
+
+/** The CSS `font-size` for a step: a px value, or a clamp() when fluid is on.
+    Fluid ramps h1–h3 only — body copy should not move with the viewport. */
+export function typeSizeCss(t: ThemeTokens, step: TypeStep): string {
+  const size = typeSizes(t)[step];
+  if (!t.typography.scale.fluid || !["h1", "h2", "h3"].includes(step)) return `${size}px`;
+  const min = Math.round(size * 0.72);
+  const from = 420;
+  const to = 1180;
+  const slope = ((size - min) / (to - from)) * 100;
+  const intercept = min - (slope * from) / 100;
+  return `clamp(${min}px, ${round1(intercept)}px + ${round1(slope)}vw, ${size}px)`;
+}
+
+export function typeStamp(t: ThemeTokens): string {
+  const s = typeSizes(t);
+  return `${s.h1}/${s.h2}/${s.h3}/${s.body}`;
 }
 
 export interface ThemeRevision {
@@ -105,25 +176,69 @@ export interface RoleMeta {
   use: string;
   /** text roles are held to 4.5:1, marker roles to 3:1 as UI boundaries */
   kind: "text" | "marker";
+  /** editor grouping — brand marks read differently from surface and line roles */
+  group: "Brand" | "Surface & text";
+  /** true when a v1 document (9 roles) did not carry this role and we derived it */
+  derivedFrom?: ColorRole;
 }
 
 export const COLOR_ROLES: RoleMeta[] = [
-  { key: "primary", label: "Primary", use: "CTAs, links, highlights", kind: "text" },
-  { key: "secondary", label: "Secondary", use: "Headings, dark surfaces, secondary actions", kind: "text" },
-  { key: "accent", label: "Accent", use: "Marks and highlights — never body text", kind: "marker" },
-  { key: "success", label: "Success", use: "Confirmations and positive status", kind: "marker" },
-  { key: "warning", label: "Warning", use: "Notices and pending status", kind: "marker" },
-  { key: "error", label: "Error", use: "Failures and destructive actions", kind: "marker" },
-  { key: "background", label: "Background", use: "The page canvas", kind: "marker" },
-  { key: "surface", label: "Surface", use: "Cards, panels, banded sections", kind: "marker" },
-  { key: "text", label: "Text", use: "Body copy and headings", kind: "text" }
+  { key: "primary", label: "Primary", use: "CTAs, links, highlights", kind: "text", group: "Brand" },
+  { key: "secondary", label: "Secondary", use: "Headings, dark surfaces, secondary actions", kind: "text", group: "Brand" },
+  { key: "accent", label: "Accent", use: "Marks and highlights — never body text", kind: "marker", group: "Brand" },
+  { key: "success", label: "Success", use: "Confirmations and positive status", kind: "marker", group: "Brand" },
+  { key: "warning", label: "Warning", use: "Notices and pending status", kind: "marker", group: "Brand" },
+  { key: "error", label: "Error", use: "Failures and destructive actions", kind: "marker", group: "Brand" },
+  { key: "background", label: "Background", use: "The page canvas", kind: "marker", group: "Surface & text" },
+  { key: "surface", label: "Surface", use: "Cards, panels, banded sections", kind: "marker", group: "Surface & text" },
+  { key: "text", label: "Text", use: "Body copy and headings", kind: "text", group: "Surface & text" },
+  { key: "muted", label: "Muted text", use: "Captions, labels, helper copy", kind: "text", group: "Surface & text" },
+  { key: "link", label: "Link", use: "Inline links — held to 4.5:1 like body text", kind: "text", group: "Surface & text" },
+  { key: "border", label: "Border", use: "Rules, dividers, input outlines", kind: "marker", group: "Surface & text" },
+  { key: "ring", label: "Focus ring", use: "Keyboard focus — 3:1 against the canvas", kind: "marker", group: "Surface & text" }
 ];
+
+/** The nine roles a version-1 document carries. Anything else is derived. */
+export const CORE_ROLES: ColorRole[] = ["primary", "secondary", "accent", "success", "warning", "error", "background", "surface", "text"];
 
 /** Derived, never stored: the label colour that sits on the primary button. */
 export function onPrimary(primary: string): string {
   const white = "#FFFFFF";
   const ink = "#0F172A";
   return contrast(white, primary) >= contrast(ink, primary) ? white : ink;
+}
+
+/* ---------------- palette maths used by migration and generation ----------------
+   A straight sRGB blend, not an OKLCH mix: it must be reproducible in the
+   importer and in the exporter without a colour-science dependency. */
+
+const toRgb = (hex: string): [number, number, number] => {
+  const h = hex.replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+};
+const toHex = (rgb: number[]): string =>
+  `#${rgb.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+
+/** mix(a → b) at t: 0 returns a, 1 returns b. */
+export function mixHex(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = toRgb(a);
+  const [r2, g2, b2] = toRgb(b);
+  return toHex([r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t]);
+}
+
+/** lighten/darken toward white or ink by t */
+export const shade = (hex: string, t: number): string => (t >= 0 ? mixHex(hex, "#FFFFFF", t) : mixHex(hex, "#000000", -t));
+
+/** How a v1 document's missing roles are recovered. Documented in the import
+    review so the user is never told a derived value came from the file. */
+export function deriveRole(key: ColorRole, c: Record<string, string>): string {
+  switch (key) {
+    case "muted": return mixHex(c.text, c.background, 0.42);
+    case "link": return c.primary;
+    case "border": return mixHex(c.text, c.background, 0.86);
+    case "ring": return c.primary;
+    default: return c.primary;
+  }
 }
 
 /* ---------------- contrast pairs ----------------
@@ -145,6 +260,8 @@ export interface ContrastRow {
   /** what a failing row is asking the user to do */
   hint?: string;
   role?: ColorRole;
+  /** measured against a floor, not a WCAG success criterion (dividers, 1.4.11 exempt) */
+  advisory?: boolean;
 }
 
 export function evaluate(tokens: ThemeTokens): ContrastRow[] {
@@ -152,10 +269,14 @@ export function evaluate(tokens: ThemeTokens): ContrastRow[] {
   const rows: Omit<ContrastRow, "ratio" | "verdict">[] = [
     { id: "text-on-bg", label: "Body text on background", fg: c.text, bg: c.background, need: 4.5, kind: "text", role: "text" },
     { id: "text-on-surface", label: "Body text on surface", fg: c.text, bg: c.surface, need: 4.5, kind: "text", role: "text" },
+    { id: "muted-on-bg", label: "Muted text on background", fg: c.muted, bg: c.background, need: 4.5, kind: "text", role: "muted" },
+    { id: "muted-on-surface", label: "Muted text on surface", fg: c.muted, bg: c.surface, need: 4.5, kind: "text", role: "muted" },
     { id: "cta-label", label: "Button label on primary", fg: onPrimary(c.primary), bg: c.primary, need: 4.5, kind: "text", role: "primary" },
-    { id: "link-on-bg", label: "Links on background", fg: c.primary, bg: c.background, need: 4.5, kind: "text", role: "primary" },
-    { id: "link-on-surface", label: "Links on surface", fg: c.primary, bg: c.surface, need: 4.5, kind: "text", role: "primary" },
+    { id: "link-on-bg", label: "Links on background", fg: c.link, bg: c.background, need: 4.5, kind: "text", role: "link" },
+    { id: "link-on-surface", label: "Links on surface", fg: c.link, bg: c.surface, need: 4.5, kind: "text", role: "link" },
     { id: "heading", label: "Headings in secondary", fg: c.secondary, bg: c.background, need: 4.5, kind: "text", role: "secondary" },
+    { id: "ring-on-bg", label: "Focus ring on background", fg: c.ring, bg: c.background, need: 3, kind: "marker", role: "ring" },
+    { id: "border-on-surface", label: "Dividers on surface", fg: c.border, bg: c.surface, need: 1.5, kind: "marker", role: "border", advisory: true },
     { id: "mark-accent", label: "Accent marks and borders", fg: c.accent, bg: c.background, need: 3, kind: "marker", role: "accent" },
     { id: "mark-success", label: "Success marks", fg: c.success, bg: c.background, need: 3, kind: "marker", role: "success" },
     { id: "mark-warning", label: "Warning marks", fg: c.warning, bg: c.background, need: 3, kind: "marker", role: "warning" },
@@ -172,10 +293,13 @@ export function evaluate(tokens: ThemeTokens): ContrastRow[] {
         ? undefined
         : r.kind === "text"
           ? `Needs ${r.need}:1 for readable text — this pair measures ${formatRatio(ratio)}.`
-          : `Needs ${r.need}:1 so the mark is distinguishable — this pair measures ${formatRatio(ratio)}.`
+          : r.advisory
+            ? `A divider below ${r.need}:1 disappears on this surface — this pair measures ${formatRatio(ratio)}. Decorative rules are exempt from WCAG 1.4.11, so this is advisory.`
+            : `Needs ${r.need}:1 so the mark is distinguishable — this pair measures ${formatRatio(ratio)}.`
     };
   });
 }
+
 
 export interface ContrastSummary { rows: ContrastRow[]; passed: number; warned: number; worst: number }
 
@@ -189,15 +313,26 @@ export function summarise(tokens: ThemeTokens): ContrastSummary {
   };
 }
 
+export const isScaleValid = (s: TypeScale): boolean =>
+  Number.isInteger(s.basePx) && s.basePx >= 14 && s.basePx <= 18
+  && SCALE_RATIOS.some((r) => r.value === s.ratio)
+  && s.leadingHeading >= 1 && s.leadingHeading <= 1.4
+  && s.leadingBody >= 1.4 && s.leadingBody <= 1.8
+  && s.trackingHeading >= -0.03 && s.trackingHeading <= 0
+  && s.trackingBody >= 0 && s.trackingBody <= 0.01;
+
 export const isDocumentValid = (tokens: ThemeTokens): boolean =>
   COLOR_ROLES.every((r) => normalizeHex(tokens.colors[r.key]) !== null)
   && FONT_INDEX.has(tokens.typography.heading.family)
-  && FONT_INDEX.has(tokens.typography.body.family);
+  && FONT_INDEX.has(tokens.typography.body.family)
+  && isScaleValid(tokens.typography.scale);
 
 /* ---------------- fonts ----------------
-   Embedded families are real woff2 files (see theme-font-data.ts). Families in
-   the catalogue without an asset are shown as “Requires ingestion” and cannot
-   be selected — the studio never previews a font it cannot render. */
+   Every family Google publishes is in the index (1,746 rows after excluding
+   brand fonts that are not licensed for redistribution). A subset — 247 at the
+   time of writing — carries a real woff2 in this build. Rows without an asset
+   are listed, never silently offered: the studio does not preview a font it
+   cannot render. */
 
 export interface FontFamily {
   family: string;
@@ -207,26 +342,58 @@ export interface FontFamily {
   embedded: boolean;
   /** why it cannot be picked, when it cannot */
   reason?: string;
-  category: "Sans" | "Serif";
+  category: FontCategory;
+  italic: boolean;
+  popularity: number;
 }
 
-const EMBEDDED: EmbeddedFamily[] = FONT_ASSETS;
+export const FONT_CATALOG: FontFamily[] = GOOGLE_FONT_ROWS.map((row) => {
+  const [family, category, weights, italic, author, popularity, embedded] = row;
+  return {
+    family,
+    category,
+    weights: weights ? weights.split(",").map(Number) : [400],
+    italic: italic === 1,
+    author,
+    license: "Google Fonts — free licence",
+    popularity,
+    embedded: embedded === 1,
+    reason: embedded === 1 ? undefined : "Not embedded in this build — the family is indexed but its woff2 is not shipped. Choose an embedded family, or add it through the font ingestion pipeline (BACKEND-PLAN §7.27)."
+  };
+});
 
-export const FONT_CATALOG: FontFamily[] = [
-  ...EMBEDDED.map((f) => ({
-    family: f.family,
-    weights: f.weights,
-    author: f.author,
-    license: f.license,
-    embedded: true,
-    category: /Lora/i.test(f.family) ? ("Serif" as const) : ("Sans" as const)
-  })),
-  { family: "Playfair Display", weights: [400, 600, 700], author: "Claus Eggers Sørensen", license: "SIL OFL 1.1", embedded: false, category: "Serif", reason: "Not embedded in this build — choose an embedded family or import the font through the ingestion pipeline." },
-  { family: "Space Grotesk", weights: [400, 500, 700], author: "Florian Karsten", license: "SIL OFL 1.1", embedded: false, category: "Sans", reason: "Not embedded in this build — choose an embedded family or import the font through the ingestion pipeline." },
-  { family: "Merriweather", weights: [400, 700], author: "Eben Sorkin", license: "SIL OFL 1.1", embedded: false, category: "Serif", reason: "Not embedded in this build — choose an embedded family or import the font through the ingestion pipeline." }
-];
+export const FONT_INDEX = new Set(FONT_ASSETS.map((f) => f.family));
 
-export const FONT_INDEX = new Set(FONT_CATALOG.filter((f) => f.embedded).map((f) => f.family));
+export const FONT_BY_NAME = new Map(FONT_CATALOG.map((f) => [f.family, f]));
+export const EMBEDDED_BY_NAME = new Map(FONT_ASSETS.map((f) => [f.family, f]));
+
+export const FONT_STATS = {
+  total: CATALOG_COUNT,
+  embedded: EMBEDDED_COUNT,
+  bytes: EMBEDDED_TOTAL_BYTES,
+  categories: (["sans", "serif", "display", "hand", "mono"] as FontCategory[])
+    .map((c) => ({ id: c, count: FONT_CATALOG.filter((f) => f.category === c).length }))
+};
+
+export const CATEGORY_LABEL: Record<FontCategory, string> = {
+  sans: "Sans serif", serif: "Serif", display: "Display", hand: "Handwriting", mono: "Monospace"
+};
+
+/** Search across all 1,746 families. Embedded-only is the default view; the
+    full index is one toggle away and every non-embedded row says why. */
+export function searchFonts(query: string, opts: { category?: FontCategory | "all"; embeddedOnly?: boolean; limit?: number } = {}): FontFamily[] {
+  const q = query.trim().toLowerCase();
+  const out: FontFamily[] = [];
+  const limit = opts.limit ?? 400;
+  for (const f of FONT_CATALOG) {
+    if (opts.embeddedOnly && !f.embedded) continue;
+    if (opts.category && opts.category !== "all" && f.category !== opts.category) continue;
+    if (q && !f.family.toLowerCase().includes(q) && !f.author.toLowerCase().includes(q)) continue;
+    out.push(f);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
 
 export const FALLBACK_STACKS: { id: string; label: string; value: string }[] = [
   { id: "system-ui", label: "System UI — system-ui, -apple-system, Segoe UI", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
@@ -239,38 +406,75 @@ export const stackOf = (id: string): string => FALLBACK_STACKS.find((s) => s.id 
 
 export interface Pairing { id: string; heading: string; body: string; label: string }
 
-export const PAIRINGS: Pairing[] = [
+/* curated pairs, all resolvable in the embedded set (checked by qa_theme.py) */
+const PAIR_CANDIDATES: Pairing[] = [
   { id: "geist-inter", heading: "Geist", body: "Inter", label: "Geist + Inter" },
-  { id: "poppins-inter", heading: "Poppins", body: "Inter", label: "Poppins + Inter" },
-  { id: "montserrat-inter", heading: "Montserrat", body: "Inter", label: "Montserrat + Inter" },
-  { id: "dmsans-inter", heading: "DM Sans", body: "Inter", label: "DM Sans + Inter" },
+  { id: "poppins-dmsans", heading: "Poppins", body: "DM Sans", label: "Poppins + DM Sans" },
+  { id: "montserrat-opensans", heading: "Montserrat", body: "Open Sans", label: "Montserrat + Open Sans" },
+  { id: "dmserif-dmsans", heading: "DM Serif Display", body: "DM Sans", label: "DM Serif Display + DM Sans" },
+  { id: "playfair-source", heading: "Playfair Display", body: "Source Sans 3", label: "Playfair Display + Source Sans 3" },
   { id: "lora-inter", heading: "Lora", body: "Inter", label: "Lora + Inter" },
-  { id: "poppins-dmsans", heading: "Poppins", body: "DM Sans", label: "Poppins + DM Sans" }
+  { id: "spacegrotesk-inter", heading: "Space Grotesk", body: "Inter", label: "Space Grotesk + Inter" },
+  { id: "oswald-roboto", heading: "Oswald", body: "Roboto", label: "Oswald + Roboto" },
+  { id: "bebas-inter", heading: "Bebas Neue", body: "Inter", label: "Bebas Neue + Inter" },
+  { id: "librebaskerville-nunitosans", heading: "Libre Baskerville", body: "Nunito Sans", label: "Libre Baskerville + Nunito Sans" },
+  { id: "raleway-roboto", heading: "Raleway", body: "Roboto", label: "Raleway + Roboto" },
+  { id: "merriweather-sourcesans", heading: "Merriweather", body: "Source Sans 3", label: "Merriweather + Source Sans 3" }
 ];
 
-let fontCssInjected = false;
-/** Inject the embedded faces once. Data URIs, so nothing leaves the document. */
-export function ensureFontFaces(): void {
-  if (fontCssInjected || typeof document === "undefined") return;
-  fontCssInjected = true;
-  const css = FONT_ASSETS.flatMap((f) => f.faces.map((face) => `@font-face{font-family:'${f.family}';font-style:${face.style};font-weight:${face.weight};font-display:swap;src:url(data:font/woff2;base64,${face.b64}) format('woff2');}`)).join("\n");
-  const el = document.createElement("style");
-  el.id = "m6-font-faces";
-  el.textContent = css;
-  document.head.appendChild(el);
+export const PAIRINGS: Pairing[] = PAIR_CANDIDATES.filter((p) => FONT_INDEX.has(p.heading) && FONT_INDEX.has(p.body));
+
+/* Font faces are injected lazily, per family. With 247 embedded families the
+   full stylesheet is ~14 MB of base64 — building it eagerly costs more than it
+   saves, so a family is registered the first time something asks for it. */
+const injected = new Set<string>();
+
+export function ensureFontFaces(families?: string[]): void {
+  if (typeof document === "undefined") return;
+  const want = families ?? [...FONT_INDEX];
+  let css = "";
+  for (const family of want) {
+    if (injected.has(family)) continue;
+    const asset = EMBEDDED_BY_NAME.get(family);
+    if (!asset) continue;
+    injected.add(family);
+    for (const face of asset.faces) {
+      css += `@font-face{font-family:'${family}';font-style:${face.style};font-weight:${face.weight};font-display:swap;src:url(data:font/woff2;base64,${face.b64}) format('woff2');}\n`;
+    }
+  }
+  ensureStyle().appendChild(document.createTextNode(css));
 }
 
+let styleEl: HTMLStyleElement | null = null;
+function ensureStyle(): HTMLStyleElement {
+  if (styleEl && styleEl.isConnected) return styleEl;
+  styleEl = document.createElement("style");
+  styleEl.id = "m6-font-faces";
+  document.head.appendChild(styleEl);
+  return styleEl;
+}
+
+/** The full stack string for a stored FontChoice. */
+export const stackFor = (f: FontChoice): string => `'${f.family}', ${stackOf(f.fallback)}`;
+
 /* ---------------- defaults & presets ---------------- */
+
+export const DEFAULT_SCALE: TypeScale = {
+  basePx: 16, ratio: 1.25, leadingHeading: 1.15, leadingBody: 1.6,
+  trackingHeading: -0.01, trackingBody: 0, fluid: true
+};
 
 export const DEFAULT_TOKENS: ThemeTokens = {
   colors: {
     primary: "#6941E8", secondary: "#0B1026", accent: "#0EA5E9",
     success: "#16A34A", warning: "#F59E0B", error: "#EF4444",
-    background: "#FFFFFF", surface: "#F8FAFC", text: "#0B1026"
+    background: "#FFFFFF", surface: "#F8FAFC", text: "#0B1026",
+    muted: "#5A6474", link: "#6941E8", border: "#C3CBD7", ring: "#6941E8"
   },
   typography: {
     heading: { family: "Geist", weight: 700, fallback: "system-ui" },
-    body: { family: "Inter", weight: 400, fallback: "system-ui" }
+    body: { family: "Inter", weight: 400, fallback: "system-ui" },
+    scale: DEFAULT_SCALE
   },
   geometry: { radiusPx: 12, spacing: { base: 8, density: "comfortable" }, containerWidthPx: 1200 },
   blockStyling: { cardDensity: "comfortable", elevation: "soft" }
@@ -280,11 +484,13 @@ export const OCEAN_TOKENS: ThemeTokens = {
   ...DEFAULT_TOKENS,
   colors: {
     primary: "#0E7490", secondary: "#0B2A38", accent: "#22D3EE", success: "#15803D",
-    warning: "#B45309", error: "#B91C1C", background: "#FFFFFF", surface: "#F1F7FA", text: "#0B2A38"
+    warning: "#B45309", error: "#B91C1C", background: "#FFFFFF", surface: "#F1F7FA", text: "#0B2A38",
+    muted: "#4C6B79", link: "#0E7490", border: "#BCD2DC", ring: "#0E7490"
   },
   typography: {
     heading: { family: "Poppins", weight: 600, fallback: "system-ui" },
-    body: { family: "Inter", weight: 400, fallback: "system-ui" }
+    body: { family: "Inter", weight: 400, fallback: "system-ui" },
+    scale: { ...DEFAULT_SCALE, ratio: 1.333, leadingHeading: 1.2, trackingHeading: 0 }
   },
   geometry: { radiusPx: 8, spacing: { base: 8, density: "compact" }, containerWidthPx: 1140 as 1280 }
 };
@@ -293,11 +499,13 @@ export const EDITORIAL_TOKENS: ThemeTokens = {
   ...DEFAULT_TOKENS,
   colors: {
     primary: "#B45309", secondary: "#1C1917", accent: "#D97706", success: "#166534",
-    warning: "#92400E", error: "#9F1239", background: "#FFFDF8", surface: "#F6EFE6", text: "#1C1917"
+    warning: "#92400E", error: "#9F1239", background: "#FFFDF8", surface: "#F6EFE6", text: "#1C1917",
+    muted: "#6B6154", link: "#B45309", border: "#DCD0BE", ring: "#B45309"
   },
   typography: {
     heading: { family: "Lora", weight: 600, fallback: "serif" },
-    body: { family: "Inter", weight: 400, fallback: "system-ui" }
+    body: { family: "Inter", weight: 400, fallback: "system-ui" },
+    scale: { ...DEFAULT_SCALE, basePx: 17, ratio: 1.25, leadingHeading: 1.3, leadingBody: 1.7, trackingHeading: 0 }
   },
   geometry: { radiusPx: 16, spacing: { base: 8, density: "spacious" }, containerWidthPx: 1280 },
   blockStyling: { cardDensity: "comfortable", elevation: "flat" }
@@ -322,10 +530,44 @@ interface SiteTheme {
 const themes = new Map<string, SiteTheme>();
 
 function seedTheme(_siteId: string): SiteTheme {
+  /* A theme that has been lived in: five revisions before the current draft.
+     The history is what the Revisions surface reads, so it has to contain real
+     changes — a list of identical re-saves would prove nothing. */
+  const base = clone(DEFAULT_TOKENS);
+
+  const r3t = clone(base);
+  r3t.colors.primary = "#7C3AED";
+  r3t.colors.link = "#7C3AED";
+  r3t.colors.ring = "#7C3AED";
+  const r3: ThemeRevision = {
+    id: "thm_rev_03", seq: 3, baseId: null, tokens: r3t,
+    createdAt: T0 - 74 * HOUR, createdBy: "Rohan P.", status: "draft"
+  };
+
+  const r4t = clone(r3t);
+  r4t.geometry.radiusPx = 8;
+  r4t.typography.heading = { family: "Poppins", weight: 600, fallback: "system-ui" };
+  const r4: ThemeRevision = {
+    id: "thm_rev_04", seq: 4, baseId: r3.id, tokens: r4t,
+    createdAt: T0 - 51 * HOUR, createdBy: "Aranya K.", status: "draft"
+  };
+
+  const r5t = clone(r4t);
+  r5t.colors.primary = "#6941E8";
+  r5t.colors.link = "#6941E8";
+  r5t.colors.ring = "#6941E8";
+  r5t.typography.heading = { family: "Geist", weight: 700, fallback: "system-ui" };
+  r5t.typography.scale = { ...DEFAULT_SCALE, ratio: 1.333, basePx: 17 };
+  const r5: ThemeRevision = {
+    id: "thm_rev_05", seq: 5, baseId: r4.id, tokens: r5t,
+    createdAt: T0 - 38 * HOUR, createdBy: "Aranya K.", status: "draft"
+  };
+
   const live: ThemeRevision = {
-    id: "thm_live_06", seq: 6, baseId: "thm_live_05", tokens: clone(DEFAULT_TOKENS),
+    id: "thm_live_06", seq: 6, baseId: r5.id, tokens: clone(DEFAULT_TOKENS),
     createdAt: T0 - 26 * HOUR, createdBy: "Aranya K.", status: "live", presetId: "preset_modern_violet"
   };
+
   /* the draft started from Modern Violet and was then hand-edited: wider container
      and a softer radius, so "draft is ahead of live" is visible on load and the
      publish review has a real diff to freeze. Contrast is untouched. */
@@ -336,7 +578,7 @@ function seedTheme(_siteId: string): SiteTheme {
     id: "thm_draft_07", seq: 7, baseId: live.id, tokens: draftTokens,
     createdAt: T0, createdBy: "Aranya K.", status: "draft"
   };
-  return { live, draft, history: [live, draft], seq: 7 };
+  return { live, draft, history: [r3, r4, r5, live, draft], seq: 7 };
 }
 
 function themeFor(siteId: string): SiteTheme {
@@ -346,6 +588,50 @@ function themeFor(siteId: string): SiteTheme {
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/* ---------------- revision diffs (G4) ----------------
+   A revision list is only useful if it says what changed. This is a field-level
+   diff over the token document, grouped the way the editor groups it. */
+
+export interface TokenDiff { group: string; label: string; from: string; to: string }
+
+export function diffTokens(before: ThemeTokens, after: ThemeTokens): TokenDiff[] {
+  const out: TokenDiff[] = [];
+  for (const role of COLOR_ROLES) {
+    const a = before.colors[role.key];
+    const b = after.colors[role.key];
+    if (a !== b) out.push({ group: "Colour", label: role.label, from: a, to: b });
+  }
+  const fa = before.typography.heading, fb = after.typography.heading;
+  if (fa.family !== fb.family) out.push({ group: "Typography", label: "Heading family", from: fa.family, to: fb.family });
+  if (fa.weight !== fb.weight) out.push({ group: "Typography", label: "Heading weight", from: String(fa.weight), to: String(fb.weight) });
+  const ba = before.typography.body, bb = after.typography.body;
+  if (ba.family !== bb.family) out.push({ group: "Typography", label: "Body family", from: ba.family, to: bb.family });
+  if (ba.weight !== bb.weight) out.push({ group: "Typography", label: "Body weight", from: String(ba.weight), to: String(bb.weight) });
+  const sa = before.typography.scale, sb = after.typography.scale;
+  const scaleLabels: Record<keyof TypeScale, string> = {
+    basePx: "Base size", ratio: "Scale ratio", leadingHeading: "Heading leading", leadingBody: "Body leading",
+    trackingHeading: "Heading tracking", trackingBody: "Body tracking", fluid: "Fluid headings"
+  };
+  for (const k of Object.keys(scaleLabels) as (keyof TypeScale)[]) {
+    if (sa[k] !== sb[k]) out.push({ group: "Type scale", label: scaleLabels[k], from: String(sa[k]), to: String(sb[k]) });
+  }
+  const ga = before.geometry, gb = after.geometry;
+  if (ga.radiusPx !== gb.radiusPx) out.push({ group: "Geometry", label: "Radius", from: `${ga.radiusPx}px`, to: `${gb.radiusPx}px` });
+  if (ga.containerWidthPx !== gb.containerWidthPx) out.push({ group: "Geometry", label: "Container", from: `${ga.containerWidthPx}px`, to: `${gb.containerWidthPx}px` });
+  if (ga.spacing.base !== gb.spacing.base) out.push({ group: "Geometry", label: "Spacing base", from: `${ga.spacing.base}px`, to: `${gb.spacing.base}px` });
+  if (ga.spacing.density !== gb.spacing.density) out.push({ group: "Geometry", label: "Density", from: ga.spacing.density, to: gb.spacing.density });
+  if (before.blockStyling.cardDensity !== after.blockStyling.cardDensity) out.push({ group: "Blocks", label: "Card density", from: before.blockStyling.cardDensity, to: after.blockStyling.cardDensity });
+  if (before.blockStyling.elevation !== after.blockStyling.elevation) out.push({ group: "Blocks", label: "Elevation", from: before.blockStyling.elevation, to: after.blockStyling.elevation });
+  return out;
+}
+
+/** What changed in a revision, against the one before it in the list. */
+export function revisionDiff(history: ThemeRevision[], rev: ThemeRevision): TokenDiff[] {
+  const idx = history.findIndex((r) => r.id === rev.id);
+  if (idx <= 0) return [];
+  return diffTokens(history[idx - 1].tokens, rev.tokens);
+}
 
 /* ---------------- presets ---------------- */
 
@@ -382,6 +668,10 @@ export function previewVars(t: ThemeTokens): Record<string, string> {
     "--t-bg": t.colors.background,
     "--t-surface": t.colors.surface,
     "--t-text": t.colors.text,
+    "--t-muted": t.colors.muted,
+    "--t-link": t.colors.link,
+    "--t-border": t.colors.border,
+    "--t-ring": t.colors.ring,
     "--t-radius": `${t.geometry.radiusPx}px`,
     "--t-container": `${t.geometry.containerWidthPx}px`,
     "--t-band": `${Math.round(48 * gap)}px`,
@@ -390,6 +680,16 @@ export function previewVars(t: ThemeTokens): Record<string, string> {
     "--t-font-body": `'${t.typography.body.family}', ${stackOf(t.typography.body.fallback)}`,
     "--t-heading-weight": String(t.typography.heading.weight),
     "--t-body-weight": String(t.typography.body.weight),
+    "--t-fs-h1": typeSizeCss(t, "h1"),
+    "--t-fs-h2": typeSizeCss(t, "h2"),
+    "--t-fs-h3": typeSizeCss(t, "h3"),
+    "--t-fs-body": typeSizeCss(t, "body"),
+    "--t-fs-small": typeSizeCss(t, "small"),
+    "--t-fs-caption": typeSizeCss(t, "caption"),
+    "--t-lh-heading": String(t.typography.scale.leadingHeading),
+    "--t-lh-body": String(t.typography.scale.leadingBody),
+    "--t-ls-heading": `${t.typography.scale.trackingHeading}em`,
+    "--t-ls-body": `${t.typography.scale.trackingBody}em`,
     "--t-card-pad": t.blockStyling.cardDensity === "compact" ? "14px" : "20px",
     "--t-shadow": t.blockStyling.elevation === "soft" ? "0 10px 26px -18px rgba(16,24,40,.45)" : "none"
   };
@@ -408,12 +708,26 @@ export function compiledVars(t: ThemeTokens): Record<string, string> {
     "--brand-bg": t.colors.background,
     "--brand-surface": t.colors.surface,
     "--brand-text": t.colors.text,
+    "--brand-muted": t.colors.muted,
+    "--brand-link": t.colors.link,
+    "--brand-border": t.colors.border,
+    "--brand-ring": t.colors.ring,
     "--radius-md": `${t.geometry.radiusPx}px`,
     "--container-max": `${t.geometry.containerWidthPx}px`,
     "--space-1": `${spacingScale(t)[0]}px`,
     "--space-4": `${spacingScale(t)[3]}px`,
     "--font-heading": `'${t.typography.heading.family}', ${stackOf(t.typography.heading.fallback)}`,
-    "--font-body": `'${t.typography.body.family}', ${stackOf(t.typography.body.fallback)}`
+    "--font-body": `'${t.typography.body.family}', ${stackOf(t.typography.body.fallback)}`,
+    "--font-size-h1": typeSizeCss(t, "h1"),
+    "--font-size-h2": typeSizeCss(t, "h2"),
+    "--font-size-h3": typeSizeCss(t, "h3"),
+    "--font-size-body": typeSizeCss(t, "body"),
+    "--font-size-small": typeSizeCss(t, "small"),
+    "--font-size-caption": typeSizeCss(t, "caption"),
+    "--leading-heading": String(t.typography.scale.leadingHeading),
+    "--leading-body": String(t.typography.scale.leadingBody),
+    "--tracking-heading": `${t.typography.scale.trackingHeading}em`,
+    "--tracking-body": `${t.typography.scale.trackingBody}em`
   };
 }
 
@@ -493,10 +807,12 @@ export function validateImport(raw: string, scope: Preset["scope"], name: string
     return { ok: false, errors: [{ path: "$", message: "A theme preset must be a JSON object." }], warnings };
   }
   walkKeys(doc, "$", errors);
-  if (doc.schemaVersion !== 1 && doc.schemaVersion !== "1") {
-    errors.push({ path: "$.schemaVersion", message: `Unsupported version ${JSON.stringify(doc.schemaVersion ?? null)} — this build reads version 1.` });
+  const version = Number(doc.schemaVersion);
+  if (![1, 2].includes(version)) {
+    errors.push({ path: "$.schemaVersion", message: `Unsupported version ${JSON.stringify(doc.schemaVersion ?? null)} — this build reads versions 1 and 2.` });
   }
   const allowed = new Set(["schemaVersion", "name", "description", "colors", "typography", "geometry", "blockStyling", "starterLayouts", "navigation", "x-wacrm"]);
+  const derivedRoles: ColorRole[] = [];
   for (const k of Object.keys(doc)) {
     if (!allowed.has(k)) errors.push({ path: `$.${k}`, message: `“${k}” is not part of the version 1 theme schema.` });
   }
@@ -504,7 +820,15 @@ export function validateImport(raw: string, scope: Preset["scope"], name: string
   const colors = doc.colors ?? {};
   for (const role of COLOR_ROLES) {
     const v = colors[role.key];
-    if (v === undefined) { errors.push({ path: `$.colors.${role.key}`, message: `Missing required token colors.${role.key}.` }); continue; }
+    if (v === undefined) {
+      /* a version-1 file predates muted/link/border/ring — derive them and say so */
+      if (!CORE_ROLES.includes(role.key) && normalizeHex(colors.text ?? "") && normalizeHex(colors.background ?? "")) {
+        derivedRoles.push(role.key);
+        continue;
+      }
+      errors.push({ path: `$.colors.${role.key}`, message: `Missing required token colors.${role.key}.` });
+      continue;
+    }
     if (normalizeHex(v) === null) errors.push({ path: `$.colors.${role.key}`, message: `“${v}” is not a six-digit hex colour.` });
   }
   for (const k of Object.keys(colors)) {
@@ -522,6 +846,24 @@ export function validateImport(raw: string, scope: Preset["scope"], name: string
     }
     if (!FALLBACK_IDS.has(f.fallback)) errors.push({ path: `$.typography.${role}.fallback`, message: `“${f.fallback}” is not an approved fallback stack.` });
   }
+  const rawScale = typo.scale;
+  let scale: TypeScale = DEFAULT_SCALE;
+  let scaleDerived = false;
+  if (rawScale === undefined) {
+    scaleDerived = true;
+  } else if (typeof rawScale !== "object" || rawScale === null) {
+    errors.push({ path: "$.typography.scale", message: "The type scale must be an object." });
+  } else {
+    const candidate: TypeScale = {
+      basePx: Number(rawScale.basePx), ratio: Number(rawScale.ratio),
+      leadingHeading: Number(rawScale.leadingHeading), leadingBody: Number(rawScale.leadingBody),
+      trackingHeading: Number(rawScale.trackingHeading), trackingBody: Number(rawScale.trackingBody),
+      fluid: rawScale.fluid !== false
+    };
+    if (!isScaleValid(candidate)) {
+      errors.push({ path: "$.typography.scale", message: "The type scale is out of range: base 14–18 px, ratio 1.2 / 1.25 / 1.333 / 1.5, heading leading 1–1.4, body leading 1.4–1.8, heading tracking −0.03–0 em." });
+    } else scale = candidate;
+  }
 
   const g = doc.geometry ?? {};
   if (!RADII.includes(Number(g.radiusPx))) errors.push({ path: "$.geometry.radiusPx", message: `${g.radiusPx} is not one of the allowed radii (${RADII.join(", ")}).` });
@@ -536,16 +878,28 @@ export function validateImport(raw: string, scope: Preset["scope"], name: string
 
   const starterLayouts = Boolean(doc.starterLayouts && Object.keys(doc.starterLayouts).length);
   const navigation = Boolean(doc.navigation && Object.keys(doc.navigation).length);
+  if (derivedRoles.length) warnings.push(`${derivedRoles.length} role${derivedRoles.length === 1 ? "" : "s"} were not in the file (${derivedRoles.join(", ")}) — this build derived ${derivedRoles.length === 1 ? "it" : "them"} from the file's own palette. Check them before saving.`);
+  if (scaleDerived) warnings.push("The file carries no type scale (it predates version 2) — the default 16 px / 1.250 scale was applied. Adjust it in the Typography tab.");
   if (starterLayouts) warnings.push("The file carries starter layouts. This build keeps existing pages and layouts — the field is ignored.");
   if (navigation) warnings.push("The file carries navigation. This build keeps existing menus — the field is ignored.");
 
   if (errors.length) return { ok: false, errors, warnings };
 
+  const resolvedColors = Object.fromEntries(COLOR_ROLES.map((r) => {
+    const own = normalizeHex(colors[r.key]);
+    return [r.key, own ?? deriveRole(r.key, {
+      text: normalizeHex(colors.text) ?? DEFAULT_TOKENS.colors.text,
+      background: normalizeHex(colors.background) ?? DEFAULT_TOKENS.colors.background,
+      primary: normalizeHex(colors.primary) ?? DEFAULT_TOKENS.colors.primary
+    })];
+  })) as Record<ColorRole, string>;
+
   const tokens: ThemeTokens = {
-    colors: Object.fromEntries(COLOR_ROLES.map((r) => [r.key, normalizeHex(colors[r.key])!])) as Record<ColorRole, string>,
+    colors: resolvedColors,
     typography: {
       heading: { family: typo.heading.family, weight: Number(typo.heading.weight), fallback: typo.heading.fallback },
-      body: { family: typo.body.family, weight: Number(typo.body.weight), fallback: typo.body.fallback }
+      body: { family: typo.body.family, weight: Number(typo.body.weight), fallback: typo.body.fallback },
+      scale
     },
     geometry: {
       radiusPx: Number(g.radiusPx) as ThemeTokens["geometry"]["radiusPx"],
@@ -586,14 +940,18 @@ export function exportDocument(siteId: string, mode: ExportMode): { filename: st
   if (!rev) return null;
   const slug = (site?.name ?? "site").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const body = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     name: site?.name ? `${site.name} theme` : "Theme",
     description: mode === "live" ? "Exported from the live release." : "Exported from the saved draft.",
     colors: rev.tokens.colors,
     typography: rev.tokens.typography,
     geometry: rev.tokens.geometry,
     blockStyling: rev.tokens.blockStyling,
-    "x-wacrm": { site: site?.name ?? siteId, revision: rev.id, status: mode, exportedAt: new Date().toISOString(), exportedBy: "Aranya K." }
+    "x-wacrm": {
+      site: site?.name ?? siteId, revision: rev.id, seq: rev.seq, status: mode,
+      typeScale: typeStamp(rev.tokens), contrastPairs: evaluate(rev.tokens).length,
+      exportedAt: new Date().toISOString(), exportedBy: "Aranya K."
+    }
   };
   return { filename: `${slug}-theme-${mode}-v${rev.seq}.json`, json: JSON.stringify(body, null, 2) };
 }

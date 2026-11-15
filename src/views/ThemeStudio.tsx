@@ -15,11 +15,12 @@ import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { seedStudyAbroad, type BlockNode } from "@/lib/builder";
 import {
-  COLOR_ROLES, CONTAINER_OPTIONS, DEFAULT_TOKENS, DENSITY_OPTIONS, FALLBACK_STACKS, FONT_CATALOG,
-  PAIRINGS, RADIUS_OPTIONS, ThemeAPI, blocksOf, ensureFontFaces, exportDocument, formatRatio,
-  isDocumentValid, onPrimary, spacingScale, summarise, validateImport,
+  BASE_SIZES, COLOR_ROLES, CONTAINER_OPTIONS, DEFAULT_TOKENS, DENSITY_OPTIONS, FALLBACK_STACKS,
+  FONT_CATALOG, FONT_STATS, PAIRINGS, RADIUS_OPTIONS, SCALE_RATIOS, TYPE_STEPS, ThemeAPI, blocksOf,
+  ensureFontFaces, exportDocument, formatRatio, isDocumentValid, onPrimary, spacingScale, summarise,
+  typeSizeCss, typeSizes, typeStamp, validateImport,
   type ColorRole, type ContrastRow, type ImportResult, type Preset, type ThemePayload,
-  type ThemeRevision, type ThemeTokens, type Usage
+  type ThemeRevision, type ThemeTokens, type TypeStep, type Usage
 } from "@/lib/theme-db";
 import type { Device } from "@/components/builder/Canvas";
 import { ColorField, FontCombobox } from "@/components/theme/ThemeControls";
@@ -27,7 +28,7 @@ import { ThemePreview } from "@/components/theme/ThemePreview";
 import { ThemeOverview } from "@/components/theme/ThemeOverview";
 import {
   ApplyPresetModal, ConflictModal, DeletePresetModal, ImportReviewModal, LeaveModal,
-  PresetNameModal, PublishReviewModal, ResetModal, UsageModal
+  PresetNameModal, PublishReviewModal, ResetModal, RevisionsModal, UsageModal
 } from "@/components/theme/ThemeModals";
 
 type Tab = "brand" | "type" | "presets";
@@ -88,6 +89,25 @@ function Segmented<T extends string | number>({ value, options, onChange, disabl
   );
 }
 
+function ScaleSlider({ label, value, min, max, step, format, disabled, onChange, hint }: {
+  label: string; value: number; min: number; max: number; step: number;
+  format: (v: number) => string; disabled?: boolean; onChange: (v: number) => void; hint?: string;
+}) {
+  return (
+    <div className="m6-slider" data-m6-slider={label.toLowerCase().replace(/[^a-z]+/g, "-")}>
+      <div className="m6-slider-top">
+        <label className="m6-label">{label}</label>
+        <b>{format(value)}</b>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step} value={value} disabled={disabled}
+        aria-label={label} onChange={(e) => onChange(Number(e.target.value))}
+      />
+      {hint && <p className="m6-hint">{hint}</p>}
+    </div>
+  );
+}
+
 /* ---------------- the screen ---------------- */
 
 export function ThemeStudio() {
@@ -104,6 +124,8 @@ export function ThemeStudio() {
 
   /* ---- working copy ---- */
   const [tab, setTab] = useState<Tab>("brand");
+  const [pvMode, setPvMode] = useState<"page" | "specimen">("page");
+  const [revOpen, setRevOpen] = useState(false);
   const [working, setWorking] = useState<ThemeTokens | null>(null);
   const [undoStack, setUndoStack] = useState<ThemeTokens[]>([]);
   const [saving, setSaving] = useState(false);
@@ -192,15 +214,18 @@ export function ThemeStudio() {
     setTick((n) => n + 1);
   }, [app.demo, siteId]);
 
-  /* ---- embedded fonts ---- */
+  /* ---- embedded fonts ----
+     Faces are registered lazily, one family at a time: 247 embedded families is
+     ~14 MB of base64, so only the families actually on screen are materialised. */
   useEffect(() => {
-    ensureFontFaces();
+    if (!working) return;
+    ensureFontFaces([working.typography.heading.family, working.typography.body.family]);
     let alive = true;
     const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
     if (!fonts) { setFontsReady(true); return; }
     fonts.ready.then(() => { if (alive) setFontsReady(true); }).catch(() => undefined);
     return () => { alive = false; };
-  }, []);
+  }, [working?.typography.heading.family, working?.typography.body.family]);
 
   /* ---- font verification state (local job, real result) ---- */
   const [fontJob, setFontJob] = useState<"idle" | "preparing" | "ready" | "failed">("idle");
@@ -340,6 +365,24 @@ export function ThemeStudio() {
     setModalErr("");
   };
 
+  /* ---- G4: restore a revision into the working copy ----
+     Deliberately not a write. A restore that saved behind the user's back would
+     be the one action in this module that changes stored state without a press
+     of Save, which is exactly the guarantee the module sells. */
+  const restoreRevision = useCallback((rev: ThemeRevision) => {
+    setWorking((w) => {
+      if (w) setUndoStack((u) => [...u, w].slice(-20));
+      return clone(rev.tokens);
+    });
+    setRevOpen(false);
+    setTab("brand");
+    app.toast({
+      type: "info",
+      title: `Revision #${rev.seq} restored into the working copy`,
+      sub: "Press Save Brand Tokens to make it a new draft — nothing reaches the live site until a release is published."
+    });
+  }, [app]);
+
   /* ================= states ================= */
 
   if (status === "error") {
@@ -464,11 +507,19 @@ export function ThemeStudio() {
               <>
                 <div className="m6-sec-head">
                   <h3>Colors</h3>
-                  <p>Nine semantic roles. Contrast is measured on the pairs that actually render, not on every role against white.</p>
+                  <p>Thirteen semantic roles — brand marks, then the surface, text and line roles they sit with. Contrast is measured on the pairs that actually render, not on every role against white.</p>
                 </div>
 
-                <div className="m6-rows">
-                  {COLOR_ROLES.map((role) => {
+                {(["Brand", "Surface & text"] as const).map((group) => (
+                  <div className="m6-role-group-wrap" key={group} data-m6-group={group}>
+                    <div className="m6-role-group">
+                      <b>{group === "Brand" ? "Brand marks" : "Surface, text & lines"}</b>
+                      <em>{group === "Brand"
+                        ? "What the site signals with — measured against the canvas"
+                        : "What the site sits on, and the text and lines drawn on it"}</em>
+                    </div>
+                    <div className="m6-rows">
+                      {COLOR_ROLES.filter((r) => r.group === group).map((role) => {
                     const hex = working.colors[role.key];
                     const row = contrastFor(role.key);
                     return (
@@ -497,7 +548,7 @@ export function ThemeStudio() {
                           <div className="m6-crow-sub">{role.use}</div>
                         </div>
                         {row ? (
-                          <Tip text={`${row.label} — ${formatRatio(row.ratio)} against ${row.bg === working.colors.background ? "background" : "surface"} · needs ${row.need}:1`}>
+                          <Tip text={`${row.label} — ${formatRatio(row.ratio)} against ${row.bg === working.colors.background ? "background" : "surface"} · ${row.advisory ? "advisory floor" : "needs"} ${row.need}:1`}>
                             <span className={`m6-crow-ratio is-${row.verdict}`}>{formatRatio(row.ratio)}</span>
                           </Tip>
                         ) : (
@@ -507,8 +558,10 @@ export function ThemeStudio() {
                         )}
                       </div>
                     );
-                  })}
-                </div>
+                      })}
+                    </div>
+                  </div>
+                ))}
 
                 <div className="m6-derived-line">
                   <span className="m6-swatch-chip" style={{ background: onPrimary(working.colors.primary) }} aria-hidden />
@@ -626,7 +679,7 @@ export function ThemeStudio() {
               <>
                 <div className="m6-banner is-soft">
                   <Icon name="shield" size={13} />
-                  Selected fonts are self-hosted and validated before saving — the woff2 files ship inside this build, so nothing is fetched at save time.
+                  {FONT_STATS.embedded} of {FONT_STATS.total.toLocaleString()} Google Fonts families are embedded in this build as self-hosted woff2 ({(FONT_STATS.bytes / 1e6).toFixed(1)} MB) and verified before saving. The rest are indexed, searchable and locked — never offered as a font the page cannot render.
                 </div>
 
                 {(["heading", "body"] as const).map((role) => {
@@ -680,6 +733,126 @@ export function ThemeStudio() {
                   );
                 })}
 
+                <div className="m6-card" data-m6="type-scale">
+                  <div className="m6-card-head">
+                    <span className="m6-card-title">Type Scale</span>
+                    <span className="m6-card-meta">{typeStamp(working)} px · ratio {working.typography.scale.ratio.toFixed(3)}</span>
+                  </div>
+
+                  <div className="m6-scale-two">
+                    <div>
+                      <label className="m6-label">Base size</label>
+                      <Segmented
+                        ariaLabel="Base font size" disabled={readOnly}
+                        value={working.typography.scale.basePx}
+                        options={BASE_SIZES.map((n) => ({ value: n as number, label: String(n) }))}
+                        onChange={(v) => commit((x) => ({ ...x, typography: { ...x.typography, scale: { ...x.typography.scale, basePx: v } } }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="m6-label">Ratio</label>
+                      <select
+                        className="m6-select" aria-label="Scale ratio" disabled={readOnly}
+                        value={working.typography.scale.ratio}
+                        onChange={(e) => commit((x) => ({ ...x, typography: { ...x.typography, scale: { ...x.typography.scale, ratio: Number(e.target.value) } } }))}
+                      >
+                        {SCALE_RATIOS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="m6-hint">
+                    {SCALE_RATIOS.find((r) => r.value === working.typography.scale.ratio)?.use}. h1 is {typeSizes(working).h1} px and caption {typeSizes(working).caption} px — six steps derived from one base, not six numbers typed by hand.
+                  </p>
+
+                  <div className="m6-slider-group">
+                    <span className="m6-label">Line height</span>
+                    <div className="m6-sliders">
+                      <ScaleSlider
+                        label="Heading" value={working.typography.scale.leadingHeading}
+                        min={1} max={1.4} step={0.05} format={(v) => v.toFixed(2)} disabled={readOnly}
+                        onChange={(v) => commit((x) => ({ ...x, typography: { ...x.typography, scale: { ...x.typography.scale, leadingHeading: v } } }))}
+                      />
+                      <ScaleSlider
+                        label="Body" value={working.typography.scale.leadingBody}
+                        min={1.4} max={1.8} step={0.05} format={(v) => v.toFixed(2)} disabled={readOnly}
+                        onChange={(v) => commit((x) => ({ ...x, typography: { ...x.typography, scale: { ...x.typography.scale, leadingBody: v } } }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="m6-slider-group">
+                    <span className="m6-label">Letter spacing · em</span>
+                    <div className="m6-sliders">
+                      <ScaleSlider
+                        label="Heading" value={working.typography.scale.trackingHeading}
+                        min={-0.03} max={0} step={0.005} format={(v) => v.toFixed(3)} disabled={readOnly}
+                        onChange={(v) => commit((x) => ({ ...x, typography: { ...x.typography, scale: { ...x.typography.scale, trackingHeading: v } } }))}
+                      />
+                      <ScaleSlider
+                        label="Body" value={working.typography.scale.trackingBody}
+                        min={0} max={0.01} step={0.001} format={(v) => v.toFixed(3)} disabled={readOnly}
+                        onChange={(v) => commit((x) => ({ ...x, typography: { ...x.typography, scale: { ...x.typography.scale, trackingBody: v } } }))}
+                      />
+                    </div>
+                    <p className="m6-hint">Display type usually tightens; body copy usually does not.</p>
+                  </div>
+
+                  <label className="m6-check">
+                    <input
+                      type="checkbox" checked={working.typography.scale.fluid} disabled={readOnly}
+                      onChange={(e) => commit((x) => ({ ...x, typography: { ...x.typography, scale: { ...x.typography.scale, fluid: e.target.checked } } }))}
+                    />
+                    <span>
+                      <b>Fluid headings</b>
+                      <em>Emits clamp() between 420 and 1180 px. h1–h3 breathe; body copy never moves — that is the difference between fluid type and a shrinking page.</em>
+                    </span>
+                  </label>
+
+                  <div className="m6-ramp" role="table" aria-label="Type scale preview">
+                    {TYPE_STEPS.map((step) => {
+                      const size = typeSizes(working)[step];
+                      const isHead = step === "h1" || step === "h2" || step === "h3";
+                      /* short strings: the ramp lives in a 250 px pane, so the
+                         sample has to survive at h1 size without ellipsis */
+                      const sample: Record<TypeStep, string> = {
+                        h1: "Study abroad",
+                        h2: "Destinations",
+                        h3: "Talk to an expert",
+                        body: "Applications are open for the September intake.",
+                        small: "Closes 30 June",
+                        caption: "Updated 12 minutes ago"
+                      };
+                      return (
+                        <div className="m6-ramp-row" key={step} role="row" data-m6-step={step}>
+                          <div className="m6-ramp-key" role="cell">
+                            <b>{step}</b>
+                            <em>{size} px · {isHead ? working.typography.scale.leadingHeading : working.typography.scale.leadingBody} lh · {isHead ? working.typography.scale.trackingHeading.toFixed(3) : working.typography.scale.trackingBody.toFixed(3)}em</em>
+                          </div>
+                          <div
+                            className={`m6-ramp-sample ${isHead ? "is-head" : "is-body"}`} role="cell"
+                            style={{
+                              fontFamily: isHead
+                                ? `'${working.typography.heading.family}', system-ui`
+                                : `'${working.typography.body.family}', system-ui`,
+                              fontWeight: isHead ? working.typography.heading.weight : step === "small" || step === "caption" ? 500 : working.typography.body.weight,
+                              fontSize: typeSizeCss(working, step),
+                              lineHeight: isHead ? working.typography.scale.leadingHeading : working.typography.scale.leadingBody,
+                              letterSpacing: `${isHead ? working.typography.scale.trackingHeading : working.typography.scale.trackingBody}em`,
+                              color: step === "caption" || step === "small" ? working.colors.muted : working.colors.text
+                            }}
+                          >
+                            {sample[step]}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="m6-hint">
+                    {working.typography.scale.fluid
+                      ? `Fluid on — h1 renders ${typeSizeCss(working, "h1")} in the preview.`
+                      : "Fluid off — every step is a fixed px value at all widths."}
+                  </p>
+                </div>
+
                 <div className="m6-field">
                   <label className="m6-label">Pairing shortcuts</label>
                   <div className="m6-pairing-chips">
@@ -692,6 +865,7 @@ export function ThemeStudio() {
                           onClick={() => commit((x) => ({
                             ...x,
                             typography: {
+                              ...x.typography,
                               heading: { ...x.typography.heading, family: p.heading },
                               body: { ...x.typography.body, family: p.body }
                             }
@@ -727,7 +901,7 @@ export function ThemeStudio() {
                       className="m6-prev-p"
                       style={{ fontFamily: `'${working.typography.body.family}', system-ui`, fontWeight: working.typography.body.weight, color: working.colors.text }}
                     >
-                      {working.typography.heading.family} ({working.typography.heading.weight}) sets the hierarchy; {working.typography.body.family} ({working.typography.body.weight}) carries the copy at 16 px.
+                      {working.typography.heading.family} ({working.typography.heading.weight}) sets the hierarchy at {typeSizes(working).h1} px; {working.typography.body.family} ({working.typography.body.weight}) carries the copy at {working.typography.scale.basePx} px / {working.typography.scale.leadingBody}.
                     </p>
                     <div className="m6-prev-actions">
                       <span
@@ -892,7 +1066,9 @@ export function ThemeStudio() {
             page={pageId}
             onPage={(id) => { setPageId(id); setUseSample(false); }}
             blocks={blocks}
-            zoomLabel={device === "desktop" ? "scaled to fit the studio" : "actual size"}
+            zoomLabel={pvMode === "specimen" ? "rendered at studio width" : device === "desktop" ? "scaled to fit the studio" : "actual size"}
+            mode={pvMode}
+            onMode={setPvMode}
             empty={
               <div className="m6-pv-noPage">
                 <Icon name="file" size={20} />
@@ -936,6 +1112,9 @@ export function ThemeStudio() {
             app.go("overview");
             app.toast({ type: "info", title: "Release history", sub: "Releases and their token revisions are listed on the dashboard until Publishing & Releases ships." });
           })}
+          history={payload.history}
+          onRestore={restoreRevision}
+          onOpenRevisions={() => setRevOpen(true)}
         />
       </div>
 
@@ -1117,6 +1296,16 @@ export function ThemeStudio() {
               app.toast({ type: "info", title: "Preset archived", sub: "Its references still resolve; it can no longer be applied." });
             } catch (e) { setModalErr((e as Error).message); }
           }}
+        />
+      )}
+
+      {revOpen && (
+        <RevisionsModal
+          history={payload.history}
+          live={payload.live}
+          draft={payload.draft}
+          onClose={() => setRevOpen(false)}
+          onRestore={restoreRevision}
         />
       )}
 

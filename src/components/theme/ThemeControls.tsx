@@ -12,10 +12,13 @@
    Neither one owns theme state: they call back with a value and the screen
    decides what a commit means (working edit, undo entry, dirty flag).
    ============================================================ */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Popover } from "@/components/ui";
-import { FONT_CATALOG, normalizeHex, type FontFamily } from "@/lib/theme-db";
+import {
+  CATEGORY_LABEL, FONT_STATS, ensureFontFaces, normalizeHex, searchFonts,
+  type FontCategory
+} from "@/lib/theme-db";
 
 /* ---------------- colour maths for the picker ---------------- */
 
@@ -188,7 +191,14 @@ export function ColorField({ anchor, open, onClose, roleLabel, value, recent, on
   );
 }
 
-/* ---------------- font combobox ---------------- */
+/* ---------------- font combobox ----------------
+   The catalogue is the whole Google Fonts library (1,746 families after brand
+   fonts are excluded), so this control is built like a search product, not a
+   dropdown: query, category filters, an embedded-only default, and a windowed
+   list. Every row states what it is — embedded families render here, indexed
+   families say why they cannot be picked. */
+
+const WINDOW = 60;
 
 export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }: {
   anchor: HTMLElement | null;
@@ -199,23 +209,67 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
   onPick: (family: string) => void;
 }) {
   const [q, setQ] = useState("");
+  const [cat, setCat] = useState<FontCategory | "all">("all");
+  const [embeddedOnly, setEmbeddedOnly] = useState(true);
+  const [shown, setShown] = useState(WINDOW);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (open) { setQ(""); window.setTimeout(() => inputRef.current?.focus(), 30); } }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    setQ(""); setCat("all"); setEmbeddedOnly(true); setShown(WINDOW);
+    window.setTimeout(() => inputRef.current?.focus(), 30);
+  }, [open]);
 
-  const rows = FONT_CATALOG.filter((f: FontFamily) => !q.trim() || f.family.toLowerCase().includes(q.trim().toLowerCase()));
+  const matches = useMemo(
+    () => searchFonts(q, { category: cat, embeddedOnly, limit: 1200 }),
+    [q, cat, embeddedOnly]
+  );
+  const visible = matches.slice(0, shown);
+
+  /* only the families inside the window need a face — 247 eager @font-face
+     blocks would cost a 14 MB stylesheet before the first keystroke */
+  useEffect(() => {
+    if (!open || !visible.length) return;
+    ensureFontFaces(visible.filter((f) => f.embedded).map((f) => f.family));
+  }, [open, visible]);
 
   return (
-    <Popover anchor={anchor} open={open} onClose={onClose} align="left" role="listbox" className="m6-fc">
+    <Popover anchor={anchor} open={open} onClose={onClose} align="left" role="dialog" className="m6-fc">
       <div className="m6-fc-search">
         <Icon name="search" size={13} />
         <input
-          ref={inputRef} value={q} placeholder={`Search fonts for ${roleLabel.toLowerCase()}…`}
-          aria-label={`Search fonts for ${roleLabel}`} onChange={(e) => setQ(e.target.value)}
+          ref={inputRef} value={q} placeholder={`Search ${FONT_STATS.total.toLocaleString()} families for ${roleLabel.toLowerCase()}…`}
+          aria-label={`Search fonts for ${roleLabel}`} onChange={(e) => { setQ(e.target.value); setShown(WINDOW); }}
         />
+        {q && <button className="m6-clear" onClick={() => setQ("")} aria-label="Clear font search"><Icon name="x" size={12} /></button>}
       </div>
-      <div className="m6-fc-list" role="presentation">
-        {rows.map((f) => {
+
+      <div className="m6-fc-filters" role="group" aria-label="Font category">
+        <button type="button" className={`m6-fc-chip ${cat === "all" ? "is-on" : ""}`} onClick={() => { setCat("all"); setShown(WINDOW); }}>
+          All <em>{FONT_STATS.total.toLocaleString()}</em>
+        </button>
+        {FONT_STATS.categories.map((c) => (
+          <button
+            key={c.id} type="button" className={`m6-fc-chip ${cat === c.id ? "is-on" : ""}`}
+            onClick={() => { setCat(c.id); setShown(WINDOW); }}
+          >
+            {CATEGORY_LABEL[c.id]} <em>{c.count}</em>
+          </button>
+        ))}
+        <span className="grow" />
+        <button
+          type="button" className={`m6-fc-toggle ${embeddedOnly ? "is-on" : ""}`}
+          aria-pressed={embeddedOnly}
+          onClick={() => { setEmbeddedOnly((v) => !v); setShown(WINDOW); }}
+          title="Embedded families render offline from woff2 inside this build. Turning this off lists the full index, including families that need ingestion."
+        >
+          <Icon name={embeddedOnly ? "check" : "x"} size={10} />
+          Embedded only
+        </button>
+      </div>
+
+      <div className="m6-fc-list" role="listbox" aria-label={`Font families for ${roleLabel}`}>
+        {visible.map((f) => {
           const on = f.family === value;
           return (
             <button
@@ -225,15 +279,20 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
               aria-selected={on}
               aria-disabled={!f.embedded}
               disabled={!f.embedded}
-              className={`m6-fc-row ${on ? "is-on" : ""}`}
+              className={`m6-fc-row ${on ? "is-on" : ""} ${f.embedded ? "" : "is-locked"}`}
               title={!f.embedded ? f.reason : `${f.family} · ${f.weights.join("/")} · ${f.license}`}
               onClick={() => { onPick(f.family); onClose(); }}
             >
-              <span className="m6-fc-aa" style={{ fontFamily: `'${f.family}', system-ui` }}>Aa</span>
+              <span
+                className="m6-fc-aa"
+                style={{ fontFamily: f.embedded ? `'${f.family}', system-ui` : undefined }}
+              >
+                Aa
+              </span>
               <span className="m6-fc-body">
                 <span className="m6-fc-name">{f.family}</span>
                 <span className="m6-fc-meta">
-                  {f.category} · {f.weights.join(" / ")} · {f.license}
+                  {CATEGORY_LABEL[f.category]} · {f.weights.slice(0, 4).join(" / ")}{f.weights.length > 4 ? " …" : ""} · {f.author || "—"}
                   {!f.embedded && <em className="m6-fc-warn"> · Requires ingestion</em>}
                 </span>
               </span>
@@ -242,11 +301,26 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
             </button>
           );
         })}
-        {!rows.length && <div className="m6-fc-none">No family in the catalogue matches “{q}”.</div>}
+        {!matches.length && (
+          <div className="m6-fc-none">
+            {embeddedOnly
+              ? <>No embedded family matches “{q}”. <button type="button" className="m6-link" onClick={() => setEmbeddedOnly(false)}>Search all {FONT_STATS.total.toLocaleString()} indexed families</button></>
+              : <>No family in the index matches “{q}”.</>}
+          </div>
+        )}
+        {matches.length > visible.length && (
+          <button type="button" className="m6-fc-more" onClick={() => setShown((n) => n + 120)}>
+            Showing {visible.length} of {matches.length} — show 120 more
+          </button>
+        )}
       </div>
+
       <div className="m6-fc-foot">
         <Icon name="info" size={11} />
-        <span>Six families ship inside this build as self-hosted woff2. Anything else needs the ingestion job.</span>
+        <span>
+          {FONT_STATS.embedded} of {FONT_STATS.total.toLocaleString()} families ship as self-hosted woff2 inside this build
+          ({(FONT_STATS.bytes / 1e6).toFixed(1)} MB). Indexed families without a face are locked, never silently offered.
+        </span>
       </div>
     </Popover>
   );

@@ -13,8 +13,9 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Field, Modal, Pill } from "@/components/ui";
 import {
-  COLOR_ROLES, DEFAULT_TOKENS, ThemeAPI, dateLong, formatRatio, type ContrastRow, type ContrastSummary,
-  type ImportResult, type Preset, type ThemeRevision, type ThemeTokens, type Usage
+  COLOR_ROLES, DEFAULT_TOKENS, ThemeAPI, dateLong, formatRatio, revisionDiff,
+  type ContrastRow, type ContrastSummary, type ImportResult, type Preset, type ThemeRevision,
+  type ThemeTokens, type Usage
 } from "@/lib/theme-db";
 
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -479,5 +480,120 @@ export function PairList({ rows, onFix, compact = false }: {
         </li>
       ))}
     </ul>
+  );
+}
+
+/* ============================================================
+   G4 · Revisions — the history that used to be data only
+   ------------------------------------------------------------
+   `ThemePayload.history` was loaded, appended to on every save, and rendered
+   nowhere. This modal makes it a real surface: what changed in each revision,
+   who saved it, and a restore that re-enters the working copy rather than
+   writing behind the user's back.
+   ============================================================ */
+
+export function RevisionsModal({ history, live, draft, onClose, onRestore }: {
+  history: ThemeRevision[];
+  live: ThemeRevision;
+  draft: ThemeRevision;
+  onClose: () => void;
+  onRestore: (rev: ThemeRevision) => void;
+}) {
+  const [pick, setPick] = useState<string | null>(null);
+  const list = [...history].reverse();
+  const selected = list.find((r) => r.id === pick) ?? null;
+  const diff = selected ? revisionDiff(history, selected) : [];
+
+  return (
+    <Modal
+      title="Revision History"
+      sub={`${history.length} revision${history.length === 1 ? "" : "s"} for this site — drafts and releases, newest first.`}
+      icon="calendar"
+      onClose={onClose}
+      width="wide"
+      footer={
+        <>
+          <Btn onClick={onClose}>Close</Btn>
+          <span className="grow" />
+          <Btn
+            variant="primary"
+            icon="refresh"
+            disabled={!selected || selected.id === draft.id}
+            title={!selected ? "Pick a revision first" : selected.id === draft.id ? "That revision is already the saved draft" : undefined}
+            onClick={() => selected && onRestore(selected)}
+          >
+            Restore into working copy
+          </Btn>
+        </>
+      }
+    >
+      <div className="m6-revh">
+        <div className="m6-revh-list" role="listbox" aria-label="Revisions">
+          {list.map((r) => {
+            const d = revisionDiff(history, r);
+            const isDraft = r.id === draft.id;
+            const isLive = r.id === live.id;
+            return (
+              <button
+                key={r.id} type="button" role="option"
+                aria-selected={pick === r.id}
+                className={`m6-revh-row ${pick === r.id ? "is-on" : ""}`}
+                onClick={() => setPick(r.id)}
+                data-m6-rev={r.seq}
+              >
+                <span className="m6-revh-seq">#{r.seq}</span>
+                <span className="m6-revh-body">
+                  <b>
+                    {isLive ? "Published" : isDraft ? "Saved draft" : "Earlier draft"}
+                    <em> · {r.createdBy}</em>
+                  </b>
+                  <em>{d.length ? `${d.length} token${d.length === 1 ? "" : "s"} changed` : "initial revision"} · {dateLong(r.createdAt)}</em>
+                </span>
+                {isLive && <span className="pill pill-green">live</span>}
+                {isDraft && !isLive && <span className="pill pill-violet">draft</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="m6-revh-diff">
+          {!selected ? (
+            <div className="m6-revh-hint">
+              <Icon name="calendar" size={20} />
+              <b>Pick a revision</b>
+              <em>Its token-by-token diff against the revision before it appears here before you restore anything.</em>
+            </div>
+          ) : (
+            <>
+              <div className="m6-revh-diff-head">
+                <b>Revision #{selected.seq}</b>
+                <em>{selected.createdBy} · {dateLong(selected.createdAt)}</em>
+              </div>
+              {diff.length === 0 ? (
+                <p className="m6-fine">This revision changed nothing in the token document — it is the first revision, or a re-save of identical values.</p>
+              ) : (
+                <table className="m6-revh-table">
+                  <thead><tr><th>Group</th><th>Token</th><th>From</th><th>To</th></tr></thead>
+                  <tbody>
+                    {diff.map((d) => (
+                      <tr key={`${d.group}-${d.label}`}>
+                        <td>{d.group}</td>
+                        <td>{d.label}</td>
+                        <td><code>{d.from}</code></td>
+                        <td><code>{d.to}</code></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <p className="m6-fine">
+                Restoring loads these values into the working copy. Nothing is written until you press Save Brand Tokens,
+                and nothing reaches the live site until a release is published.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }
