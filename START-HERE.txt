@@ -68,6 +68,9 @@ Read in this order
   THEME-STUDIO-BENCHMARK.md  the competitive study that produced M6.1
   MODULE-6.2-REVIEW.md    M6.2 audit: 10 presets, font downloads, the complete
                           theme bundle, and every interlink with its proof
+  MODULE-7-SPEC.md        M7 Layouts & Templates — submitted spec (persisted)
+  MODULE-7-BENCHMARK.md   9 production CMSs, mechanism by mechanism
+  MODULE-7-GAP-REVIEW.md  M7 review: 22 findings + decisions + build plan
   MODULE-*-SPEC / -DECISIONS / -REVIEW / -GAP-REVIEW   per-module documentation
   STATE-COVERAGE.md       every state per module, how to trigger it
   STORAGE.md              where the bytes go (52 MB workspace, why)

@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 21:23:54 UTC · **generated against commit** `c413491` · **working tree** 13 uncommitted file(s)
+**Generated** 2026-11-15 22:27:08 UTC · **generated against commit** `949b66f` · **working tree** 13 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -49,7 +49,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 4,766,369 B (4655 kB) · gzip 2901 kB |
 | md5 | `b4a9bf42ec095807766abd2c978ccb53` |
 | sha256 (first 16) | `488930dfd29973e0` |
-| Built | 2026-11-15 21:23:54 |
+| Built | 2026-11-15 22:23:42 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -92,7 +92,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **61 source files, 23,972 lines** of TS/TSX/CSS (35,976 lines across all tracked text files).
+Source inventory: **61 source files, 23,972 lines** of TS/TSX/CSS (37,773 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -113,11 +113,11 @@ Top files by size:
 | `src/views/Library.tsx` | 1,070 |
 | `qa_theme.py` | 1,049 |
 | `src/views/Builder.tsx` | 1,028 |
+| `MODULE-7-SPEC.md` | 979 |
 | `src/lib/data.ts` | 974 |
 | `MODULE-6-THEME-STUDIO-SPEC.md` | 880 |
 | `src/lib/library-db.ts` | 856 |
 | `src/lib/builder.ts` | 828 |
-| `src/views/Pages.tsx` | 789 |
 
 ## 6. Data seam and contracts
 
@@ -238,13 +238,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `c413491` — docs: README rewritten as the complete project guide — install, architecture, all six modules, testing, git, backend contract, roadmap, troubleshooting; START-HERE brought in line.
+- Repo: that git directory is `.`; branch `main`; HEAD `949b66f` — M6.2: ten presets, real font downloads, complete theme bundle, builder canvas themed by the site theme.
 - Working tree: 13 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `949b66f` | 2026-11-15 | M6.2: ten presets, real font downloads, complete theme bundle, builder canvas themed by the site theme |
 | `c413491` | 2026-11-15 | docs: README rewritten as the complete project guide — install, architecture, all six modules, testing, git, backend contract, roadmap, troubleshooting; START-HERE brought in line |
 | `ec90c97` | 2026-11-15 | docs: final workspace numbers after the slim pass (52 MB, history 29 MB, mocks 26 MB) |
 | `b48f9dd` | 2026-11-15 | perf: top-50 font set, one repository, workspace 140.6 MB → 46 MB; picker gains a Get action for any indexed family |
@@ -256,7 +257,6 @@ First tasks:
 | `82e207b` | 2026-11-15 | docs(module-6): competitive benchmark of Theme Studio across CMS systems + gap register |
 | `b41bf3e` | 2026-11-15 | feat(module-6): Theme Studio — tokens, typography, presets, computed contrast, draft-only save |
 | `aa904b7` | 2026-11-15 | docs(module-6): persist the Theme Studio spec and the gap review — 31 findings, 10 decisions |
-| `942b600` | 2026-11-15 | docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
