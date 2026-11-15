@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 04:32:41 UTC · **generated against commit** `82e207b` · **working tree** 21 uncommitted file(s)
+**Generated** 2026-11-15 04:33:56 UTC · **generated against commit** `aca7109` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -49,7 +49,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 15,487,295 B (15124 kB) · gzip 10781 kB |
 | md5 | `3b6612e18fc6f9c3e81d08b51145d25e` |
 | sha256 (first 16) | `dc6ff4d94b849b45` |
-| Built | 2026-11-15 04:32:31 |
+| Built | 2026-11-15 04:33:50 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -92,7 +92,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **61 source files, 23,424 lines** of TS/TSX/CSS (34,540 lines across all tracked text files).
+Source inventory: **61 source files, 23,424 lines** of TS/TSX/CSS (34,548 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -237,13 +237,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `82e207b` — docs(module-6): competitive benchmark of Theme Studio across CMS systems + gap register.
-- Working tree: 21 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `aca7109` — M6.1: type scale, 13 colour roles, specimen sheet, revision diffs, 247 embedded + 1,746 indexed Google Fonts.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
-- Tags: `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
+- Tags: `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `aca7109` | 2026-11-15 | M6.1: type scale, 13 colour roles, specimen sheet, revision diffs, 247 embedded + 1,746 indexed Google Fonts |
 | `82e207b` | 2026-11-15 | docs(module-6): competitive benchmark of Theme Studio across CMS systems + gap register |
 | `b41bf3e` | 2026-11-15 | feat(module-6): Theme Studio — tokens, typography, presets, computed contrast, draft-only save |
 | `aa904b7` | 2026-11-15 | docs(module-6): persist the Theme Studio spec and the gap review — 31 findings, 10 decisions |
@@ -255,7 +256,6 @@ First tasks:
 | `10530b7` | 2026-11-14 | chore(qa): write screenshots as WebP directly, drop stray PNGs |
 | `d76e638` | 2026-11-14 | feat(module-5): composition diagram on the inspector overview tab |
 | `fe6b36d` | 2026-11-14 | feat(module-5): desktop block library — four views, computed counts, insert path |
-| `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
