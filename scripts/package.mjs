@@ -20,7 +20,17 @@ const PARENT = path.dirname(ROOT);
 const NAME = path.basename(ROOT);
 const ZIP = path.join(PARENT, `${NAME}.zip`);
 
-const EXCLUDES = ["node_modules/*", "dist/*", ".git/*", "*.zip", "*.bundle"];
+/* Regenerable, and large:
+   · theme-font-data.ts / theme-font-catalog.ts — 14.2 MB of base64 woff2 produced by
+     `npm run fonts`. They are in Git; duplicating them inside the zip tripled the
+     workspace for no reviewer benefit.
+   · qa/ — captures are evidence for the person running the suite, not for the reader
+     of the zip (Git excludes them too, see .gitignore). */
+const EXCLUDES = [
+  "node_modules/*", "dist/*", ".git/*", "*.zip", "*.bundle",
+  "src/lib/theme-font-data.ts", "src/lib/theme-font-catalog.ts",
+  "qa/*"
+];
 
 fs.rmSync(ZIP, { force: true });
 execFileSync("zip", ["-rq", ZIP, NAME, ...EXCLUDES.flatMap((e) => ["-x", `${NAME}/${e}`])], { cwd: PARENT });
@@ -34,6 +44,7 @@ const mb = (buf.length / 1048576).toFixed(2);
 
 console.log(`zip  ${path.relative(process.cwd(), ZIP)}`);
 console.log(`     ${buf.length.toLocaleString()} B (${mb} MB) · ${files} files · md5 ${md5}`);
+console.log("     omitted (regenerable, present in Git): theme-font-data.ts, theme-font-catalog.ts, qa/");
 
 /* A stale zip is worse than no zip: warn loudly if the artefact inside it does
    not match the one just built. */

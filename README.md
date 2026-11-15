@@ -98,6 +98,18 @@ eight dialogs, **and** Pages → Builder → publish: pick a page, edit it in th
 panels, drag blocks, rewrite copy with the assistant, save, conflict, restore a
 revision, publish.
 
+## Where the bytes live
+
+Two files — the 14 MB font library and the 15.5 MB single-file app — carry 90 % of
+this project's weight, and they used to be stored three times (app folder, Git clone,
+zip). They now live **once on disk** as links into the clone, the zip omits what it can
+regenerate, and history is repacked. `STORAGE.md` has the map, the savings per item and
+the checks that keep a build through a symlink honest.
+
+```bash
+npm run fonts    # regenerate the 247-family library (14 MB, generated, in Git)
+```
+
 ## Handover (for a human or an AI agent picking this up cold)
 
 `HANDOVER.md` is **generated**, never hand-written. It carries the current module
@@ -156,6 +168,8 @@ npm run build       # also regenerates the handover
   and the contract for each state.
 - `SPEC-AUDIT.md` — dissection of the reference mockups.
 - `ROLLBACK.md` — tags, revert recipes and what each release contains.
+- `STORAGE.md` — where the 80 MB goes: the symlink layout, the zip's omissions,
+  and the one remaining lever (the font budget).
 
 ## QA
 

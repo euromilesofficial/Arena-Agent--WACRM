@@ -11,12 +11,11 @@ tags          module-1-and-2-import · module-2-complete · module-3-complete ·
               module-4-ai · module-5-complete · m6-theme-studio · m6-theme-studio-benchmark
               m6.1-theme-studio (5fcaff4)
 artifact      WACRM-CMS.html 15,487,295 B · md5 3b6612e18fc6f9c3e81d08b51145d25e
-package       wacrm-app.zip 32,106,576 B · 195 files · md5 9c906889a4183a287a8f069e6ada739c
-              (the zip md5 moves with every doc edit, because docs are inside it — `npm run
-              package` prints the current one; the artifact md5 is the stable one)
+package       wacrm-app.zip 11.4 MB · 113 files — omits the regenerable font source
+              and qa/ (STORAGE.md); md5 is printed by every `npm run package`
 ```
 
-Since then every module has landed the same way and the remote has never drifted: Module 3, Module 4 (builder + AI mode), Module 5 (block library), Module 6 (Theme Studio), the competitive benchmark, and now **Module 6.1** — the type scale, the four new colour roles, the specimen sheet, revision diffs and the 247-family Google Fonts library. The zip grew from 10.55 MB to **30.6 MB** because it now carries 14 MB of embedded font source; it is still well inside the 128 MB workspace ceiling.
+Since then every module has landed the same way and the remote has never drifted: Module 3, Module 4 (builder + AI mode), Module 5 (block library), Module 6 (Theme Studio), the competitive benchmark, and now **Module 6.1** — the type scale, the four new colour roles, the specimen sheet, revision diffs and the 247-family Google Fonts library. The workspace itself went the other way: it had drifted to **119 MB** — the 14 MB font library and the 15.5 MB artifact were each stored in the app folder, in the clone and inside the zip. That layout is fixed (`STORAGE.md`): one copy on disk, a zip that omits what it can regenerate, and repacked history. **119 MB → ~80 MB** with the artifact byte-identical (md5 `3b6612e18fc6…`).
 
 ---
 
