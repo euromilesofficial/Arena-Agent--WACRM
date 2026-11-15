@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Tip } from "@/components/ui";
 import { Canvas, DEVICE_W, type Device, type DropTarget } from "@/components/builder/Canvas";
+import { canvasVars, themeFor } from "@/lib/theme-db";
 import { Library, type LibTab } from "@/components/builder/Library";
 import { Inspector, type InspTab } from "@/components/builder/Inspector";
 import { AiPanel, type AiMode, type AiPanelState } from "@/components/builder/AiPanel";
@@ -52,6 +53,14 @@ export function Builder() {
   /* ---------- page + site context ---------- */
   const sites = app.data?.sites ?? [];
   const [siteId, setSiteId] = useState<string>(initial.site ?? (app.siteId !== "all" ? app.siteId : "site_main"));
+
+  /* M6.2 — the canvas renders the site's theme, not the app's own palette.
+     Draft tokens: this is the surface the draft is built on. */
+  const canvasTheme = useMemo(() => {
+    const t = themeFor(siteId);
+    const site = DBX().sites.find((x) => x.id === siteId);
+    return { vars: canvasVars(t.draft.tokens), label: `Theme · ${site?.name ?? "site"} draft #${t.draft.seq}` };
+  }, [siteId]);
   const [pageId, setPageId] = useState<string | null>(initial.page ?? handoff);
   const [pages, setPages] = useState<CmsPage[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);
@@ -763,7 +772,8 @@ export function Builder() {
                   else if (action === "duplicate") dup(id);
                   else if (action === "delete") del(id);
                 },
-                onEditMaster: () => app.toast({ type: "info", title: "Master layout", sub: "Headers and footers are edited in Layouts & Templates." })
+                onEditMaster: () => app.toast({ type: "info", title: "Master layout", sub: "Headers and footers are edited in Layouts & Templates." }),
+                theme: canvasTheme
               }} />
             )}
             {drag && <div className="wb-ghost" ref={ghost}><Icon name="blocks" size={12} /> {drag.label}</div>}

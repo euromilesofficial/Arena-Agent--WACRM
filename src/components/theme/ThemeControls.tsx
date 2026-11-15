@@ -202,13 +202,53 @@ const WINDOW = 60;
 
 /* ---------------- on-demand family ----------------
    The catalogue is the whole of Google Fonts (1,746 families); the artifact embeds
-   the 50 that earn their bytes. A family outside that set is not a dead end — it is
-   one command away, and this panel says which command, and what the production
-   equivalent is once there is a backend. Nothing here pretends the font can load
-   from Google at runtime: the artifact must render with no network. */
+   the 50 that earn their bytes. A family outside that set is not a dead end and it
+   is not a shell command in a costume: “Get” fetches the family's real woff2 from
+   Google and hands the file to the browser's download list, so it can be dropped
+   into the project (or installed) today. The build command stays as the way to
+   make it permanent, and the backend contract as the way to make it a service. */
+
+type GetState =
+  | { s: "idle" }
+  | { s: "css" }
+  | { s: "file" }
+  | { s: "done"; name: string; bytes: number }
+  | { s: "error"; why: string };
+
+const CSS2 = (family: string): string =>
+  `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, "+")}&display=swap`;
+
+/** Pull the latin woff2 URL out of a css2 response. Prefers the last `/* latin *\/`
+    block (Google emits unicode-range subsets; latin is the one a UI needs first). */
+function latinWoff2(css: string): string | null {
+  const blocks = css.split("/*").map((b) => b.trim());
+  const latin = blocks.filter((b) => /^latin\s*\*\//.test(b));
+  const pool = latin.length ? latin : blocks;
+  for (const b of pool) {
+    const m = /url\((https:\/\/[^)]+?\.woff2)\)/.exec(b);
+    if (m) return m[1];
+  }
+  const any = /url\((https:\/\/[^)]+?\.woff2)\)/.exec(css);
+  return any ? any[1] : null;
+}
+
+function saveBlob(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
 function GetFamilyPanel({ family, category }: { family: string; category: string }) {
+  const [state, setState] = useState<GetState>({ s: "idle" });
   const [copied, setCopied] = useState(false);
   const cmd = `npm run fonts -- --only="${family}"`;
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(cmd);
@@ -216,12 +256,68 @@ function GetFamilyPanel({ family, category }: { family: string; category: string
       window.setTimeout(() => setCopied(false), 1600);
     } catch { /* clipboard blocked — the command is selectable text regardless */ }
   };
+
+  const download = async () => {
+    setState({ s: "css" });
+    try {
+      const res = await fetch(CSS2(family), { mode: "cors", credentials: "omit" });
+      if (!res.ok) throw new Error(`Google Fonts answered ${res.status}`);
+      const css = await res.text();
+      const url = latinWoff2(css);
+      if (!url) throw new Error("The CSS response carried no woff2 URL");
+      setState({ s: "file" });
+      const bin = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (!bin.ok) throw new Error(`The font file answered ${bin.status}`);
+      const buf = await bin.arrayBuffer();
+      const name = `${family.replace(/[^A-Za-z0-9]+/g, "-")}-latin.woff2`;
+      saveBlob(new Blob([buf], { type: "font/woff2" }), name);
+      setState({ s: "done", name, bytes: buf.byteLength });
+    } catch (e) {
+      setState({
+        s: "error",
+        why: (e as Error).message || "The request was blocked"
+      });
+    }
+  };
+
+  const busy = state.s === "css" || state.s === "file";
+
   return (
     <div className="m6-fc-getpanel">
       <p>
         <b>{family}</b> is indexed, not embedded — this build carries the 50 most-used families
-        offline. Pull this one in from Google Fonts:
+        offline. Download the font file now, or pull it into the build:
       </p>
+
+      <div className="m6-fc-getrow">
+        <button
+          type="button" className="btn btn-primary m6-fc-dl"
+          onClick={download} disabled={busy}
+        >
+          <Icon name="download" size={11} />
+          {state.s === "css" ? "Asking Google Fonts…" : state.s === "file" ? "Downloading…" : `Download ${family}.woff2`}
+        </button>
+        <a className="m6-fc-open" href={`https://fonts.google.com/specimen/${encodeURIComponent(family)}`} target="_blank" rel="noreferrer noopener">
+          <Icon name="globe" size={10} />Specimen
+        </a>
+      </div>
+
+      {state.s === "done" && (
+        <p className="m6-fc-getstate is-ok">
+          <Icon name="check" size={11} />
+          Saved <b>{state.name}</b> · {(state.bytes / 1024).toFixed(1)} KB, latin subset, woff2.
+          Drop it in <code>public/fonts/</code> and add the family to the generator to make it permanent.
+        </p>
+      )}
+      {state.s === "error" && (
+        <p className="m6-fc-getstate is-bad">
+          <Icon name="alert" size={11} />
+          Couldn’t reach Google Fonts — {state.why}. This artifact is built to run with no network,
+          so the download needs a connected browser; the build command below works offline-adjacent
+          (it fetches once, then the family is part of the bundle).
+        </p>
+      )}
+
       <div className="m6-fc-cmd">
         <code>{cmd}</code>
         <button type="button" className="m6-fc-copy" onClick={copy}>
@@ -238,13 +334,15 @@ function GetFamilyPanel({ family, category }: { family: string; category: string
   );
 }
 
-export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }: {
+export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick, initialAll = false }: {
   anchor: HTMLElement | null;
   open: boolean;
   onClose: () => void;
   roleLabel: string;
   value: string;
   onPick: (family: string) => void;
+  /** open on the full 1,746 index instead of the 50 embedded families */
+  initialAll?: boolean;
 }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<FontCategory | "all">("all");
@@ -256,7 +354,7 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
 
   useEffect(() => {
     if (!open) return;
-    setQ(""); setCat("all"); setEmbeddedOnly(true); setShown(WINDOW); setGetFor(null);
+    setQ(""); setCat("all"); setEmbeddedOnly(!initialAll); setShown(WINDOW); setGetFor(null);
     window.setTimeout(() => inputRef.current?.focus(), 30);
   }, [open]);
 

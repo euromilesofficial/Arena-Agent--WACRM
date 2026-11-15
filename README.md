@@ -8,7 +8,7 @@ Every screen ships with its **CTAs wired, its dropdowns working, and its operati
 Modules built   6   ·  M1 Overview · M2 Sites & Domains · M3 Pages & Routes
                        M4 Visual Builder (+ AI) · M5 Block Library
                        M6 Theme Studio · M6.1 type scale, specimen, revisions, fonts
-Suites          11  ·  764 assertions, all green
+Suites          11  ·  807 assertions, all green
 Artifact        4.75 MB  ·  WACRM-CMS.html  ·  no network, no dependencies at runtime
 Package         3.82 MB  ·  wacrm-app.zip   ·  opens by double-click
 Backend         not built — every call is a documented contract in BACKEND-PLAN.md
@@ -61,7 +61,7 @@ The product is modelled on the same surface area as Shopify's Online Store, Elem
 Three things separate this from a mockup:
 
 1. **State is real.** Saves use compare-and-swap with a `409` conflict path, the builder autosaves with undo/redo, themes write drafts only, and every screen has reachable loading / empty / error / viewer / conflict states.
-2. **It is measured.** 764 Playwright assertions drive the built artifact — not the source, not a dev server — and the count is regenerated into `HANDOVER.md` on every build.
+2. **It is measured.** 807 Playwright assertions drive the built artifact — not the source, not a dev server — and the count is regenerated into `HANDOVER.md` on every build.
 3. **It is documented as a contract.** `BACKEND-PLAN.md` specifies the schema, endpoints, RBAC and job states behind every button, because the backend is deliberately out of scope.
 
 ---
@@ -242,8 +242,8 @@ Brand tokens, typography and presets under one roof, with a read-only preview an
 - **13 colour roles** in two groups, discrete geometry (radius, spacing base × density, container width, card density, elevation).
 - **Computed contrast audit:** 14 pairs with per-role thresholds and verdicts; warnings are advisory and never block a save.
 - **Save writes a draft only** — publishing belongs to Module 11.
-- Preset library (5 seeded) with import/export, apply, rename, duplicate, archive.
-- **QA:** `qa_theme.py` 198.
+- Preset library (10 seeded) with import/export, apply, rename, duplicate, archive.
+- **QA:** `qa_theme.py` 241.
 
 ### M6.1 · Theme Studio completion — `#/theme`
 
@@ -255,9 +255,20 @@ Closes the four Tier-A gaps found by a competitive benchmark against Shopify, El
 | **G2** role coverage | `muted`, `link`, `border`, `ring` added (13 roles); `border` measured against an advisory 1.5:1 floor, `ring` held to 3:1 |
 | **G3** specimen sheet | Type, palette, buttons in four states, four field states, consent block, three alert severities, five pills, card, table, radius, spacing — rendered 1:1 |
 | **G4** revisions | Rail panel + diff modal (group · token · from · to); restore **loads the working copy and never saves** |
-| **Fonts** | 50 embedded families (2.48 MB woff2) + a searchable **1,746-family** index, each indexed family one **Get** click from its fetch command |
+| **Fonts** | 50 embedded families (2.48 MB woff2) + a searchable **1,746-family** index, each indexed family one **Get** click from its font file download |
 
 Document schema is **version 2**; a version-1 file still imports, with the four derived roles and the default scale named in the review.
+
+### M6.2 · Ten presets, real font downloads, the complete bundle — `#/theme`
+
+Full audit: **`MODULE-6.2-REVIEW.md`**.
+
+| Area | Before | Now |
+|---|---|---|
+| Presets | 5 seeds, three of one idea | **10**: 5 built-in (`Modern Violet`, `Ocean Professional`, `Warm Editorial`, `Midnight Product`, `Cobalt Corporate`), 3 workspace, 2 site-scoped — every family embedded, so all ten apply offline |
+| Font "Get" | a shell command | **a file**: fetches the family's latin woff2 from Google and saves it (`Abril-Fatface-latin.woff2`), with busy, saved and offline states, a specimen link, and the banner's **Browse all 1,746** |
+| Export | tokens only (`schemaVersion 2`) | **complete bundle** (`schemaVersion 3`, `kind: wacrm.theme.bundle`): token document + font faces as base64 woff2 + every referenced image + layout slots + reference pages + computed type sizes + 14 WCAG verdicts + provenance + `fnv1a-32` integrity stamp. > 200 KB on the seed site, and it imports back |
+| Interlink | none — nothing else read the theme | the **Visual Builder canvas renders the site's draft theme** (`.wb-themed`): background, surface, border, ink, primary, radius, container, band spacing, heading stack, table chrome, secondary button |
 
 ---
 
@@ -457,7 +468,7 @@ The token document is `schemaVersion: 2`:
 
 ## 12. Testing
 
-11 Playwright suites, **764 assertions**, run against **the built artifact** — never the dev server, never the source.
+11 Playwright suites, **807 assertions**, run against **the built artifact** — never the dev server, never the source.
 
 ```bash
 source scripts/qa-env.sh     # once per shell: extracts Chromium's libs into /tmp
@@ -474,7 +485,7 @@ npm run qa                   # → qa/last-run.json + regenerated HANDOVER.md
 | `qa_builder.py` | 98 | M4 document model, undo/redo, autosave CAS, revisions, publish hand-off |
 | `qa_ai.py` | 60 | AI page generation and in-canvas rewrite, streaming and failure |
 | `qa_library.py` | 90 | M5 catalogue, placement index, saved templates, form/consent rules |
-| `qa_theme.py` | 198 | M6 + M6.1: roles, contrast maths recomputed in Python, type scale arithmetic, specimen, revisions, v1 import, font library and Get path |
+| `qa_theme.py` | 241 | M6 + M6.1 + M6.2: roles, contrast maths recomputed in Python, type scale arithmetic, specimen, revisions, v1 import, ten presets, font **download**, complete bundle export, M6 → M4 canvas theming |
 | `qa_flows.py` | 38 | cross-module journeys (Pages → Builder → publish, theme → preset → release) |
 | `qa_react.py` | smoke | renders the file and fails on any React warning or console error |
 
@@ -625,7 +636,7 @@ Rules baked into those contracts, and into the UI:
 
 **Symptom:** the Vite dev server starts, then the page throws `Rendered fewer hooks than expected` (and logs `Do not call Hooks inside useEffect(...), useMemo(...)`), leaving a partial DOM.
 
-**Status:** known, **dev-mode only**. It is a hook-order violation that React's development build enforces and the production build tolerates. The shipped artifact and all 764 assertions are unaffected — they run against the built file.
+**Status:** known, **dev-mode only**. It is a hook-order violation that React's development build enforces and the production build tolerates. The shipped artifact and all 807 assertions are unaffected — they run against the built file.
 
 **Workaround:** use the build. `npm run build && open WACRM-CMS.html`, or `python3 serve.py` for an `http://` origin. If you are editing source and need a live origin, `npm run build && npm run preview` serves the production bundle from `dist/`.
 
@@ -683,4 +694,4 @@ These are not aspirations; they are the constraints the build was held to, and t
 
 ---
 
-*Built with React 19 + TypeScript (strict) + Vite 7. Last measured: artifact 4,751,566 B · zip 3,821,036 B · 154 tracked files · 11 suites / 764 assertions green.*
+*Built with React 19 + TypeScript (strict) + Vite 7. Last measured: artifact 4,766,369 B · zip 3,847,284 B · 155 tracked files · 11 suites / 807 assertions green.*

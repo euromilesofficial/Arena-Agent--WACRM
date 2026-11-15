@@ -14,6 +14,7 @@ import { DBX } from "./data";
 import { SECTION_PRESETS, REGISTRY, type BlockNode, type BlockType } from "./builder";
 import { ensureDraft } from "./builder-db";
 import { FONT_ASSETS, EMBEDDED_COUNT, EMBEDDED_TOTAL_BYTES } from "./theme-font-data";
+import { SAMPLE_IMAGES } from "./builder-images";
 import { GOOGLE_FONT_ROWS, CATALOG_COUNT, type FontCategory } from "./theme-font-catalog";
 
 export type { FontCategory };
@@ -492,7 +493,7 @@ export const OCEAN_TOKENS: ThemeTokens = {
     body: { family: "Inter", weight: 400, fallback: "system-ui" },
     scale: { ...DEFAULT_SCALE, ratio: 1.333, leadingHeading: 1.2, trackingHeading: 0 }
   },
-  geometry: { radiusPx: 8, spacing: { base: 8, density: "compact" }, containerWidthPx: 1140 as 1280 }
+  geometry: { radiusPx: 8, spacing: { base: 8, density: "compact" }, containerWidthPx: 1200 }
 };
 
 export const EDITORIAL_TOKENS: ThemeTokens = {
@@ -509,6 +510,92 @@ export const EDITORIAL_TOKENS: ThemeTokens = {
   },
   geometry: { radiusPx: 16, spacing: { base: 8, density: "spacious" }, containerWidthPx: 1280 },
   blockStyling: { cardDensity: "comfortable", elevation: "flat" }
+};
+
+/* ---------------- M6.2 — five more presets ----------------
+   The library now covers the range a real CMS ships instead of five variations
+   on one idea: a dark product set, a corporate cobalt, a warm campaign set, a
+   calm education set and a high-contrast editorial one. Every family used here
+   is one of the 50 embedded families, so a preset applies with zero network. */
+
+export const MIDNIGHT_TOKENS: ThemeTokens = {
+  ...DEFAULT_TOKENS,
+  colors: {
+    primary: "#A78BFA", secondary: "#1B2340", accent: "#34D399", success: "#34D399",
+    warning: "#FBBF24", error: "#F87171", background: "#0B1020", surface: "#141A2E", text: "#EFF3FA",
+    muted: "#9BA7BF", link: "#C4B5FD", border: "#27314B", ring: "#A78BFA"
+  },
+  typography: {
+    heading: { family: "Space Grotesk", weight: 700, fallback: "system-ui" },
+    body: { family: "Inter", weight: 400, fallback: "system-ui" },
+    scale: { ...DEFAULT_SCALE, ratio: 1.25, leadingHeading: 1.25, trackingHeading: -0.015 }
+  },
+  geometry: { radiusPx: 16, spacing: { base: 8, density: "comfortable" }, containerWidthPx: 1200 },
+  blockStyling: { cardDensity: "comfortable", elevation: "soft" }
+};
+
+export const COBALT_TOKENS: ThemeTokens = {
+  ...DEFAULT_TOKENS,
+  colors: {
+    primary: "#1D4ED8", secondary: "#0A1B3D", accent: "#38BDF8", success: "#15803D",
+    warning: "#B45309", error: "#B91C1C", background: "#FFFFFF", surface: "#F2F6FF", text: "#0A1B3D",
+    muted: "#51608A", link: "#1D4ED8", border: "#C7D3EE", ring: "#1D4ED8"
+  },
+  typography: {
+    heading: { family: "Manrope", weight: 700, fallback: "system-ui" },
+    body: { family: "Source Sans 3", weight: 400, fallback: "system-ui" },
+    scale: { ...DEFAULT_SCALE, ratio: 1.25, leadingHeading: 1.25, trackingHeading: -0.01 }
+  },
+  geometry: { radiusPx: 8, spacing: { base: 8, density: "comfortable" }, containerWidthPx: 1200 },
+  blockStyling: { cardDensity: "compact", elevation: "flat" }
+};
+
+export const CORAL_TOKENS: ThemeTokens = {
+  ...DEFAULT_TOKENS,
+  colors: {
+    primary: "#D94F2B", secondary: "#3A1D14", accent: "#F59E0B", success: "#15803D",
+    warning: "#B45309", error: "#B91C1C", background: "#FFF9F5", surface: "#FDEDE4", text: "#2A1410",
+    muted: "#6E4A3D", link: "#C2410C", border: "#EFD3C4", ring: "#D94F2B"
+  },
+  typography: {
+    heading: { family: "Bricolage Grotesque", weight: 700, fallback: "system-ui" },
+    body: { family: "Figtree", weight: 400, fallback: "system-ui" },
+    scale: { ...DEFAULT_SCALE, basePx: 17, ratio: 1.333, leadingHeading: 1.2, leadingBody: 1.7, trackingHeading: -0.02 }
+  },
+  geometry: { radiusPx: 24, spacing: { base: 8, density: "spacious" }, containerWidthPx: 1280 },
+  blockStyling: { cardDensity: "comfortable", elevation: "soft" }
+};
+
+export const SAGE_TOKENS: ThemeTokens = {
+  ...DEFAULT_TOKENS,
+  colors: {
+    primary: "#2F6B4F", secondary: "#1D3B2C", accent: "#84A98C", success: "#15803D",
+    warning: "#A16207", error: "#B91C1C", background: "#FBFCF9", surface: "#EFF4EC", text: "#16241A",
+    muted: "#4F6255", link: "#2F6B4F", border: "#CFDCCB", ring: "#2F6B4F"
+  },
+  typography: {
+    heading: { family: "Outfit", weight: 600, fallback: "system-ui" },
+    body: { family: "Work Sans", weight: 400, fallback: "system-ui" },
+    scale: { ...DEFAULT_SCALE, ratio: 1.2, leadingHeading: 1.3, leadingBody: 1.65, trackingHeading: 0 }
+  },
+  geometry: { radiusPx: 12, spacing: { base: 4, density: "compact" }, containerWidthPx: 1080 },
+  blockStyling: { cardDensity: "compact", elevation: "flat" }
+};
+
+export const MONOGRAPH_TOKENS: ThemeTokens = {
+  ...DEFAULT_TOKENS,
+  colors: {
+    primary: "#111111", secondary: "#2B2B2B", accent: "#B91C1C", success: "#166534",
+    warning: "#92400E", error: "#B91C1C", background: "#FFFFFF", surface: "#F4F4F2", text: "#111111",
+    muted: "#555555", link: "#111111", border: "#D6D6D2", ring: "#111111"
+  },
+  typography: {
+    heading: { family: "Libre Baskerville", weight: 700, fallback: "serif" },
+    body: { family: "Karla", weight: 400, fallback: "system-ui" },
+    scale: { ...DEFAULT_SCALE, basePx: 17, ratio: 1.333, leadingHeading: 1.2, leadingBody: 1.7, trackingHeading: 0, trackingBody: 0.002 }
+  },
+  geometry: { radiusPx: 0, spacing: { base: 8, density: "spacious" }, containerWidthPx: 1080 },
+  blockStyling: { cardDensity: "compact", elevation: "flat" }
 };
 
 /* ---------------- revisions (per site) ----------------
@@ -581,7 +668,7 @@ function seedTheme(_siteId: string): SiteTheme {
   return { live, draft, history: [r3, r4, r5, live, draft], seq: 7 };
 }
 
-function themeFor(siteId: string): SiteTheme {
+export function themeFor(siteId: string): SiteTheme {
   if (!themes.has(siteId)) themes.set(siteId, seedTheme(siteId));
   return themes.get(siteId)!;
 }
@@ -642,7 +729,14 @@ const presets: Preset[] = [
   { id: "preset_ocean", name: "Ocean Professional", desc: "A clean and trusted look for education and consultancy websites.", scope: "Built-in", tokens: clone(OCEAN_TOKENS), builtIn: true, updatedAt: UPD - 72 * HOUR, createdBy: "WACRM", referencedBy: [] },
   { id: "preset_editorial", name: "Warm Editorial", desc: "A friendly, modern editorial style for storytelling and campaigns.", scope: "Built-in", tokens: clone(EDITORIAL_TOKENS), builtIn: true, updatedAt: UPD - 48 * HOUR, createdBy: "WACRM", referencedBy: [] },
   { id: "preset_brand2026", name: "EuroMiles Brand 2026", desc: "The refreshed brand set approved for the 2026 intake campaign.", scope: "Workspace", tokens: { ...clone(DEFAULT_TOKENS), colors: { ...DEFAULT_TOKENS.colors, primary: "#5B32D6", accent: "#7C3AED" }, geometry: { ...DEFAULT_TOKENS.geometry, radiusPx: 16 } }, builtIn: false, updatedAt: UPD - 24 * HOUR, createdBy: "Aranya K.", referencedBy: [] },
-  { id: "preset_admissions", name: "Admissions Campaign", desc: "Warmer accent for the scholarship push; same typography as brand.", scope: "This Site", tokens: { ...clone(DEFAULT_TOKENS), colors: { ...DEFAULT_TOKENS.colors, primary: "#0F766E" } }, builtIn: false, updatedAt: UPD - 12 * HOUR, createdBy: "Rohan P.", referencedBy: [] }
+  { id: "preset_admissions", name: "Admissions Campaign", desc: "Warmer accent for the scholarship push; same typography as brand.", scope: "This Site", tokens: { ...clone(DEFAULT_TOKENS), colors: { ...DEFAULT_TOKENS.colors, primary: "#0F766E" } }, builtIn: false, updatedAt: UPD - 12 * HOUR, createdBy: "Rohan P.", referencedBy: [] },
+  /* M6.2 — the second five. Two remain model-authored built-ins; three are
+     workspace/site sets, so the scope chips stay honest. */
+  { id: "preset_midnight", name: "Midnight Product", desc: "Dark product set for dashboards and release pages — violet signal on near-black.", scope: "Built-in", tokens: clone(MIDNIGHT_TOKENS), builtIn: true, updatedAt: UPD - 8 * HOUR, createdBy: "WACRM", referencedBy: [] },
+  { id: "preset_cobalt", name: "Cobalt Corporate", desc: "Institutional cobalt with a tight radius — reads as finance and government.", scope: "Built-in", tokens: clone(COBALT_TOKENS), builtIn: true, updatedAt: UPD - 7 * HOUR, createdBy: "WACRM", referencedBy: [] },
+  { id: "preset_coral", name: "Coral Campaign", desc: "Warm coral with pill geometry for intake and offer campaigns.", scope: "Workspace", tokens: clone(CORAL_TOKENS), builtIn: false, updatedAt: UPD - 6 * HOUR, createdBy: "Aranya K.", referencedBy: [] },
+  { id: "preset_sage", name: "Sage Campus", desc: "Calm, low-contrast-green teaching set; compact rhythm for long reading lists.", scope: "Workspace", tokens: clone(SAGE_TOKENS), builtIn: false, updatedAt: UPD - 5 * HOUR, createdBy: "Rohan P.", referencedBy: [] },
+  { id: "preset_monograph", name: "Monograph", desc: "High-contrast serif editorial — zero radius, one red accent, no ornament.", scope: "This Site", tokens: clone(MONOGRAPH_TOKENS), builtIn: false, updatedAt: UPD - 4 * HOUR, createdBy: "Nikhil S.", referencedBy: [] }
 ];
 
 /* ---------------- token → variables ---------------- */
@@ -692,6 +786,31 @@ export function previewVars(t: ThemeTokens): Record<string, string> {
     "--t-ls-body": `${t.typography.scale.trackingBody}em`,
     "--t-card-pad": t.blockStyling.cardDensity === "compact" ? "14px" : "20px",
     "--t-shadow": t.blockStyling.elevation === "soft" ? "0 10px 26px -18px rgba(16,24,40,.45)" : "none"
+  };
+}
+
+/** M6.2 — the M4 interlink. The Visual Builder canvas renders with the site's
+    theme instead of the app's own palette: same token document, mapped onto the
+    block variables the canvas already uses. Draft tokens, because the builder
+    edits the draft; the live release keeps its own compiled copy. */
+export function canvasVars(t: ThemeTokens): Record<string, string> {
+  const vars = previewVars(t);
+  return {
+    ...vars,
+    /* app-level variables the block CSS reads directly */
+    "--brand": t.colors.primary,
+    "--brand-2": t.colors.accent,
+    "--brand-ink": t.colors.primary,
+    "--brand-soft": t.colors.surface,
+    "--brand-line": t.colors.border,
+    "--bg": t.colors.background,
+    "--surface": t.colors.surface,
+    "--surface-2": t.colors.surface,
+    "--ink": t.colors.text,
+    "--ink-2": t.colors.secondary,
+    "--muted": t.colors.muted,
+    "--line": t.colors.border,
+    "--line-strong": t.colors.border
   };
 }
 
@@ -780,6 +899,7 @@ const RADII = [0, 4, 8, 12, 16, 24];
 const CONTAINERS = [960, 1080, 1200, 1280];
 const FALLBACK_IDS = new Set(FALLBACK_STACKS.map((f) => f.id));
 const MAX_BYTES = 256 * 1024;
+const MAX_BUNDLE_BYTES = 8 * 1024 * 1024;
 
 function walkKeys(node: unknown, path: string, issues: ImportIssue[], depth = 0): void {
   if (depth > 8) { issues.push({ path, message: "The file nests deeper than the 8 levels an import allows." }); return; }
@@ -796,8 +916,8 @@ export function validateImport(raw: string, scope: Preset["scope"], name: string
   const errors: ImportIssue[] = [];
   const warnings: string[] = [];
 
-  if (raw.length > MAX_BYTES) {
-    return { ok: false, errors: [{ path: "$", message: "This file is larger than 256 KB. Theme presets are token documents, not page bundles." }], warnings };
+  if (raw.length > MAX_BUNDLE_BYTES) {
+    return { ok: false, errors: [{ path: "$", message: "This file is larger than 8 MB. A bundle carries font faces, imagery and page content; nothing the studio exports is bigger than that." }], warnings };
   }
   let doc: any;
   try { doc = JSON.parse(raw); } catch (e) {
@@ -805,6 +925,39 @@ export function validateImport(raw: string, scope: Preset["scope"], name: string
   }
   if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
     return { ok: false, errors: [{ path: "$", message: "A theme preset must be a JSON object." }], warnings };
+  }
+
+  /* A complete bundle (schemaVersion 3) wraps the same token document under
+     `theme` and adds fonts, imagery, layout slots and reference pages. The
+     importer reads the token half and tells you what it did not take, rather
+     than failing on fields it does not own yet. */
+  let bundleSummary: { assets: number; fonts: number; pages: number } | null = null;
+  if (doc.kind === "wacrm.theme.bundle") {
+    if (!doc.theme || typeof doc.theme !== "object" || Array.isArray(doc.theme)) {
+      return { ok: false, errors: [{ path: "$.theme", message: "A bundle must carry a `theme` object holding the token document." }], warnings };
+    }
+    bundleSummary = {
+      assets: Array.isArray(doc.assets?.images) ? doc.assets.images.length : 0,
+      fonts: Array.isArray(doc.fonts) ? doc.fonts.length : 0,
+      pages: Array.isArray(doc.pages) ? doc.pages.length : 0
+    };
+    warnings.push(`This is a complete bundle: ${bundleSummary.fonts} font roles, ${bundleSummary.assets} image${bundleSummary.assets === 1 ? "" : "s"} and ${bundleSummary.pages} reference page${bundleSummary.pages === 1 ? "" : "s"}. The studio imports the token document and keeps its own imagery, layouts and pages — assets stay in the Media library.`);
+    doc = {
+      schemaVersion: 2,
+      name: doc.name ?? doc.theme.name,
+      description: doc.description ?? doc.theme.description,
+      colors: doc.theme.colors,
+      typography: doc.theme.typography,
+      geometry: doc.theme.geometry,
+      blockStyling: doc.theme.blockStyling,
+      starterLayouts: doc.layout?.starterLayouts,
+      navigation: doc.layout?.navigation,
+      "x-wacrm": doc["x-wacrm"]
+    };
+  }
+
+  if (JSON.stringify(doc.theme ?? doc).length > MAX_BYTES) {
+    return { ok: false, errors: [{ path: "$", message: "The token document is larger than 256 KB. Theme tokens are a small document; a bundle's assets belong in the Media library." }], warnings };
   }
   walkKeys(doc, "$", errors);
   const version = Number(doc.schemaVersion);
@@ -954,6 +1107,169 @@ export function exportDocument(siteId: string, mode: ExportMode): { filename: st
     }
   };
   return { filename: `${slug}-theme-${mode}-v${rev.seq}.json`, json: JSON.stringify(body, null, 2) };
+}
+
+/* ---------------- M6.2 — the complete bundle ----------------
+   "Export light theme" used to hand back four token groups and nothing else:
+   no fonts, no imagery, no layout slots, no idea which revision rendered what.
+   The bundle is the complete artefact — everything needed to rebuild this site's
+   look on another install, offline:
+
+     fonts      the actual woff2 bytes for the heading and body families
+     imagery    every image the previewed page references, decoded into base64
+     layout     geometry, spacing scale and the M7/M8 slots (declared, empty)
+     pages      the reference page tree the theme was judged against
+     computed   derived type sizes + the WCAG verdicts at export time
+
+   The token document stays in the same place it always was (`theme`), so the
+   bundle is a superset of the v2 file rather than a second format. */
+
+export interface BundlePage { id: string; title: string; blocks: BlockNode[] }
+
+export interface BundleResult {
+  filename: string;
+  json: string;
+  bytes: number;
+  fonts: number;
+  images: number;
+  pages: number;
+}
+
+/** 32-bit FNV-1a — a synchronous integrity stamp for files a browser writes.
+    Not a cryptographic signature; the label says so wherever it is shown. */
+const fnv1a = (input: string): string => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+};
+
+const DATA_URI = /^data:([\w/+.-]+);base64,/;
+
+/** Walk a page tree and return every distinct media key / data URI it uses. */
+function collectMedia(blocks: BlockNode[], into: Set<string>): void {
+  for (const b of blocks) {
+    const props = (b.props ?? {}) as Record<string, unknown>;
+    for (const v of Object.values(props)) {
+      if (typeof v === "string" && (SAMPLE_IMAGES[v] || DATA_URI.test(v))) into.add(v);
+    }
+    if (Array.isArray(b.children)) collectMedia(b.children as BlockNode[], into);
+  }
+}
+
+export function exportBundle(siteId: string, mode: ExportMode, pages: BundlePage[] = []): BundleResult | null {
+  const site = DBX().sites.find((s) => s.id === siteId);
+  const theme = themeFor(siteId);
+  const rev = mode === "live" ? theme.live : theme.draft;
+  if (!rev) return null;
+  const t = rev.tokens;
+  const slug = (site?.name ?? "site").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  /* fonts — the bytes, not a command */
+  const fonts = (["heading", "body"] as const).map((role) => {
+    const f = t.typography[role];
+    const asset = EMBEDDED_BY_NAME.get(f.family);
+    return {
+      role,
+      family: f.family,
+      weight: f.weight,
+      fallback: f.fallback,
+      source: asset ? "embedded" : "indexed",
+      licence: asset?.licence ?? "SIL Open Font License 1.1",
+      designers: asset?.designers ?? null,
+      faces: (asset?.faces ?? []).map((face) => ({
+        weight: face.weight,
+        style: face.style,
+        format: "woff2",
+        encoding: "base64",
+        bytes: face.bytes,
+        fnv1a: fnv1a(face.b64),
+        content: face.b64
+      }))
+    };
+  });
+
+  /* imagery — everything the previewed pages actually reference */
+  const keys = new Set<string>();
+  pages.forEach((pg) => collectMedia(pg.blocks, keys));
+  const images = [...keys].map((key) => {
+    const uri = SAMPLE_IMAGES[key] ?? key;
+    const m = DATA_URI.exec(uri);
+    const content = uri.slice(m ? m[0].length : 0);
+    return {
+      id: SAMPLE_IMAGES[key] ? key : `inline_${fnv1a(key)}`,
+      source: SAMPLE_IMAGES[key] ? "sample-library" : "inline",
+      mime: m ? m[1] : "image/jpeg",
+      encoding: "base64",
+      fnv1a: fnv1a(content),
+      content
+    };
+  });
+
+  const type = typeSizes(t);
+  const rows = evaluate(t);
+
+  const body = {
+    schemaVersion: 3,
+    kind: "wacrm.theme.bundle",
+    generator: "WACRM Website CMS · Theme Studio",
+    name: site?.name ? `${site.name} theme` : "Theme",
+    description: mode === "live"
+      ? "Complete bundle exported from the live release."
+      : "Complete bundle exported from the saved draft.",
+    theme: {
+      colors: t.colors,
+      typography: t.typography,
+      geometry: t.geometry,
+      blockStyling: t.blockStyling
+    },
+    fonts,
+    assets: {
+      logo: null,
+      note: "Logo and favicon are owned by the Media library (Module 9) and are exported with the site, not the theme.",
+      images
+    },
+    layout: {
+      containerWidthPx: t.geometry.containerWidthPx,
+      radiusPx: t.geometry.radiusPx,
+      spacing: { base: t.geometry.spacing.base, density: t.geometry.spacing.density, scalePx: spacingScale(t) },
+      blockStyling: t.blockStyling,
+      /* declared now, filled by the modules that own them */
+      starterLayouts: {},
+      navigation: {},
+      deferredTo: { starterLayouts: "Module 7 · Layouts", navigation: "Module 8 · Navigation" }
+    },
+    computed: {
+      typeScale: Object.fromEntries(TYPE_STEPS.map((step) => [step, type[step]])),
+      fluid: t.typography.scale.fluid,
+      contrast: rows.map((r) => ({ id: r.id, label: r.label, fg: r.fg, bg: r.bg, ratio: Number(r.ratio.toFixed(2)), need: r.need, verdict: r.verdict, advisory: Boolean(r.advisory) }))
+    },
+    pages: pages.map((pg) => ({ id: pg.id, title: pg.title, blocks: pg.blocks })),
+    "x-wacrm": {
+      site: site?.name ?? siteId,
+      siteId,
+      revision: rev.id,
+      seq: rev.seq,
+      status: mode,
+      exportedAt: new Date().toISOString(),
+      exportedBy: "Aranya K.",
+      fontsEmbedded: EMBEDDED_COUNT,
+      fontsTotalBytes: EMBEDDED_TOTAL_BYTES,
+      integrity: { algorithm: "fnv1a-32", theme: fnv1a(JSON.stringify(t)) }
+    }
+  };
+
+  const json = JSON.stringify(body, null, 2);
+  return {
+    filename: `${slug}-theme-bundle-${mode}-v${rev.seq}.json`,
+    json,
+    bytes: new TextEncoder().encode(json).length,
+    fonts: fonts.reduce((n, f) => n + f.faces.length, 0),
+    images: images.length,
+    pages: pages.length
+  };
 }
 
 /* ---------------- API ---------------- */
