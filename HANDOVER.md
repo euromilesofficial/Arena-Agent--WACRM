@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 02:00:07 UTC · **generated against commit** `edc189b` · **working tree** 3 uncommitted file(s)
+**Generated** 2026-11-15 02:09:25 UTC · **generated against commit** `942b600` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -45,7 +45,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 1,146,834 B (1120 kB) · gzip 391 kB |
 | md5 | `a9fc8c13a3a178a0b9b3c48a04d10896` |
 | sha256 (first 16) | `39ed2c10fc9f358d` |
-| Built | 2026-11-15 02:00:05 |
+| Built | 2026-11-15 02:04:28 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,7 +86,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **52 source files, 18,654 lines** of TS/TSX/CSS (26,386 lines across all tracked text files).
+Source inventory: **52 source files, 18,654 lines** of TS/TSX/CSS (27,498 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -105,13 +105,13 @@ Top files by size:
 | `src/views/Library.tsx` | 1,070 |
 | `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
+| `MODULE-6-THEME-STUDIO-SPEC.md` | 880 |
 | `src/lib/library-db.ts` | 856 |
 | `src/lib/builder.ts` | 828 |
 | `src/views/Pages.tsx` | 789 |
 | `src/lib/store.tsx` | 569 |
 | `src/components/pages/PageModals.tsx` | 552 |
 | `src/views/Sites.tsx` | 538 |
-| `src/components/builder/Blocks.tsx` | 520 |
 
 ## 6. Data seam and contracts
 
@@ -216,13 +216,15 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `edc189b` — docs(uploads): add the inspector-overview close-up mock; rebuild MANIFEST; restore script exec bits.
-- Working tree: 3 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `942b600` — docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `942b600` | 2026-11-15 | docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST |
+| `f5f0309` | 2026-11-15 | fix(module-5): restore the mock's responsive strip; verify uploads manifest |
 | `edc189b` | 2026-11-15 | docs(uploads): add the inspector-overview close-up mock; rebuild MANIFEST; restore script exec bits |
 | `78f8fab` | 2026-11-14 | feat(module-5): close the mock-fidelity audit — 25-block catalogue, mock categories, icon cards, property inspector |
 | `0fbd45c` | 2026-11-14 | docs(module-5): audit the ten block-library mocks against the build |
@@ -233,8 +235,6 @@ First tasks:
 | `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
 | `d53dbd3` | 2026-11-14 | chore: the mirror no longer carries HANDOVER.md — the hook owns that file |
 | `a2df16c` | 2026-11-14 | noop |
-| `22c68d8` | 2026-11-14 | noop |
-| `a41df35` | 2026-11-14 | chore: the handover hook no longer manufactures a commit on every checkpoint |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
