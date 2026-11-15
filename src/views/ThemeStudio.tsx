@@ -679,7 +679,7 @@ export function ThemeStudio() {
               <>
                 <div className="m6-banner is-soft">
                   <Icon name="shield" size={13} />
-                  {FONT_STATS.embedded} of {FONT_STATS.total.toLocaleString()} Google Fonts families are embedded in this build as self-hosted woff2 ({(FONT_STATS.bytes / 1e6).toFixed(1)} MB) and verified before saving. The rest are indexed, searchable and locked — never offered as a font the page cannot render.
+                  {FONT_STATS.embedded} of {FONT_STATS.total.toLocaleString()} Google Fonts families ship inside this build as self-hosted woff2 ({(FONT_STATS.bytes / 1e6).toFixed(1)} MB). The other {(FONT_STATS.total - FONT_STATS.embedded).toLocaleString()} are searchable — “Get” hands you the command to pull any of them in.
                 </div>
 
                 {(["heading", "body"] as const).map((role) => {

@@ -59,16 +59,23 @@ It renders **1:1 at the studio's own width** rather than being scaled to 42% and
 - **Restore loads the revision into the working copy. It does not write.** Save is still the only thing that creates a revision — the one guarantee the module sells. Undo walks back out of a restore, and undoing a restore returns to a clean saved draft.
 - The seed history is now five revisions with *real* changes (`#3` violet swap, `#4` radius + Poppins, `#5` back to Geist at ratio 1.333/17 px, `#6` live, `#7` draft) instead of two identical objects — a diff list that shows nothing proves nothing.
 
-### Fonts · from 9 families to 247 embedded + 1,746 indexed
+### Fonts · from 9 families to 50 embedded + 1,746 indexed (revised down from 247)
+
+> **Revision, 2026-11-15.** This section first shipped **247** embedded families. That was
+the wrong trade: 247 families cost 15.5 MB of artifact, and the whole workspace went past
+its 128 MB budget with five modules still to build. The embedded set is now the **top 50
+by Google popularity**, which covers what a builder actually reaches for, and **every family
+outside it is one command away from inside the picker** (§ *Get*). The 1,746-family index,
+the metadata, the licence register and the on-demand path are unchanged.
 
 The user's ask was "almost all the fonts in Google". That is a byte question before it is a feature question, so it was answered with two different mechanisms:
 
 | | Count | Mechanism | Truth in the UI |
 |---|---|---|---|
-| **Embedded** | **247 families**, 10.49 MB of woff2 (14.1 MB base64) | real latin-subset woff2, variable-first (one file = 100–900), static 400+700 fallback | fully selectable, renders offline, weight buttons are the weights the file actually covers |
-| **Indexed** | **1,746 families** (every family Google publishes, minus 212 brand fonts and the unlicensed Google Sans family) | metadata only: category, weights, italic, designer, popularity rank | listed, searchable, **locked**, each row says *Requires ingestion* and points at the pipeline |
+| **Embedded** | **50 families** — the ones the product's own documents and pairing chips use, plus Google's most-downloaded — **2.48 MB** of woff2 (3.3 MB base64) | real latin-subset woff2, variable-first (one file = 100–900), static 400+700 fallback | fully selectable, renders offline, weight buttons are the weights the file actually covers |
+| **Indexed** | **1,746 families** (every family Google publishes, minus 212 brand fonts and the unlicensed Google Sans family) | metadata only: category, weights, italic, designer, popularity rank | listed, searchable, locked, and each row carries a **Get** action that hands over the exact `npm run fonts -- --only="<family>"` command |
 
-Why 247 and not 1,746: all of Google Fonts as woff2 is ~70 MB before base64 — impossible inside a single HTML file that must open by double-click with no network. The budget is a constant in the generator (`--budget=10.5` MB) and the selection is **Google popularity order, variable-first**, which is why the set is Roboto, Open Sans, Inter, Montserrat, Poppins, Lato, Arimo, Playfair Display, Nunito, Raleway…
+Why 50: all of Google Fonts as woff2 is ~70 MB before base64 — impossible in a single HTML file that opens by double-click with no network — and 247 families already proved too heavy for the workspace. The cut is a constant (`--families=50`, with `--budget` as a seatbelt) and the selection is **Google popularity order, variable-first**, with eighteen families pinned because the product itself references them in its seeded documents and pairing shortcuts: Geist, Inter, Poppins, DM Sans, Montserrat, Open Sans, DM Serif Display, Playfair Display, Source Sans 3, Lora, Space Grotesk, Oswald, Roboto, Bebas Neue, Libre Baskerville, Nunito Sans, Raleway, Merriweather.
 
 Consequences worth noting:
 
@@ -93,7 +100,7 @@ Nothing is silently invented, and nothing is silently rejected.
 | File | Change |
 |---|---|
 | `scripts/fetch-theme-fonts.mjs` | rewritten — metadata index + budgeted embedding + licence register |
-| `src/lib/theme-font-data.ts` | generated · 247 families, 14.1 MB |
+| `src/lib/theme-font-data.ts` | generated · 50 families, 3.3 MB |
 | `src/lib/theme-font-catalog.ts` | generated · 1,746 rows, 137 KB |
 | `src/lib/theme-db.ts` | `TypeScale`, `typeSizes`/`typeSizeCss`/`typeStamp`, 13 roles, `mixHex`/`deriveRole`, `diffTokens`/`revisionDiff`, lazy `ensureFontFaces`, `searchFonts`, v2 export/migration |
 | `src/components/theme/ThemeSpecimen.tsx` | **new** — the specimen sheet |

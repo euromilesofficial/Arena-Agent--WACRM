@@ -8,7 +8,9 @@ Publish is Module 11 (M6 D1) · contrast never blocks save (D11) · the working 
 
 ---
 
-## D1 — "Almost all Google Fonts" is resolved as *247 embedded + 1,746 indexed*, not as 1,746 embedded
+## D1 — "Almost all Google Fonts" is resolved as *a popularity cut embedded + 1,746 indexed*, not as 1,746 embedded
+
+*Revised 2026-11-15: the cut is **50**, not 247 (see D16).*
 
 All of Google Fonts as latin woff2 is ≈70 MB before base64. A single HTML file that must double-click open cannot carry that, and a 70 MB page would not be a SaaS-grade artifact.
 
@@ -26,7 +28,7 @@ A hand-curated set would encode my taste. Popularity order is verifiable, reprod
 
 ## D4 — Faces are injected lazily, per family
 
-M6 injected all faces on mount; with 247 families that is a 14 MB stylesheet built before the first interaction. 6.1 registers a family the first time something asks for it (the chosen pair, plus the visible window of the picker). QA asserts the face is genuinely registered (`document.fonts.check`) and not merely named in a style rule.
+M6 injected all faces on mount; at 247 families that was a 14 MB stylesheet built before the first interaction. 6.1 registers a family the first time something asks for it (the chosen pair, plus the visible window of the picker). QA asserts the face is genuinely registered (`document.fonts.check`) and not merely named in a style rule.
 
 ## D5 — The divider role is measured against an **advisory 1.5:1 floor**, not WCAG 1.4.11's 3:1
 
@@ -71,3 +73,40 @@ Listing them as "requires ingestion" would imply we could ingest them. We could 
 ## D15 — Licence text is per family where known, generic where not
 
 `FONT-LICENSES.md` records OFL 1.1 for the vast majority, Apache 2.0 for the Roboto/Arimo/Tinos/Cousine family of faces and UFL 1.0 for Ubuntu. Every row carries a designer and a size, and the file states plainly that italic and latin-ext are **not** embedded.
+
+
+---
+
+## D16 — Embed the top 50, not 247 (reversal, 2026-11-15)
+
+D1 chose 247 families on a 10.5 MB budget. That was defensible in isolation and wrong in
+practice: it made the artifact 15.5 MB, pushed the workspace past its storage ceiling, and
+paid for itself in families nobody chooses — the difference between the 40th and the 240th
+most-downloaded font is not a difference any reviewer will notice.
+
+**Decision:** the embedded set is **50**, ordered by Google popularity with eighteen
+families pinned because the product itself references them (seeded documents, pairing
+shortcuts). 2.48 MB of woff2, artifact 4.8 MB instead of 15.5 MB.
+
+**What did *not* change:** the 1,746-family index, its metadata, the category counts, the
+licence register, the locked-never-faked rule, and the offline guarantee.
+
+**What was added:** a locked row is no longer a dead end. Every indexed family carries a
+**Get** action that opens a panel with the exact command — `npm run fonts -- --only="Abril
+Fatface"` — a copy control, what happens next (the next build renders it offline), and the
+production equivalent (`POST /theme/fonts/{family}/ingest`). The user asked for "the option
+to download the font they want from Google"; this is that option, made honest about the
+fact that the artifact cannot fetch anything at runtime.
+
+## D17 — One repository, no mirror clone (2026-11-15)
+
+The workspace held the app folder *and* a Git clone of it, so every artifact existed twice.
+The clone is gone: `wacrm-app/` is the repository. `checkpoint.sh` no longer copies anything
+— it builds, commits and pushes in place.
+
+**Consequence, and the reason it is safe:** a symlink-based "one copy" variant was tried
+first and does not survive the workspace snapshot — links were silently dropped and their
+targets left the tree inconsistent. A single working tree has no link to drop. The cost is
+that the token-authenticated push happens from the app folder; `.git/config` is excluded
+from snapshots, so the credential is still never persisted and `checkpoint.sh` supplies the
+URL per run.

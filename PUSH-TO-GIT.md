@@ -3,21 +3,13 @@
 **Status: in sync.** `origin/main` = the workspace, verified by cloning the repository back out.
 
 ```
-origin/main   aca7109   ← M6.1 code, verified with git ls-remote after the push
-              99dac4d   ← this document on top of it
-local main    99dac4d   ← identical to the remote; 0 ahead / 0 behind
-files         152 tracked (133 source/docs/QA + 19 reference mocks on disk-less uploads/)
-tags          module-1-and-2-import · module-2-complete · module-3-complete · module-4-complete
-              module-4-ai · module-5-complete · m6-theme-studio · m6-theme-studio-benchmark
-              m6.1-theme-studio (5fcaff4)
-artifact      WACRM-CMS.html 15,487,295 B · md5 3b6612e18fc6f9c3e81d08b51145d25e
-package       wacrm-app.zip 11.4 MB · 113 files — omits the regenerable font source
-              and qa/ (STORAGE.md); md5 is printed by every `npm run package`
+origin/main   95d3f16   ← matches /home/user/repo exactly
+files         107       (88 source/docs/QA + 19 reference mocks)
+tags          module-1-and-2-import · module-2-complete · module-3-complete · module-4-complete · module-4-ai
+round trip    fresh clone → WACRM-CMS.html md5 119b71ca… (identical) · uploads/EuroMiles…webp sha 7b51c952… (matches MANIFEST)
 ```
 
-Since then every module has landed the same way and the remote has never drifted: Module 3, Module 4 (builder + AI mode), Module 5 (block library), Module 6 (Theme Studio), the competitive benchmark, and now **Module 6.1** — the type scale, the four new colour roles, the specimen sheet, revision diffs and the 247-family Google Fonts library. The workspace itself went the other way: it had drifted to **119 MB** — the 14 MB font library and the 15.5 MB artifact were each stored in the app folder, in the clone and inside the zip. That layout is fixed (`STORAGE.md`): one copy on disk, a zip that omits what it can regenerate, and repacked history. **119 MB → 78 MB** with the artifact byte-identical (md5 `3b6612e18fc6…`).
-
-One incident worth recording, because the rule is that GitHub state is verified and not assumed: when this turn began, the local clone at `repo/` had been restored from an **older snapshot** and no longer contained the three M6.1 commits — while `origin/main` still did. Verified with `git ls-remote` + `git cat-file -s origin/main:src/lib/theme-font-data.ts` → **14,060,527 B**, i.e. the real font library is on GitHub. The clone was re-synced with `git reset --hard origin/main`, working tree clean, no history rewritten. A local clone can be rolled back by the environment; the remote cannot.
+Before the credential arrived, GitHub held only `d2dd7db` — your Module 3 *spec review*. The 30 commits after it (Module 3's build, the whole Module 4 builder, the interlink plan, AI mode, the packaging automation, the WebP mocks) were local-only. They are now on `main`.
 
 ---
 

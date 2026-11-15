@@ -4167,6 +4167,22 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m6-fc-toggle{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 6px;font:inherit;font-size:9.5px;font-weight:650;color:var(--muted);cursor:pointer}
 .m6-fc-toggle.is-on{background:var(--green-soft);border-color:var(--green-line);color:#0A7A46}
 .m6-fc-row.is-locked .m6-fc-aa{color:var(--muted-2)}
+.m6-fc-item{border-radius:7px}
+.m6-fc-line{display:flex;align-items:center;gap:4px}
+.m6-fc-line .m6-fc-row{flex:1 1 auto;min-width:0}
+.m6-fc-get{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 6px;border:1px solid var(--line-strong);background:var(--surface);border-radius:6px;font:inherit;font-size:9.5px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.m6-fc-get:hover{border-color:var(--brand-line);background:var(--brand-soft);color:var(--brand-ink)}
+.m6-fc-get.is-on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-ink)}
+.m6-fc-getpanel{margin:2px 0 6px;padding:8px 9px;border:1px solid var(--brand-line);background:var(--brand-soft);border-radius:8px;font-size:10px;line-height:1.45;color:var(--ink-2)}
+.m6-fc-getpanel p{margin:0 0 6px}
+.m6-fc-getpanel b{color:var(--ink)}
+.m6-fc-getpanel ul{margin:6px 0 0;padding-left:14px}
+.m6-fc-getpanel li{margin:2px 0}
+.m6-fc-getpanel code{font-family:var(--mono);font-size:9.5px;background:#fff;border:1px solid var(--brand-line);border-radius:4px;padding:0 3px;overflow-wrap:anywhere}
+.m6-fc-cmd{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--brand-line);border-radius:6px;padding:4px 6px}
+.m6-fc-cmd code{flex:1 1 auto;border:0;background:transparent;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m6-fc-copy{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line-strong);background:var(--surface);border-radius:5px;padding:2px 5px;font:inherit;font-size:9px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.m6-fc-copy:hover{border-color:var(--brand-line);color:var(--brand-ink)}
 .m6-fc-more{width:100%;border:1px dashed var(--line);background:var(--surface-2);border-radius:7px;padding:6px;margin-top:4px;font:inherit;font-size:10px;font-weight:650;color:var(--brand-ink);cursor:pointer}
 .m6-fc-more:hover{background:var(--brand-soft);border-color:var(--brand-line)}
 

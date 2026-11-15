@@ -11,11 +11,11 @@
 # remote URL, or to shell history. Scope needed: Contents = Read and write.
 set -euo pipefail
 
-REPO=/home/user/repo
+APP=/home/user/wacrm-app
 OWNER_REPO=euromilesofficial/Arena-Agent--WACRM
 BRANCH=main
 
-cd "$REPO"
+cd "$APP"
 
 git config user.name "Arena Agent"
 git config user.email "agent@arena.ai"

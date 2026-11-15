@@ -28,9 +28,10 @@ forwards to `WACRM-CMS.html`, so a double-click never lands on a blank page.
   150–300 ms `cubic-bezier(.16,1,.3,1)`.
 - **No runtime dependencies beyond React.** Icons are inline SVG, charts are
   hand-drawn SVG, photos are inlined at build time, and the Theme Studio carries
-  **247 self-hosted Google Fonts families** (10.5 MB of subsetted woff2, inlined
-  at build time) with a searchable 1,746-family index behind them — nothing is
-  fetched from a CDN, so the file works offline.
+  **50 self-hosted Google Fonts families** (2.5 MB of subsetted woff2, inlined at
+  build time — the most-used families plus every one the product references) with a
+  searchable 1,746-family index behind them, each indexed family one `Get` click from
+  its fetch command — nothing is fetched from a CDN, so the file works offline.
 
 ## Layout of the source
 
@@ -53,7 +54,7 @@ src/
                             derived six-step type scale, WCAG pair engine,
                             presets, CAS draft save, revisions + token diffs,
                             v1/v2 import-export, presets seed
-    theme-font-data.ts      247 embedded font families (generated, ~14 MB base64)
+    theme-font-data.ts      50 embedded font families (generated, ~3.3 MB base64)
     theme-font-catalog.ts   the full 1,746-family Google Fonts index (generated)
     nav.ts, format.ts, thumbs.ts
   components/
@@ -107,7 +108,8 @@ regenerate, and history is repacked. `STORAGE.md` has the map, the savings per i
 the checks that keep a build through a symlink honest.
 
 ```bash
-npm run fonts    # regenerate the 247-family library (14 MB, generated, in Git)
+npm run fonts                          # regenerate the embedded set (top 50, 3.3 MB)
+npm run fonts -- --only="Bebas Neue"   # or pull in one family from Google Fonts
 ```
 
 ## Handover (for a human or an AI agent picking this up cold)
