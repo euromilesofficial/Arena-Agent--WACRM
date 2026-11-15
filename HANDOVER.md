@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 19:36:38 UTC · **generated against commit** `fa27d41` · **working tree** 6 uncommitted file(s)
+**Generated** 2026-11-15 19:37:39 UTC · **generated against commit** `0b8ae43` · **working tree** 2 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -49,7 +49,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 15,487,295 B (15124 kB) · gzip 10781 kB |
 | md5 | `3b6612e18fc6f9c3e81d08b51145d25e` |
 | sha256 (first 16) | `dc6ff4d94b849b45` |
-| Built | 2026-11-15 19:36:35 |
+| Built | 2026-11-15 19:37:36 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -92,7 +92,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **61 source files, 23,424 lines** of TS/TSX/CSS (34,653 lines across all tracked text files).
+Source inventory: **61 source files, 23,424 lines** of TS/TSX/CSS (34,655 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -237,13 +237,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `fa27d41` — docs: PUSH-TO-GIT head + package facts after the M6.1 push.
-- Working tree: 6 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `0b8ae43` — chore: cut the workspace from 119 MB to ~80 MB — one on-disk copy of the font library and the artifact, a zip that omits regenerable source, repacked history.
+- Working tree: 2 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `0b8ae43` | 2026-11-15 | chore: cut the workspace from 119 MB to ~80 MB — one on-disk copy of the font library and the artifact, a zip that omits regenerable source, repacked history |
 | `fa27d41` | 2026-11-15 | docs: PUSH-TO-GIT head + package facts after the M6.1 push |
 | `99dac4d` | 2026-11-15 | docs: PUSH-TO-GIT and ROLLBACK reflect the M6.1 push (aca7109, 9 tags, 152 files) |
 | `aca7109` | 2026-11-15 | M6.1: type scale, 13 colour roles, specimen sheet, revision diffs, 247 embedded + 1,746 indexed Google Fonts |
@@ -255,7 +256,6 @@ First tasks:
 | `edc189b` | 2026-11-15 | docs(uploads): add the inspector-overview close-up mock; rebuild MANIFEST; restore script exec bits |
 | `78f8fab` | 2026-11-14 | feat(module-5): close the mock-fidelity audit — 25-block catalogue, mock categories, icon cards, property inspector |
 | `0fbd45c` | 2026-11-14 | docs(module-5): audit the ten block-library mocks against the build |
-| `10530b7` | 2026-11-14 | chore(qa): write screenshots as WebP directly, drop stray PNGs |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

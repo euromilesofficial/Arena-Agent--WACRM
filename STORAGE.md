@@ -1,6 +1,6 @@
 # Where the bytes live
 
-The workspace was 119 MB with five modules still to build. It is now **~80 MB**, and this file is the map — because the reduction was not "delete things", it was "stop storing the same bytes three times".
+The workspace was 119 MB with five modules still to build. It is now **78 MB** (55 MB of it Git history and the two artifacts, which have to exist somewhere), and this file is the map — because the reduction was not "delete things", it was "stop storing the same bytes three times".
 
 ## What was actually large
 
@@ -69,7 +69,7 @@ The four stray `qa/*.png` files (1.7 MB) were deleted — JPEG/PNG captures were
 | app folder | 41 MB | **11 MB** |
 | clone + history | 67 MB | **57 MB** |
 | zip | 31 MB | **11 MB** |
-| **snapshot total** | **~119 MB** | **~80 MB** |
+| **snapshot total** | **~119 MB** | **78 MB** |
 
 ## What is left, and why it is the floor
 
