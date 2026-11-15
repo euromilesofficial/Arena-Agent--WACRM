@@ -407,14 +407,13 @@ function Inspector({
             <p className="m5-summary">{entry.desc}</p>
             <Composition entry={entry} onMore={() => setTab("Structure")} />
 
-            <div className="m5-bp" aria-label="Supported breakpoints">
-              {([["monitor", "Desktop", "≥ 1200 px"], ["tablet", "Tablet", "768 – 1199 px"], ["phone", "Mobile", "≤ 767 px"]] as [string, string, string][]).map(([icon, name, range]) => (
-                <div key={name} className="m5-bp-card">
-                  <Icon name={icon} size={15} />
-                  <b>{name}</b>
-                  <em>{range}</em>
-                  <Icon name="check" size={10} />
-                </div>
+            {/* the mock's one-line strip — the px ranges stay as tooltips, so the
+                information is there without three extra boxes in a 330 px rail */}
+            <div className="m5-resp-row" aria-label="Supported breakpoints">
+              <Icon name="monitor" size={13} />
+              <span className="m5-resp-k">Responsive:</span>
+              {([["Desktop", "≥ 1200 px"], ["Tablet", "768 – 1199 px"], ["Mobile", "≤ 767 px"]] as [string, string][]).map(([d, range]) => (
+                <span key={d} className="m5-resp-item" title={range}>{d}<Icon name="check" size={11} /></span>
               ))}
             </div>
 

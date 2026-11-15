@@ -138,3 +138,11 @@ The audit found 14 divergences from the ten mocks. Closed here:
 Left as it is, deliberately: card thumbnails remain wireframe schematics rather than
 photographic renders (a generated-image set would add ~0.6–1 MB to a single-file artefact
 and would still be fiction); the inspector preview is the same schematic.
+
+## 24 · Responsive strip, not breakpoint cards
+
+Item 11 of the fidelity pass briefly became three breakpoint cards (≥1200 / 768–1199 /
+≤767 px), taken from the AM-8 frame. The close-up you sent afterwards shows the same
+inspector with a **one-line `Responsive: Desktop ✓ Tablet ✓ Mobile ✓` strip**, and six of the
+ten frames agree with it. Reverted to the strip; the pixel ranges survive as `title`
+tooltips, so nothing is lost except three boxes in a 330 px rail.
