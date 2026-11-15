@@ -200,6 +200,44 @@ export function ColorField({ anchor, open, onClose, roleLabel, value, recent, on
 
 const WINDOW = 60;
 
+/* ---------------- on-demand family ----------------
+   The catalogue is the whole of Google Fonts (1,746 families); the artifact embeds
+   the 50 that earn their bytes. A family outside that set is not a dead end — it is
+   one command away, and this panel says which command, and what the production
+   equivalent is once there is a backend. Nothing here pretends the font can load
+   from Google at runtime: the artifact must render with no network. */
+function GetFamilyPanel({ family, category }: { family: string; category: string }) {
+  const [copied, setCopied] = useState(false);
+  const cmd = `npm run fonts -- --only="${family}"`;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch { /* clipboard blocked — the command is selectable text regardless */ }
+  };
+  return (
+    <div className="m6-fc-getpanel">
+      <p>
+        <b>{family}</b> is indexed, not embedded — this build carries the 50 most-used families
+        offline. Pull this one in from Google Fonts:
+      </p>
+      <div className="m6-fc-cmd">
+        <code>{cmd}</code>
+        <button type="button" className="m6-fc-copy" onClick={copy}>
+          <Icon name={copied ? "check" : "copy"} size={10} />
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <ul>
+        <li>The generator fetches the latin subset, writes it to <code>theme-font-data.ts</code>, and the next build renders it with no network.</li>
+        <li>Then this row unlocks — <code>{family}</code> is a {category} family with its licence recorded in <code>FONT-LICENSES.md</code>.</li>
+        <li>With a backend, the same action is <code>POST /theme/fonts/{family}/ingest</code> → job → <code>state: ready</code>. Contract: <code>BACKEND-PLAN §7.28.3</code>.</li>
+      </ul>
+    </div>
+  );
+}
+
 export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }: {
   anchor: HTMLElement | null;
   open: boolean;
@@ -212,11 +250,13 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
   const [cat, setCat] = useState<FontCategory | "all">("all");
   const [embeddedOnly, setEmbeddedOnly] = useState(true);
   const [shown, setShown] = useState(WINDOW);
+  /* which indexed family is showing its "pull it from Google" recipe */
+  const [getFor, setGetFor] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setQ(""); setCat("all"); setEmbeddedOnly(true); setShown(WINDOW);
+    setQ(""); setCat("all"); setEmbeddedOnly(true); setShown(WINDOW); setGetFor(null);
     window.setTimeout(() => inputRef.current?.focus(), 30);
   }, [open]);
 
@@ -226,8 +266,8 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
   );
   const visible = matches.slice(0, shown);
 
-  /* only the families inside the window need a face — 247 eager @font-face
-     blocks would cost a 14 MB stylesheet before the first keystroke */
+  /* only the families inside the window need a face — 50 eager @font-face
+     blocks up front would cost a multi-MB stylesheet before the first keystroke */
   useEffect(() => {
     if (!open || !visible.length) return;
     ensureFontFaces(visible.filter((f) => f.embedded).map((f) => f.family));
@@ -272,8 +312,9 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
         {visible.map((f) => {
           const on = f.family === value;
           return (
+            <div className={`m6-fc-item ${getFor === f.family ? "is-open" : ""}`} key={f.family}>
+            <div className="m6-fc-line">
             <button
-              key={f.family}
               type="button"
               role="option"
               aria-selected={on}
@@ -299,6 +340,22 @@ export function FontCombobox({ anchor, open, onClose, roleLabel, value, onPick }
               {on && <Icon name="check" size={13} />}
               {!f.embedded && <Icon name="lock" size={11} />}
             </button>
+            {!f.embedded && (
+              <button
+                type="button"
+                className={`m6-fc-get ${getFor === f.family ? "is-on" : ""}`}
+                aria-expanded={getFor === f.family}
+                aria-label={`Get ${f.family} from Google Fonts`}
+                title={`Pull ${f.family} into this build from Google Fonts`}
+                onClick={() => setGetFor((cur) => (cur === f.family ? null : f.family))}
+              >
+                <Icon name="download" size={11} />
+                Get
+              </button>
+            )}
+            </div>
+            {getFor === f.family && <GetFamilyPanel family={f.family} category={CATEGORY_LABEL[f.category]} />}
+            </div>
           );
         })}
         {!matches.length && (

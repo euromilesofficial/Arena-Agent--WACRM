@@ -81,8 +81,8 @@
       "name": "Theme Studio completion + Google Fonts library",
       "route": "#/theme",
       "status": "done",
-      "evidence": "qa_theme.py 189/189",
-      "notes": "Closes the four Tier-A gaps from THEME-STUDIO-BENCHMARK.md: (G1) a derived six-step type scale with ratio, leadings, trackings and fluid clamp(), edited in a Type Scale card and obeyed by the preview; (G2) 13 colour roles adding muted/link/border/ring, 14 measured contrast pairs with per-role thresholds and the divider advisory floor; (G3) a 1:1 specimen sheet covering type, palette, buttons in four states, four field states, alerts, pills, card, table, radius and spacing; (G4) a Revisions rail + diff modal whose restore fills the working copy and never saves. Fonts: 247 embedded families (10.49 MB woff2, variable-first) plus the full 1,746-family Google Fonts index, searchable with category counts and an embedded-only default; locked rows state the reason. Document schema is now version 2 with a stated v1 migration."
+      "evidence": "qa_theme.py 198/198",
+      "notes": "Closes the four Tier-A gaps from THEME-STUDIO-BENCHMARK.md: (G1) a derived six-step type scale with ratio, leadings, trackings and fluid clamp(), edited in a Type Scale card and obeyed by the preview; (G2) 13 colour roles adding muted/link/border/ring, 14 measured contrast pairs with per-role thresholds and the divider advisory floor; (G3) a 1:1 specimen sheet covering type, palette, buttons in four states, four field states, alerts, pills, card, table, radius and spacing; (G4) a Revisions rail + diff modal whose restore fills the working copy and never saves. Fonts: the 50 most-used Google Fonts families embedded (2.48 MB woff2, variable-first) plus the full 1,746-family index, searchable with category counts and an embedded-only default; locked rows state the reason. Document schema is now version 2 with a stated v1 migration. Embedded set trimmed from 247 to the top 50 on 2026-11-15 (D16); every family outside the 50 is searchable and one Get click from its fetch command."
     }
   ],
   "decisions": [
@@ -158,7 +158,7 @@
     },
     {
       "id": "D19",
-      "decision": "\"Almost all Google Fonts\" = 247 families embedded (10.5 MB woff2 budget, popularity order, variable-first) + all 1,746 families indexed with real metadata and locked, never silently offered. A single offline HTML cannot carry the whole library; the budget is a generator flag.",
+      "decision": "\"Almost all Google Fonts\" = the top 50 families embedded (popularity order, 18 pinned because the product references them) + all 1,746 indexed with real metadata. Every indexed family carries a Get action that hands over the exact `npm run fonts -- --only=\\\"<family>\\\"` command and names the production ingest endpoint. Revised from 247 on 2026-11-15: the artifact had to fit the workspace budget.",
       "status": "locked"
     },
     {
@@ -200,10 +200,15 @@
       "id": "D27",
       "decision": "The specimen renders 1:1 at the studio width rather than scaled inside the 1440 px device frame — a specimen scaled to 42% is unreadable and therefore useless.",
       "status": "locked"
+    },
+    {
+      "id": "D28",
+      "decision": "One repository, no mirror clone: /home/user/wacrm-app is the Git repository, so no artifact is stored twice. A symlink-based shared-copy variant was tried and abandoned — workspace snapshots drop symlinks and leave the tree inconsistent.",
+      "status": "locked"
     }
   ],
   "next": {
-    "headline": "Module 6.1 is complete: the four Tier-A gaps from the competitive benchmark are closed (type scale, 13 role pairs, specimen sheet, revisions) and the Theme Studio carries 247 embedded Google Fonts families with a searchable 1,746-family index. 11/11 suites green. Tier B of the benchmark is researched but unapproved.",
+    "headline": "Workspace cut from 140.6 MB to ~46 MB: the embedded font set is the top 50 (was 247), the mirror clone is gone and history is repacked. The artifact is 4.8 MB (was 15.5), the zip 3.6 MB (was 31), and every one of the 1,746 indexed families is now one Get click from a fetch command. 11/11 suites green, qa_theme.py 198/198.",
     "blockedOn": [
       "Module 7 (Layouts & Templates) waits on its specification; the theme contract already reserves the layout/navigation import fields and keeps them switched off.",
       "Module 11 (Publishing & Releases) is the future owner of the publish surface — until then the theme draft rides Module 4's release dialog.",

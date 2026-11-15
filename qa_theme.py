@@ -577,9 +577,41 @@ async def main():
         m = re.search(r"(\d[\d,]*) of ([\d,]+) Google Fonts families", banner)
         ck("14.1 the banner states the embedded vs indexed split", m is not None, banner[:80])
         embedded_n, total_n = (int(m.group(1).replace(",", "")), int(m.group(2).replace(",", ""))) if m else (0, 0)
-        ck("14.2 the embedded set is substantial", embedded_n >= 200, str(embedded_n))
+        ck("14.2 the embedded set is the top-50 popularity cut", embedded_n == 50, str(embedded_n))
         ck("14.3 the index covers almost all of Google Fonts", total_n >= 1700, str(total_n))
         ck("14.4 embedded is a real subset of the index", 0 < embedded_n < total_n)
+        # --- the long tail is not a dead end: a locked family can be pulled in ---
+        await pg.locator(".m6-combo").first.click()        # open the family picker
+        await pg.wait_for_timeout(600)
+        ck("14.5 the picker opens on the embedded set", await pg.locator(".m6-fc-toggle.is-on").count() == 1)
+        await pg.locator(".m6-fc-toggle").click()          # show the full index
+        await pg.wait_for_timeout(500)
+        search = pg.locator(".m6-fc-search input")
+        await search.fill("Bebas Neue")
+        await pg.wait_for_timeout(400)
+        have_get = await pg.locator(".m6-fc-get").count()
+        ck("14.14 an embedded family shows no Get action", have_get == 0, str(have_get))
+        await search.fill("Abril Fatface")
+        await pg.wait_for_timeout(400)
+        rows = await pg.locator(".m6-fc-row").count()
+        ck("14.15 a family outside the 50 still appears in the index", rows == 1, str(rows))
+        ck("14.16 it is locked, and it says why",
+           "ingestion" in (await txt(pg, ".m6-fc-row")).lower())
+        get = pg.locator(".m6-fc-get").first
+        ck("14.17 a locked family offers a Get action", await get.count() > 0)
+        await get.click()
+        await pg.wait_for_timeout(400)
+        panel = await txt(pg, ".m6-fc-getpanel")
+        ck("14.18 the panel hands over the exact fetch command",
+           'npm run fonts -- --only="Abril Fatface"' in panel, panel[:90])
+        ck("14.19 the panel names the production equivalent",
+           "/theme/fonts/" in panel and "ingest" in panel)
+        ck("14.20 it states the font is not fetched at runtime",
+           "no network" in panel.lower() or "next build" in panel.lower())
+        ck("14.21 the command has a copy control",
+           await pg.locator(".m6-fc-copy").count() == 1)
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(300)
 
         await pg.locator(".m6-combo").first.click()
         await pg.wait_for_timeout(420)

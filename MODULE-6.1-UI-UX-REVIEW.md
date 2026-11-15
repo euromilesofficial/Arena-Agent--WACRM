@@ -123,6 +123,6 @@ The picker's empty state is the one worth calling out: a search miss **never dea
 | 9 roles, no border/ring/muted/link, audit measured a `link` that did not exist | 13 roles, 14 pairs, thresholds per role | dark mode / modes (G5) |
 | Preview = one real page | page + 1:1 specimen | per-section colour schemes (block library work) |
 | History loaded, rendered nowhere | rail + diff modal + restore | scheduled publish (M11) |
-| 9 fonts, 3 locked | 247 embedded, 1,746 indexed, 0 locked in the default view | ingestion job for the long tail (server contract) |
+| 9 fonts, 3 locked | 50 embedded, 1,746 indexed, 0 locked in the default view, and every locked row has a **Get** that names the fetch command | ingestion job for the long tail (server contract) |
 
 Two things this module did **not** fix and should not be read as fixed: the picker is a list of families, not of **pairs** (you still choose two roles); and `accent` and `warning` still measure below 3:1 in the Modern Violet seed — both predate this module and both remain visible rather than hidden.

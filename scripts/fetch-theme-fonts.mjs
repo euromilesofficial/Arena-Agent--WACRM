@@ -19,7 +19,17 @@
         picker can list the whole library and still tell the truth
         about what this build can render offline.
 
-   Run:  node scripts/fetch-theme-fonts.mjs [--budget=10.5]
+   Run:  node scripts/fetch-theme-fonts.mjs [--families=50] [--budget=6]
+
+   WHY 50 AND NOT 247
+   ------------------
+   247 families made the single-file artifact 15.5 MB and pushed the whole workspace
+   past its storage budget. The set that actually earns its bytes is the top of
+   Google's popularity ranking — the faces a builder reaches for. Everything past
+   that stays in the 1,746-family catalogue as metadata and can be pulled in on
+   demand: `npm run fonts -- --families=1 --only="Bebas Neue"` adds one family to
+   this file, and BACKEND-PLAN §7.28.3 is the server-side ingest job for a tenant
+   that wants the long tail at runtime.
    Emits src/lib/theme-font-data.ts
          src/lib/theme-font-catalog.ts
          FONT-LICENSES.md
@@ -27,12 +37,30 @@
 import { writeFileSync } from "node:fs";
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36";
-const BUDGET = Number((process.argv.find((a) => a.startsWith("--budget=")) ?? "--budget=10.5").split("=")[1]) * 1_000_000;
+const arg = (name, fallback) => {
+  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.split("=").slice(1).join("=") : fallback;
+};
+/* the popularity cut: this many families get base64 woff2 in the artifact */
+const LIMIT = Number(arg("families", "50"));
+/* a byte ceiling as a second seatbelt, in case a future set is unusually heavy */
+const BUDGET = Number(arg("budget", "6")) * 1_000_000;
+/* `--only="Bebas Neue"` embeds exactly the families named, for on-demand pulls */
+const ONLY = arg("only", "").split(",").map((x) => x.trim()).filter(Boolean);
 const META = "https://fonts.google.com/metadata/fonts";
 
 /* families that were "present but not embedded" in M6 — keep them first so the
    document that used to say "Requires ingestion" now genuinely renders */
-const PRIORITY = ["Geist", "Inter", "Montserrat", "DM Sans", "Lora", "Poppins", "Playfair Display", "Space Grotesk", "Merriweather"];
+/* Families the product itself reaches for: the seeded theme documents, and every
+   family offered as a pairing shortcut. They are pinned into the embedded set so a
+   chip in the Typography tab can never point at a face the build cannot render;
+   the remaining slots go to Google's popularity ranking. */
+const PRIORITY = [
+  "Geist", "Inter", "Poppins", "DM Sans", "Montserrat", "Open Sans",
+  "DM Serif Display", "Playfair Display", "Source Sans 3", "Lora",
+  "Space Grotesk", "Oswald", "Roboto", "Bebas Neue", "Libre Baskerville",
+  "Nunito Sans", "Raleway", "Merriweather"
+];
 
 /* families whose licence is not OFL — recorded accurately, never guessed */
 const LICENCE = {
@@ -94,10 +122,18 @@ function axisQuery(f) {
 /* ---------- 2. embedded selection ---------- */
 
 const eligible = rows.filter((r) => r.latin);
-const order = [
-  ...PRIORITY.map((p) => eligible.find((r) => r.family === p)).filter(Boolean),
-  ...eligible.filter((r) => !PRIORITY.includes(r.family)).sort((a, b) => a.popularity - b.popularity)
-];
+const order = ONLY.length
+  ? ONLY.map((f) => rows.find((r) => r.family.toLowerCase() === f.toLowerCase()) ?? eligible.find((r) => r.family.toLowerCase() === f.toLowerCase())).filter(Boolean)
+  : [
+    ...PRIORITY.map((p) => eligible.find((r) => r.family === p)).filter(Boolean),
+    ...eligible.filter((r) => !PRIORITY.includes(r.family)).sort((a, b) => a.popularity - b.popularity)
+  ];
+const take = ONLY.length ? ONLY.length : LIMIT;
+if (ONLY.length && !order.length) {
+  console.error(`no such family in the catalogue: ${ONLY.join(", ")}`);
+  process.exit(1);
+}
+console.log(`embedding ${take} famil${take === 1 ? "y" : "ies"} of ${rows.length}, popularity order${ONLY.length ? " (explicit --only)" : ""}`);
 
 const embedded = [];
 let raw = 0;
@@ -156,15 +192,18 @@ async function embedOne(f) {
 const t0 = Date.now();
 const POOL = 6;
 let cursor = 0;
+let claimed = 0;
 let stop = false;
 
 async function worker() {
-  while (!stop && cursor < order.length && raw < BUDGET) {
+  while (!stop && cursor < order.length && raw < BUDGET && claimed < take) {
     const f = order[cursor++];
+    claimed++;
     let got = null;
     try { got = await embedOne(f); } catch { got = null; }
     if (!got) continue;
     if (raw + got.bytes > BUDGET) { stop = true; break; }
+    if (embedded.length >= take) break;
     raw += got.bytes;
     const weights = got.variable
       ? [...new Set([300, 400, 500, 600, 700].filter((w) => w >= (f.weights[0] ?? 100) && w <= (f.weights.at(-1) ?? 900)))]
