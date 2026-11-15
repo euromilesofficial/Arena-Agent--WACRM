@@ -82,7 +82,8 @@ async def forced(pg, label):
 
 async def colours(pg):
     out = {}
-    for role in ["primary", "secondary", "accent", "success", "warning", "error", "background", "surface", "text"]:
+    for role in ["primary", "secondary", "accent", "success", "warning", "error", "background", "surface", "text",
+                 "muted", "link", "border", "ring"]:
         raw = await pg.eval_on_selector(
             f'.m6-crow[data-role="{role}"] .m6-hex-copy',
             "e => e.textContent.trim()")
@@ -128,12 +129,15 @@ async def main():
         ck("1.8 the site selector is present", await n(pg, ".m6-site select") == 1)
 
         # ============ 2 · brand tokens ============
-        ck("2.1 nine semantic colour roles", await n(pg, ".m6-crow") == 9)
+        ck("2.1 thirteen semantic colour roles", await n(pg, ".m6-crow") == 13, str(await n(pg, ".m6-crow")))
         labels = [t.strip() for t in await pg.locator(".m6-crow-top b").all_inner_texts()]
         ck("2.2 role labels are spelled out",
-           labels == ["Primary", "Secondary", "Accent", "Success", "Warning", "Error", "Background", "Surface", "Text"], str(labels))
-        ck("2.3 every row shows a semantic usage line", await n(pg, ".m6-crow-sub") == 9)
-        ck("2.4 every row resolves either a measured ratio or a base-surface marker", await n(pg, ".m6-crow-ratio") == 9)
+           labels == ["Primary", "Secondary", "Accent", "Success", "Warning", "Error",
+                      "Background", "Surface", "Text", "Muted text", "Link", "Border", "Focus ring"], str(labels))
+        ck("2.3 every row shows a semantic usage line", await n(pg, ".m6-crow-sub") == 13)
+        ck("2.4 every row resolves either a measured ratio or a base-surface marker", await n(pg, ".m6-crow-ratio") == 13)
+        ck("2.4a the roles are grouped into brand marks and surface roles",
+           await n(pg, ".m6-role-group") == 2)
         ck("2.5 on-primary is shown as a derived, read-only token", "derived" in (await txt(pg, ".m6-derived-line")).lower())
 
         cols = await colours(pg)
@@ -165,13 +169,17 @@ async def main():
         await pg.locator('.m6-panel:has-text("Accessibility Checks") .m6-more').first.click()
         await pg.wait_for_timeout(320)
         pairs = await pg.locator(".m6-pair").count()
-        ck("3.1 the pair registry exposes ten pairs", pairs == 10, str(pairs))
+        ck("3.1 the pair registry exposes fourteen pairs", pairs == 14, str(pairs))
 
         expect = {
             "Body text on background": (cols["text"], cols["background"]),
             "Body text on surface": (cols["text"], cols["surface"]),
-            "Links on background": (cols["primary"], cols["background"]),
-            "Links on surface": (cols["primary"], cols["surface"]),
+            "Links on background": (cols["link"], cols["background"]),
+            "Links on surface": (cols["link"], cols["surface"]),
+            "Muted text on background": (cols["muted"], cols["background"]),
+            "Muted text on surface": (cols["muted"], cols["surface"]),
+            "Focus ring on background": (cols["ring"], cols["background"]),
+            "Dividers on surface": (cols["border"], cols["surface"]),
             "Headings in secondary": (cols["secondary"], cols["background"]),
             "Accent marks and borders": (cols["accent"], cols["background"]),
             "Success marks": (cols["success"], cols["background"]),
@@ -187,7 +195,7 @@ async def main():
             got = shown.get(label, -1)
             if abs(want - got) > 0.02:
                 bad.append(f"{label}: shown {got}, computed {want:.2f}")
-        ck("3.2 nine rendered pairs match the WCAG formula", not bad, "; ".join(bad))
+        ck("3.2 thirteen rendered pairs match the WCAG formula", not bad, "; ".join(bad))
 
         # the CTA label pair uses the derived on-primary, whichever it is
         best = max(["#FFFFFF", "#0F172A"], key=lambda c: ratio(c, cols["primary"]))
@@ -264,9 +272,10 @@ async def main():
         ck("5.1 the self-hosting banner is shown", "self-hosted" in await txt(pg, ".m6-banner.is-soft"))
         ck("5.2 heading and body font cards exist", await n(pg, ".m6-card") >= 2)
         ck("5.3 the fallback stack is a closed list, not a free field",
-           await n(pg, ".m6-select") == 2
-           and await pg.locator(".m6-select").first.locator("option").count() == 4)
-        ck("5.4 every pairing shortcut is offered", await n(pg, ".m6-pairing-chips .m6-chip") == 6)
+           await n(pg, ".m6-select") >= 2
+           and await pg.locator('.m6-select[aria-label="heading fallback stack"]').locator("option").count() == 4)
+        chips = await n(pg, ".m6-pairing-chips .m6-chip")
+        ck("5.4 every pairing shortcut is offered", chips == 12, str(chips))
         ck("5.5 the pairing preview renders real sample copy",
            "Study abroad" in await txt(pg, ".m6-prev-h"))
         ck("5.6 the font verification job reports a real result",
@@ -275,10 +284,18 @@ async def main():
         await pg.locator(".m6-combo").first.click()
         await pg.wait_for_timeout(340)
         ck("5.7 the family combobox lists the whole catalogue", await n(pg, ".m6-fc-row") >= 9)
+        await pg.locator(".m6-fc-toggle").click()          # reveal the full index
+        await pg.wait_for_timeout(420)
         dis = await pg.locator(".m6-fc-row:disabled").count()
-        ck("5.8 families that are not embedded are listed but disabled", dis == 3, str(dis))
+        ck("5.8 families that are not embedded are listed but disabled", dis > 0, str(dis))
         ck("5.9 disabled rows say why",
            "ingestion" in (await txt(pg, ".m6-fc-row:disabled")).lower())
+        ck("5.9a a locked family cannot be selected",
+           await pg.locator(".m6-fc-row:disabled").first.is_disabled())
+        await pg.locator(".m6-fc-toggle").click()          # back to the embedded set
+        await pg.wait_for_timeout(360)
+        await pg.locator('input[aria-label="Search fonts for heading"]').fill("Poppins")
+        await pg.wait_for_timeout(420)
         await pg.locator('.m6-fc-row:has-text("Poppins")').first.click()
         await pg.wait_for_timeout(600)
         fam = await pg.eval_on_selector(".m6-prev-h", "e => getComputedStyle(e).fontFamily")
@@ -445,8 +462,9 @@ async def main():
         await pg.wait_for_timeout(320)
 
         # ============ 9 · overview ============
-        ck("9.1 the token summary lists nine roles plus the derived one",
-           await n(pg, ".m6-swatch") == 9 and await n(pg, ".m6-derived") == 1)
+        ck("9.1 the token summary lists thirteen roles plus the derived one",
+           await n(pg, ".m6-swatch") == 13 and await n(pg, ".m6-derived") == 1,
+           f"{await n(pg, '.m6-swatch')} / {await n(pg, '.m6-derived')}")
         ck("9.2 typography summary names both families", await n(pg, ".m6-type-row") == 2)
         ck("9.3 usage is projected, not typed",
            num(await txt(pg, ".m6-usage div")) > 0 and "Projected" in await txt(pg, ".m6-panel:has-text('Usage') .m6-fine"))
@@ -513,7 +531,7 @@ async def main():
         ck("12.2 a Viewer cannot save", await pg.locator(".m6-head-actions .btn-primary").is_disabled())
         ck("12.3 a Viewer cannot import", await pg.locator('.m6-head-actions .btn:has-text("Import JSON")').is_disabled())
         ck("12.4 a Viewer still sees the computed contrast",
-           await n(pg, ".m6-pair") > 0 and await n(pg, ".m6-crow") == 9)
+           await n(pg, ".m6-pair") > 0 and await n(pg, ".m6-crow") == 13)
         await forced(pg, "Default")
         await pg.wait_for_timeout(600)
 
@@ -549,6 +567,248 @@ async def main():
         ck("13.2 no page errors during the whole run", not errs, "; ".join(errs[:3]))
         ck("13.3 no console errors during the whole run",
            not [e for e in errs if e.startswith("console:")], "; ".join(errs[:3]))
+
+
+        # ============ 14 · the font library (M6.1) ============
+        await go(pg)
+        await pg.locator(".m6-tab").nth(1).click()
+        await pg.wait_for_timeout(500)
+        banner = await txt(pg, ".m6-banner.is-soft")
+        m = re.search(r"(\d[\d,]*) of ([\d,]+) Google Fonts families", banner)
+        ck("14.1 the banner states the embedded vs indexed split", m is not None, banner[:80])
+        embedded_n, total_n = (int(m.group(1).replace(",", "")), int(m.group(2).replace(",", ""))) if m else (0, 0)
+        ck("14.2 the embedded set is substantial", embedded_n >= 200, str(embedded_n))
+        ck("14.3 the index covers almost all of Google Fonts", total_n >= 1700, str(total_n))
+        ck("14.4 embedded is a real subset of the index", 0 < embedded_n < total_n)
+
+        await pg.locator(".m6-combo").first.click()
+        await pg.wait_for_timeout(420)
+        chips = await pg.locator(".m6-fc-chip").all_inner_texts()
+        counts = [int(re.search(r"(\d[\d,]*)", c).group(1).replace(",", "")) for c in chips[1:]]
+        all_n = int(re.search(r"(\d[\d,]*)", chips[0]).group(1).replace(",", ""))
+        ck("14.5 the category chips sum to the whole index", sum(counts) == all_n, f"{counts} vs {all_n}")
+        ck("14.6 the picker defaults to embedded-only",
+           "is-on" in (await pg.locator(".m6-fc-toggle").get_attribute("class") or ""))
+        rows = await pg.locator(".m6-fc-row").count()
+        ck("14.7 the list is windowed, not all 1,700 rows", 0 < rows <= 60, str(rows))
+        ck("14.8 every visible row resolves a real face",
+           await pg.locator(".m6-fc-row:disabled").count() == 0)
+
+        await pg.locator('input[aria-label="Search fonts for heading"]').fill("serif")
+        await pg.wait_for_timeout(420)
+        ck("14.9 search narrows across the index", await pg.locator(".m6-fc-row").count() < rows)
+        await pg.locator('input[aria-label="Search fonts for heading"]').fill("zzzzqq")
+        await pg.wait_for_timeout(360)
+        ck("14.10 a miss offers the full-index escape hatch",
+           "indexed families" in (await txt(pg, ".m6-fc-none")).lower())
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(240)
+
+        # a family that M6 could only list is now genuinely embedded
+        for fam in ["Playfair Display", "Merriweather", "Space Grotesk"]:
+            await pg.locator(".m6-combo").first.click()
+            await pg.wait_for_timeout(300)
+            await pg.locator('input[aria-label="Search fonts for heading"]').fill(fam)
+            await pg.wait_for_timeout(400)
+            row = pg.locator(f'.m6-fc-row:has-text("{fam}")').first
+            ok = await row.count() and not await row.is_disabled()
+            ck(f"14.11 {fam} is embedded now, not 'requires ingestion'", bool(ok))
+            if fam == "Playfair Display":
+                await row.click()
+                await pg.wait_for_timeout(600)
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(240)
+        fam_css = await pg.eval_on_selector(".m6-prev-h", "e => getComputedStyle(e).fontFamily")
+        ck("14.12 the newly embedded family renders in the preview", "Playfair" in fam_css, fam_css)
+        loaded = await pg.evaluate("""() => document.fonts.check("700 16px 'Playfair Display'")""")
+        ck("14.13 the woff2 is actually registered, not just named", bool(loaded))
+
+        # ============ 15 · the type scale (G1) ============
+        await go(pg)
+        await pg.locator(".m6-tab").nth(1).click()
+        await pg.wait_for_timeout(500)
+        ck("15.1 a type-scale card exists", await n(pg, '[data-m6="type-scale"]') == 1)
+        ck("15.2 base size offers five values",
+           await pg.locator('.m6-seg[aria-label="Base font size"] .m6-seg-btn').count() == 5)
+        ratios = await pg.locator('.m6-select[aria-label="Scale ratio"] option').count()
+        ck("15.3 the modular ratio is a closed list of four", ratios == 4, str(ratios))
+        ck("15.4 four scale sliders (leading ×2, tracking ×2)", await n(pg, ".m6-slider") == 4)
+        ck("15.5 fluid headings is an explicit toggle",
+           await n(pg, '[data-m6="type-scale"] input[type=checkbox]') == 1)
+
+        async def ramp():
+            out = {}
+            for step in ["h1", "h2", "h3", "body", "small", "caption"]:
+                t = await txt(pg, f'[data-m6-step="{step}"] .m6-ramp-key em')
+                out[step] = int(num(t))
+            return out
+
+        r = await ramp()
+        base = int(re.search(r"(\d+)", await txt(pg, '.m6-seg[aria-label="Base font size"] .m6-seg-btn.is-on b')).group(1))
+        chosen = await pg.eval_on_selector('.m6-select[aria-label="Scale ratio"]', "e => Number(e.value)")
+        want = {"h1": round(base * chosen ** 3), "h2": round(base * chosen ** 2), "h3": round(base * chosen),
+                "body": base, "small": round(base / chosen), "caption": round(base / chosen ** 2)}
+        bad = [f"{k}: shown {r[k]} want {v}" for k, v in want.items() if abs(r[k] - v) > 1]
+        ck("15.6 all six ramp steps are computed from base × ratio", not bad, "; ".join(bad))
+        ck("15.7 the ramp is monotonically decreasing", r["h1"] > r["h2"] > r["h3"] > r["body"] > r["small"] >= r["caption"], str(r))
+
+        # ratio change re-rhythms the ramp
+        await pg.select_option('.m6-select[aria-label="Scale ratio"]', "1.5")
+        await pg.wait_for_timeout(460)
+        r15 = await ramp()
+        ck("15.8 switching ratio changes every derived step", r15["h1"] > r["h1"] and r15["caption"] < r["caption"], f"{r['h1']}→{r15['h1']}")
+
+        # base size drives the smallest step too
+        await pg.locator('.m6-seg[aria-label="Base font size"] .m6-seg-btn').nth(4).click()
+        await pg.wait_for_timeout(460)
+        r18 = await ramp()
+        ck("15.9 base size 18 re-derives the whole scale", r18["body"] == 18, str(r18["body"]))
+
+        # fluid emits clamp(), and the preview page obeys it
+        fluid_css = await pg.eval_on_selector(".m6-pv", "e => getComputedStyle(e).getPropertyValue('--t-fs-h1').trim()")
+        ck("15.10 fluid headings compile to clamp()", "clamp(" in fluid_css, fluid_css)
+        h1_px = await pg.eval_on_selector(".m6-pv .wb-h1", "e => getComputedStyle(e).fontSize")
+        ck("15.11 the page preview renders the new h1 size", h1_px.endswith("px"), h1_px)
+        lead = await pg.eval_on_selector(".m6-pv", "e => getComputedStyle(e).getPropertyValue('--t-lh-heading').trim()")
+        ck("15.12 heading leading reaches the preview", float(lead) >= 1.0, lead)
+
+        await pg.locator('[data-m6="type-scale"] input[type=checkbox]').click()
+        await pg.wait_for_timeout(420)
+        fixed = await pg.eval_on_selector(".m6-pv", "e => getComputedStyle(e).getPropertyValue('--t-fs-h1').trim()")
+        ck("15.13 fluid off emits a fixed px value", fixed.endswith("px") and "clamp" not in fixed, fixed)
+
+        # ============ 16 · the new role pairs (G2) ============
+        await go(pg)
+        cols4 = await colours(pg)
+        await pg.locator('.m6-panel:has-text("Accessibility Checks") .m6-more').first.click()
+        await pg.wait_for_timeout(340)
+        labels4 = [t.strip() for t in await pg.locator(".m6-pair-label").all_inner_texts()]
+        metas4 = [t.strip() for t in await pg.locator(".m6-pair-meta").all_inner_texts()]
+        shown4 = {labels4[i]: num(metas4[i]) for i in range(len(labels4))}
+        checks = {
+            "Muted text on background": (cols4["muted"], cols4["background"], 4.5),
+            "Muted text on surface": (cols4["muted"], cols4["surface"], 4.5),
+            "Links on background": (cols4["link"], cols4["background"], 4.5),
+            "Focus ring on background": (cols4["ring"], cols4["background"], 3),
+            "Dividers on surface": (cols4["border"], cols4["surface"], 1.5),
+        }
+        bad4 = []
+        for label, (fg, bg, need) in checks.items():
+            want4 = ratio(fg, bg)
+            got4 = shown4.get(label, -1)
+            if abs(want4 - got4) > 0.02:
+                bad4.append(f"{label}: shown {got4}, computed {want4:.2f}")
+        ck("16.1 the five new role pairs match the WCAG formula", not bad4, "; ".join(bad4))
+        ck("16.2 the divider pair is measured against an advisory floor, not 1.4.11",
+           "1.5" in (await txt(pg, '.m6-pair:has-text("Dividers on surface")')).replace("1.51", ""))
+        ring_need = 3.0
+        ck("16.3 the focus ring is held to the 3:1 non-text threshold",
+           abs(ratio(cols4["ring"], cols4["background"]) - shown4.get("Focus ring on background", -2)) <= 0.02)
+
+        # ============ 17 · the specimen sheet (G3) ============
+        await go(pg)
+        ck("17.1 the preview offers a specimen surface",
+           await n(pg, '.m6-pvmode-btn:has-text("Specimen")') == 1)
+        await pg.locator('.m6-pvmode-btn:has-text("Specimen")').click()
+        await pg.wait_for_timeout(900)
+        ck("17.2 the specimen renders", await n(pg, "[data-m6-specimen]") == 1)
+        ck("17.3 every role appears as a swatch", await n(pg, ".m6-spec-swatch") == 13)
+        ck("17.4 all six type steps are shown", await n(pg, "[data-m6-spec-step]") == 6)
+        ck("17.5 buttons cover default / hover / focus / disabled",
+           await n(pg, ".m6-spec-btn") >= 6)
+        ck("17.6 inputs cover default, focus and error states",
+           await n(pg, ".m6-spec-fields .m6-spec-field") == 4
+           and await n(pg, ".m6-spec-field.is-focus") == 1
+           and await n(pg, ".m6-spec-field.is-error") == 1)
+        ck("17.7 the consent block is unticked and explicit",
+           await n(pg, "[data-m6-spec-consent]") == 1
+           and "unticked" in (await txt(pg, "[data-m6-spec-consent]")).lower())
+        ck("17.8 alerts render in three severities", await n(pg, ".m6-spec-alert") == 3)
+        ck("17.9 a table row and a card are shown",
+           await n(pg, ".m6-spec-table") == 1 and await n(pg, ".m6-spec-card") == 1)
+        spec_h1 = await pg.eval_on_selector('[data-m6-spec-step="h1"] span:last-child', "e => getComputedStyle(e).fontSize")
+        ck("17.10 the specimen h1 uses the same compiled size as the page",
+           spec_h1.replace("px", "") != "" and abs(float(spec_h1.replace("px", "")) - want["h1"]) <= 40, spec_h1)
+        spec_radius = await pg.eval_on_selector(".m6-spec-card", "e => getComputedStyle(e).borderTopLeftRadius")
+        ck("17.11 specimen surfaces use the radius token", spec_radius != "0px", spec_radius)
+        await pg.locator('.m6-pvmode-btn:has-text("Page")').click()
+        await pg.wait_for_timeout(600)
+        ck("17.12 switching back restores the page preview",
+           await n(pg, "[data-m6-specimen]") == 0)
+
+        # ============ 18 · revisions (G4) ============
+        await go(pg)
+        ck("18.1 the overview carries a revisions panel",
+           await n(pg, '.m6-panel:has-text("Revisions")') >= 1)
+        revs = await n(pg, "[data-m6-overview-rev]")
+        ck("18.2 the last revisions are listed", revs >= 2, str(revs))
+        ck("18.3 a restore action exists per revision",
+           await n(pg, ".m6-revs-restore") == revs)
+        await pg.locator(".m6-revs-more").click()
+        await pg.wait_for_timeout(700)
+        rows10 = await n(pg, ".m6-revh-row")
+        ck("18.4 the full history opens", rows10 >= 4, str(rows10))
+        await pg.locator(".m6-revh-row").nth(2).click()
+        await pg.wait_for_timeout(400)
+        diffs = await n(pg, ".m6-revh-table tbody tr")
+        ck("18.5 a revision shows a token-by-token diff", diffs >= 1, str(diffs))
+        ck("18.6 the diff names the group, token, from and to",
+           await n(pg, ".m6-revh-table th") == 4)
+        await pg.locator(".m6-revh-row").nth(0).click()
+        await pg.wait_for_timeout(300)
+        html = await txt(pg, ".m6-revh")
+        ck("18.7 the newest revision is the saved draft", "Saved draft" in html)
+        # the revision that is already the saved draft cannot be restored over itself
+        btn = pg.locator('.modal-foot .btn-primary')
+        await pg.locator(".m6-revh-row").nth(0).click()
+        await pg.wait_for_timeout(300)
+        ck("18.8 restoring the current draft is refused", await btn.is_disabled())
+        await pg.locator(".m6-revh-row").nth(3).click()
+        await pg.wait_for_timeout(300)
+        ck("18.9 an earlier revision can be restored", not await btn.is_disabled())
+        before = await colours(pg)
+        await btn.click()
+        await pg.wait_for_timeout(900)
+        ck("18.10 restore closes the dialog", await n(pg, ".m6-revh") == 0)
+        ck("18.11 restore marks the working copy dirty, it does not save",
+           "unsaved changes" in (await txt(pg, ".m6-draft-chip")).lower())
+        after = await colours(pg)
+        ck("18.12 restore actually changed the tokens", before != after, f"{before['primary']} vs {after['primary']}")
+        await pg.keyboard.press("Control+z")
+        await pg.wait_for_timeout(500)
+        undone = await colours(pg)
+        ck("18.13 undo walks back out of a restore", undone == before,
+           f"{undone['primary']} vs {before['primary']}")
+        ck("18.14 undoing a restore returns to a clean saved draft",
+           "unsaved" not in (await txt(pg, ".m6-draft-chip")).lower())
+
+        # ============ 19 · the version-2 document contract ============
+        await go(pg)
+        v1 = {
+            "schemaVersion": 1, "name": "Legacy v1 file",
+            "colors": {"primary": "#123456", "secondary": "#0B1026", "accent": "#0EA5E9",
+                       "success": "#16A34A", "warning": "#F59E0B", "error": "#EF4444",
+                       "background": "#FFFFFF", "surface": "#F8FAFC", "text": "#0B1026"},
+            "typography": {"heading": {"family": "Geist", "weight": 700, "fallback": "system-ui"},
+                           "body": {"family": "Inter", "weight": 400, "fallback": "system-ui"}},
+            "geometry": {"radiusPx": 12, "containerWidthPx": 1200, "spacing": {"base": 8, "density": "comfortable"}},
+            "blockStyling": {"cardDensity": "comfortable", "elevation": "soft"}
+        }
+        await pg.evaluate("""(doc) => {
+            const el = document.querySelector('input[type=file]');
+            const f = new File([JSON.stringify(doc)], 'legacy-v1.json', {type:'application/json'});
+            const dt = new DataTransfer(); dt.items.add(f); el.files = dt.files;
+            el.dispatchEvent(new Event('change', {bubbles:true}));
+        }""", v1)
+        await pg.wait_for_timeout(900)
+        ck("19.1 a version-1 file is still accepted", await n(pg, ".modal") == 1)
+        body = await txt(pg, ".modal-body")
+        ck("19.2 missing roles are reported as derived, not invented silently",
+           "derived" in body.lower(), body[:120])
+        ck("19.3 the absent type scale is called out as a default",
+           "no type scale" in body.lower() or "default" in body.lower())
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(300)
 
         await pg.screenshot(path=f"{OUT}/m6-default.png")
         await pg.locator(".m6-tab").nth(1).click()

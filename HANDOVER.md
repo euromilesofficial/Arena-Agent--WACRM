@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 03:13:45 UTC · **generated against commit** `b41bf3e` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-15 04:32:41 UTC · **generated against commit** `82e207b` · **working tree** 21 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -31,6 +31,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | M4 | Visual Builder | `#/builder?site=&page=&sel=&lib=&insp=` | **done** | qa_builder.py 97/97 · qa_states_m4.py 47/47 |
 | M5 | Block Library | `#/library` | **done** | qa_library.py 90/90 · qa_builder.py 98/98 |
 | M6 | Theme Studio | `#/theme` | **done** | qa_theme.py 127/127 |
+| M6.1 | Theme Studio completion + Google Fonts library | `#/theme` | **done** | qa_theme.py 189/189 |
 
 - **M1 Overview** — Dashboard grid, 6 KPI drawers, funnel, acquisition, site health, publishing rail, release wizard, rollback.
 - **M2 Sites & Domains** — Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks.
@@ -38,16 +39,17 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 - **M4 Visual Builder** — 3-panel editor, 19 blocks / 23 sections / 5 templates, drag with refusal reasons, token-bounded style, autosave 2 s + CAS, revisions with block diff + restore, AI copy stream, publish handoff into M1.
 - **M5 Block Library** — Four views (All · Native 20 · Sections 23 · Saved 14), computed KPI/in-use counts, filter rail, grouped grid + list, inspector (Overview/Properties/Compatibility · Overview/Structure/Usage), Insert into Page with six outcomes, Create from page section, duplicate, guarded delete.
 - **M6 Theme Studio** — Three tabs (Brand Tokens · Typography · Presets), nine colour roles + derived on-primary, computed WCAG pairs, discrete geometry, six embedded self-hosted font families (242 KB woff2 in the artifact), live read-only preview through the M4 renderer at 1440/768/375, preset library with import/export, CAS draft save, conflict + unsaved guards, publish hand-off into M4's release flow.
+- **M6.1 Theme Studio completion + Google Fonts library** — Closes the four Tier-A gaps from THEME-STUDIO-BENCHMARK.md: (G1) a derived six-step type scale with ratio, leadings, trackings and fluid clamp(), edited in a Type Scale card and obeyed by the preview; (G2) 13 colour roles adding muted/link/border/ring, 14 measured contrast pairs with per-role thresholds and the divider advisory floor; (G3) a 1:1 specimen sheet covering type, palette, buttons in four states, four field states, alerts, pills, card, table, radius and spacing; (G4) a Revisions rail + diff modal whose restore fills the working copy and never saves. Fonts: 247 embedded families (10.49 MB woff2, variable-first) plus the full 1,746-family Google Fonts index, searchable with category counts and an embedded-only default; locked rows state the reason. Document schema is now version 2 with a stated v1 migration.
 
 ## 3. Build artifact (measured now)
 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 1,599,794 B (1562 kB) · gzip 665 kB |
-| md5 | `52dc60291425c064ce56672be812531e` |
-| sha256 (first 16) | `cc95d4975cbe6d5c` |
-| Built | 2026-11-15 03:12:34 |
+| Size | 15,487,295 B (15124 kB) · gzip 10781 kB |
+| md5 | `3b6612e18fc6f9c3e81d08b51145d25e` |
+| sha256 (first 16) | `dc6ff4d94b849b45` |
+| Built | 2026-11-15 04:32:31 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -60,21 +62,21 @@ npm run dev        # http://localhost:5173 while developing
 
 ## 4. Verification (last recorded run)
 
-Recorded 2026-11-15 02:57:46 UTC · node v20.20.2. Re-run with `npm run qa`.
+Recorded 2026-11-15 04:31:46 UTC · node v20.20.2. Re-run with `npm run qa`.
 
 | Suite | Passed | Failed | Time | Covers |
 | --- | --- | --- | --- | --- |
-| `qa_ai.py` | 60 | 0 | 36.6 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
-| `qa_theme.py` | 127 | 0 | 68.8 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
-| `qa_builder.py` | 98 | 0 | 42.8 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
-| `qa_states_m4.py` | 47 | 0 | 43.5 s | M4 state matrix |
-| `qa_pages.py` | 106 | 0 | 121.0 s | M3 registry, tree, inspector, modals, deep links |
-| `qa_states_m3.py` | 40 | 0 | 56.7 s | M3 state matrix |
-| `qa_module2.py` | 48 | 0 | 34.6 s | M2 layout, geometry, data consistency |
-| `qa_states_m1.py` | 39 | 0 | 45.5 s | M1 state matrix |
-| `qa_flows.py` | 38 | 0 | 55.7 s | cross-module interaction script |
-| `qa_react.py` | — | 0 | 4.0 s | full-page render, console clean, no overflow |
-| `qa_library.py` | 90 | 0 | 54.2 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
+| `qa_ai.py` | 60 | 0 | 42.8 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
+| `qa_theme.py` | 189 | 0 | 116.4 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
+| `qa_builder.py` | 98 | 0 | 49.4 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
+| `qa_states_m4.py` | 47 | 0 | 50.5 s | M4 state matrix |
+| `qa_pages.py` | 106 | 0 | 126.6 s | M3 registry, tree, inspector, modals, deep links |
+| `qa_states_m3.py` | 40 | 0 | 59.9 s | M3 state matrix |
+| `qa_module2.py` | 48 | 0 | 40.0 s | M2 layout, geometry, data consistency |
+| `qa_states_m1.py` | 39 | 0 | 47.9 s | M1 state matrix |
+| `qa_flows.py` | 38 | 0 | 73.1 s | cross-module interaction script |
+| `qa_react.py` | — | 0 | 6.0 s | full-page render, console clean, no overflow |
+| `qa_library.py` | 90 | 0 | 66.7 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
 
 > All recorded suites are green.
 
@@ -90,32 +92,32 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **59 source files, 22,359 lines** of TS/TSX/CSS (32,428 lines across all tracked text files).
+Source inventory: **61 source files, 23,424 lines** of TS/TSX/CSS (34,540 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 13 | 5,181 | data seams, registries, formatting, no JSX |
-| `src/components/` | 34 | 8,285 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 7 | 4,814 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 4,007 | one tokenised stylesheet (design system) |
+| `src/lib/` | 14 | 5,410 | data seams, registries, formatting, no JSX |
+| `src/components/` | 35 | 8,763 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/views/` | 7 | 5,003 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 4,176 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 4,007 |
-| `BACKEND-PLAN.md` | 1,475 |
-| `src/views/ThemeStudio.tsx` | 1,208 |
+| `src/styles/app.css` | 4,176 |
+| `BACKEND-PLAN.md` | 1,617 |
+| `src/views/ThemeStudio.tsx` | 1,397 |
+| `src/lib/theme-db.ts` | 1,176 |
 | `src/views/Library.tsx` | 1,070 |
 | `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
 | `MODULE-6-THEME-STUDIO-SPEC.md` | 880 |
 | `src/lib/library-db.ts` | 856 |
+| `qa_theme.py` | 838 |
 | `src/lib/builder.ts` | 828 |
-| `src/lib/theme-db.ts` | 818 |
 | `src/views/Pages.tsx` | 789 |
-| `qa_theme.py` | 578 |
 
 ## 6. Data seam and contracts
 
@@ -174,10 +176,19 @@ Decisions already made — do not reopen without the user:
 | D16 | Nine persisted colour roles plus one derived, read-only on-primary label colour chosen for 4.5:1 — the token the spec assumed but never defined. | locked |
 | D17 | Spacing = base (4|8) × density (compact/comfortable/spacious); radius and container width come from closed enums, so every export can be re-imported exactly. | locked |
 | D18 | Fonts ship inside the artifact as subsetted woff2 (6 families, OFL 1.1); families without an asset stay visible in the catalogue as Requires ingestion and cannot be selected. | locked |
+| D19 | "Almost all Google Fonts" = 247 families embedded (10.5 MB woff2 budget, popularity order, variable-first) + all 1,746 families indexed with real metadata and locked, never silently offered. A single offline HTML cannot carry the whole library; the budget is a generator flag. | locked |
+| D20 | Brand fonts (Google Sans, Product Sans, Material Symbols…) are excluded from the catalogue entirely — by the metadata flag and an explicit denylist — because they are not licensed for redistribution. | locked |
+| D21 | Font faces are registered lazily per family; M6 built one 14 MB stylesheet on mount. | locked |
+| D22 | The divider role is measured against an advisory 1.5:1 legibility floor, not SC 1.4.11's 3:1, because decorative rules are exempt; the focus ring is held to 3:1 because it identifies a control. | locked |
+| D23 | `link` is its own role, measured from itself. M6 measured link pairs against primary while no link token existed — the editor and the audit disagreed. | locked |
+| D24 | Type sizes are derived (base × ratio^n), never stored; fluid clamp() applies to h1–h3 only so body copy never shrinks with the viewport. | locked |
+| D25 | Restore never writes: it loads a revision into the working copy, marks it dirty and pushes an undo entry. Save remains the only write path, so CAS and the audit log stay honest. | locked |
+| D26 | Token document is version 2; the reader accepts 1 and 2, derives the four new roles and the default scale for a v1 file, and reports every derived field in the import review. | locked |
+| D27 | The specimen renders 1:1 at the studio width rather than scaled inside the 1440 px device frame — a specimen scaled to 42% is unreadable and therefore useless. | locked |
 
 ## 8. What is next
 
-**Module 6 (Theme Studio) is complete: three tabs, a computed contrast engine, an embedded font catalogue, a real draft/release split and a read-only preview that renders the site through Module 4's renderer. Nothing is blocked.**
+**Module 6.1 is complete: the four Tier-A gaps from the competitive benchmark are closed (type scale, 13 role pairs, specimen sheet, revisions) and the Theme Studio carries 247 embedded Google Fonts families with a searchable 1,746-family index. 11/11 suites green. Tier B of the benchmark is researched but unapproved.**
 
 Blocked on:
 
@@ -187,11 +198,12 @@ Blocked on:
 
 First tasks:
 
-1. Decide the M6.1 scope proposed in THEME-STUDIO-BENCHMARK.md (Tier A: G1 type scale, G2 border/ring/muted/link roles, G3 specimen sheet, G4 revisions drawer). Tier B — dark mode G5, palette generator G6, DTCG export G7, APCA column G8, partial presets G9 — is researched but unapproved; do not build before the go-ahead.
-2. Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.
-3. Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.
-4. Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.
-5. Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md — implementing it is what unblocks 'Requires ingestion'.
+1. Module 7 (Layouts & Templates) is the next build; the theme's layout/navigation import fields stay switched off until it lands.
+2. Decide Tier B of THEME-STUDIO-BENCHMARK.md: dark mode/modes (G5), palette generation (G6), DTCG export (G7), APCA column (G8), partial presets (G9). All researched and ranked; none approved.
+3. Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.
+4. Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.
+5. Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.
+6. Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md — implementing it is what unblocks 'Requires ingestion'.
 
 ## 9. Traps that cost time last time
 
@@ -225,13 +237,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `b41bf3e` — feat(module-6): Theme Studio — tokens, typography, presets, computed contrast, draft-only save.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `82e207b` — docs(module-6): competitive benchmark of Theme Studio across CMS systems + gap register.
+- Working tree: 21 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
-- Tags: `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
+- Tags: `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `82e207b` | 2026-11-15 | docs(module-6): competitive benchmark of Theme Studio across CMS systems + gap register |
 | `b41bf3e` | 2026-11-15 | feat(module-6): Theme Studio — tokens, typography, presets, computed contrast, draft-only save |
 | `aa904b7` | 2026-11-15 | docs(module-6): persist the Theme Studio spec and the gap review — 31 findings, 10 decisions |
 | `942b600` | 2026-11-15 | docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST |
@@ -243,7 +256,6 @@ First tasks:
 | `d76e638` | 2026-11-14 | feat(module-5): composition diagram on the inspector overview tab |
 | `fe6b36d` | 2026-11-14 | feat(module-5): desktop block library — four views, computed counts, insert path |
 | `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
-| `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

@@ -1472,3 +1472,145 @@ Contrast warnings are **advisory**: they are stored on the revision, listed in t
 and never block a draft save. RBAC: read + preview for any site reader, edit/save/import/apply for
 an explicit theme-edit right, preset delete/archive for owner/admin, publish only with the
 publishing permission.
+
+---
+
+## 7.28 Module 6.1 — Theme Studio completion (type scale, role pairs, specimen, revisions, font library)
+
+Everything in §7.27 still holds. This section records only what version 2 of the token document and
+the expanded font library add, and it supersedes the nine-role assumption in §7.27.1.
+
+### 7.28.1 Token document, version 2
+
+`theme_token_sets.document_version` is `2` for every set written from now on. The reader accepts `1`
+and `2` and normalises on read; the writer only ever emits `2`.
+
+```jsonc
+{
+  "schemaVersion": 2,
+  "colors": {
+    "primary": "#6941E8", "secondary": "#0B1026", "accent": "#0EA5E9",
+    "success": "#16A34A", "warning": "#F59E0B", "error": "#EF4444",
+    "background": "#FFFFFF", "surface": "#F8FAFC", "text": "#0B1026",
+    "muted": "#5A6474", "link": "#6941E8", "border": "#C3CBD7", "ring": "#6941E8"
+  },
+  "typography": {
+    "heading": { "family": "Geist", "weight": 700, "fallback": "system-ui" },
+    "body":    { "family": "Inter", "weight": 400, "fallback": "system-ui" },
+    "scale": {
+      "basePx": 16, "ratio": 1.25,
+      "leadingHeading": 1.15, "leadingBody": 1.6,
+      "trackingHeading": -0.01, "trackingBody": 0,
+      "fluid": true
+    }
+  },
+  "geometry": { "radiusPx": 16, "containerWidthPx": 1280, "spacing": { "base": 8, "density": "comfortable" } },
+  "blockStyling": { "cardDensity": "comfortable", "elevation": "soft" }
+}
+```
+
+Constraints enforced server-side, not only in the client:
+
+| Field | Domain |
+|---|---|
+| `colors.*` | closed enum of the 13 roles; six-digit hex or a colour-space object with a hex fallback |
+| `typography.scale.basePx` | integer 14–18 |
+| `typography.scale.ratio` | `1.2 \| 1.25 \| 1.333 \| 1.5` |
+| `leadingHeading` / `leadingBody` | 1.0–1.4 / 1.4–1.8 |
+| `trackingHeading` / `trackingBody` | −0.03–0 em / 0–0.01 em |
+| `fluid` | boolean; only h1–h3 emit `clamp()` (420 → 1180 px) |
+
+**Derived, never stored:** the six step sizes, the `clamp()` strings and `onPrimary`. They are computed
+by one function so the editor, the preview, the specimen, the export and the release manifest cannot
+disagree. A stored size would be a second source of truth.
+
+**Migration on read of a version-1 document** — `POST /theme/import/validate` returns the same issue
+list it returns today, plus:
+
+```jsonc
+{ "migrated": { "from": 1, "derivedRoles": ["muted", "link", "border", "ring"],
+                "rangeScale": "default 16px/1.250 applied" } }
+```
+
+`derivedRoles` must be surfaced in the import review UI as *derived, not present in the file* (it is
+today). A caller may pass `?strict=1` to reject version-1 documents instead of migrating them.
+
+### 7.28.2 Theme role registry
+
+`theme_color_roles` (new, seeded, read-only):
+
+| role | kind | threshold | sort |
+|---|---|---|---|
+| primary, secondary, accent, success, warning, error | brand | 3:1 / 4.5:1 per pair | 10–60 |
+| background, surface | base | measured against, not measured | 70–80 |
+| text, muted | text | 4.5:1 | 90–100 |
+| link | text | 4.5:1 | 110 |
+| border | marker | **1.5 advisory** (WCAG 1.4.11 exempts decorative rules) | 120 |
+| ring | marker | 3:1 (non-text contrast, SC 1.4.11) | 130 |
+
+The contrast evaluator reads this table, so a threshold change is a row update and never a deploy.
+`contrast_pairs` on the revision stores the 14 computed pairs with their threshold and verdict; the
+`advisory` flag is persisted so a release review can distinguish "failed a success criterion" from
+"below an advisory floor".
+
+### 7.28.3 Fonts — three states, not two
+
+`theme_fonts` gains `state`:
+
+| state | meaning | selectable |
+|---|---|---|
+| `embedded` | a woff2 artifact exists for this tenant/build | yes |
+| `indexed` | known to the catalogue (family, category, weights, designer, popularity), no artifact | **no** — the picker lists it, locked, with the reason |
+| `ingesting` | a job is running | no, with the job id |
+
+Endpoints:
+
+```
+GET  /theme/fonts?state=&category=&q=&cursor=      # 1,746 rows, paged; 60/page matches the UI window
+GET  /theme/fonts/{family}                          # metadata + artifact manifest + licence
+POST /theme/fonts/{family}/ingest                   # enqueue; body { subsets:["latin"], weights:"100..900" }
+GET  /theme/fonts/jobs/{id}                         # queued | downloading | subsetting | ready | failed
+```
+
+Ingestion rules: latin subset only by default (latin-ext roughly doubles the artifact), variable face
+preferred over static weights, `font-display: swap`, SHA-256 pinned into `theme_fonts.faces[].sha256`
+and into the release manifest. A family whose licence is not redistributable (`brand_font = true`, or
+in the explicit brand denylist) is **absent from the catalogue** rather than listed — the client
+cannot request what the server will not serve.
+
+`GET /theme/fonts` must never return a `state = 'embedded'` row without a resolvable artifact; that is
+the one invariant the client relies on when it renders a family as selectable.
+
+### 7.28.4 Revisions and restore
+
+`GET /theme/{site}/revisions?cursor=` returns the history with a **computed diff summary** per
+revision (`changed[]`), so the rail and the modal need one request. `GET /theme/revisions/{id}`
+returns the full token document plus `diff[]` against its predecessor.
+
+Restore is deliberately **not** a server-side write:
+
+```
+POST /theme/{site}/restore-preview   { "revisionId": "..." }  -> 200 { tokens, diff[] }
+PUT  /theme/{site}/draft             { tokens, baseId }        -> 201 { revision }   # the only write
+```
+
+The client loads the revision into the working copy and the user's Save is what creates revision
+`seq + 1` with `baseId` pointing at the previous draft. This keeps CAS intact (a restore races the
+same way a save does) and keeps the audit log honest: *actor restored #4 and saved #9* is two rows
+that both happened, not one row that implies a write nobody pressed.
+
+`409 conflict` still carries `latest`; the UI's conflict modal is unchanged.
+
+### 7.28.5 Export
+
+`GET /theme/{site}/export?format=wacrm-v2|dtcg` — `wacrm-v2` is the current document;
+`dtcg` (planned, unapproved) emits the Design Tokens Community Group 2025.10 shape (`$value`, `$type`,
+`{alias}` references, OKLCH-capable colour objects) so a tenant's tokens survive a move to Figma,
+Style Dictionary or another CMS. Both formats resolve from the same compiled map; neither is stored.
+
+### 7.28.6 Audit additions
+
+`theme.revision.restored` (target revision, resulting draft), `theme.font.ingest.requested`,
+`theme.font.ingest.completed`, `theme.import.migrated` (from-version, derived roles). The specimen
+surface renders entirely client-side from the draft and writes nothing, so it produces no audit rows
+— stated so nobody later assumes it was logged.

@@ -11,7 +11,7 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Pill, Tip } from "@/components/ui";
 import {
-  COLOR_ROLES, FALLBACK_STACKS, formatRatio, onPrimary, spacingScale,
+  COLOR_ROLES, FALLBACK_STACKS, formatRatio, onPrimary, revisionDiff, spacingScale, timeOf,
   type ColorRole, type ContrastRow, type ContrastSummary, type ThemeRevision, type ThemeTokens,
   type Usage
 } from "@/lib/theme-db";
@@ -35,7 +35,8 @@ const stackLabel = (id: string): string => FALLBACK_STACKS.find((s) => s.id === 
 
 export function ThemeOverview({
   tokens, live, draft, summary, usage, dirty, saving, publishing,
-  onEditTypography, onFixRole, onFocusRole, onViewUsage, onPublish, onHistory, fontsVerified
+  onEditTypography, onFixRole, onFocusRole, onViewUsage, onPublish, onHistory, fontsVerified,
+  history, onRestore, onOpenRevisions
 }: {
   tokens: ThemeTokens;
   live: ThemeRevision;
@@ -52,8 +53,13 @@ export function ThemeOverview({
   onPublish: () => void;
   onHistory: () => void;
   fontsVerified: string;
+  /** G4 — the revision list that used to exist only in the payload */
+  history: ThemeRevision[];
+  onRestore: (rev: ThemeRevision) => void;
+  onOpenRevisions: () => void;
 }) {
   const [allPairs, setAllPairs] = useState(false);
+  const recent = [...history].slice(-3).reverse();
   /* warnings first: a failing pair should never sit below the fold of a list
      that says the theme is nearly clean. Ordering is presentation only — the
      counts above are computed over every row. */
@@ -172,7 +178,47 @@ export function ThemeOverview({
         <p className="m6-fine">Projected from this workspace’s CMS content, not a stored counter.</p>
       </Panel>
 
-      {/* 5 — status */}
+      {/* 5 — revisions */}
+      <Panel
+        title="Revisions"
+        className="is-revs"
+        action={history.length > 3
+          ? <button className="m6-link" onClick={onOpenRevisions}>All {history.length}</button>
+          : <span className="m6-panel-meta">{history.length}</span>}
+      >
+        <div className="m6-revs">
+          {recent.map((r) => {
+            const changed = revisionDiff(history, r).length;
+            const isLive = r.id === live.id;
+            const isDraft = r.id === draft.id;
+            return (
+              <div className="m6-revs-row" key={r.id} data-m6-overview-rev={r.seq}>
+                <span className="m6-revs-seq">#{r.seq}</span>
+                <div className="m6-revs-body">
+                  <b>{isLive ? "Published" : isDraft ? "Saved draft" : "Earlier draft"}</b>
+                  <em>
+                    {changed ? `${changed} token${changed === 1 ? "" : "s"}` : "initial"} · {timeOf(r.createdAt)}
+                  </em>
+                </div>
+                <button
+                  className="m6-revs-restore"
+                  title={isDraft ? "This is already the saved draft" : `Restore revision #${r.seq} into the working copy`}
+                  disabled={isDraft}
+                  onClick={() => onRestore(r)}
+                >
+                  <Icon name="refresh" size={11} />Restore
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <button className="m6-link m6-revs-more" onClick={onOpenRevisions}>
+          Compare every revision<Icon name="arrowRight" size={10} />
+        </button>
+        <p className="m6-fine">Restoring fills the working copy — Save is still yours to press, and nothing is live until a release.</p>
+      </Panel>
+
+      {/* 6 — status */}
       <Panel title="Theme Status" className="is-status">
         <div className={`m6-rail ${dirty ? "is-dirty" : ""} ${saving ? "is-saving" : ""}`}>
           <div className={`m6-step ${dirty ? "is-on" : ""}`}>

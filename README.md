@@ -1,7 +1,8 @@
 # WACRM — Website CMS (React + TypeScript + Vite)
 
 A desktop-first Website CMS built module by module: **Overview** (M1),
-**Sites & Domains** (M2), **Pages & Routes** (M3) and the **Visual Builder** (M4).
+**Sites & Domains** (M2), **Pages & Routes** (M3), the **Visual Builder** (M4),
+the **Block Library** (M5) and the **Theme Studio** (M6, extended in M6.1).
 Every screen ships with all of its CTAs, dropdowns and operation states wired to
 a simulated backend, so it can be reviewed as a product rather than a picture.
 
@@ -22,12 +23,14 @@ forwards to `WACRM-CMS.html`, so a double-click never lands on a blank page.
 
 - **React 19 + TypeScript** (strict), **Vite 7** with `vite-plugin-singlefile` —
   the whole app inlines into one HTML file.
-- **Plain CSS** (`src/styles/app.css`, ~3.1k lines) as a tokenised design system:
+- **Plain CSS** (`src/styles/app.css`, ~4.2k lines) as a tokenised design system:
   custom properties, 4 px spacing scale, 6 px radii, tabular numerals, motion at
   150–300 ms `cubic-bezier(.16,1,.3,1)`.
 - **No runtime dependencies beyond React.** Icons are inline SVG, charts are
-  hand-drawn SVG, photos are inlined at build time, fonts are system stacks —
-  nothing is fetched from a CDN, so the file works offline.
+  hand-drawn SVG, photos are inlined at build time, and the Theme Studio carries
+  **247 self-hosted Google Fonts families** (10.5 MB of subsetted woff2, inlined
+  at build time) with a searchable 1,746-family index behind them — nothing is
+  fetched from a CDN, so the file works offline.
 
 ## Layout of the source
 
@@ -46,6 +49,12 @@ src/
                             AI copy stream, presence
     builder-images.ts       5 inlined photos used by the seeded document
     builder-handoff.ts      one-shot Pages → Builder page handoff
+    theme-db.ts             Module 6 token document: 13 colour roles + groups,
+                            derived six-step type scale, WCAG pair engine,
+                            presets, CAS draft save, revisions + token diffs,
+                            v1/v2 import-export, presets seed
+    theme-font-data.ts      247 embedded font families (generated, ~14 MB base64)
+    theme-font-catalog.ts   the full 1,746-family Google Fonts index (generated)
     nav.ts, format.ts, thumbs.ts
   components/
     Icon.tsx                81 inline SVG icons
@@ -55,9 +64,12 @@ src/
     dashboard/              M1 cards, one file per region
     pages/                  M3 page tree, inspector, 8 modals
     builder/                M4 Library, Canvas, Inspector, BuilderModals
+    theme/                  M6 ThemeControls, ThemePreview, ThemeSpecimen,
+                            ThemeOverview, ThemeModals
     overlays/               drawers, wizards, modal host
   views/
-    Overview.tsx  Sites.tsx  Pages.tsx  Builder.tsx  Placeholder.tsx
+    Overview.tsx  Sites.tsx  Pages.tsx  Builder.tsx  Library.tsx
+    ThemeStudio.tsx  Placeholder.tsx
 qa/                         WebP captures of every audited state
 ```
 
@@ -123,11 +135,19 @@ npm run build       # also regenerates the handover
   plan-then-compose pipeline, every state, and the endpoint contract behind it.
 - `INTERLINK-PLAN.md` — the decided CMS ⇄ CRM architecture (D1–D8), the
   block → trigger → action automation matrix, and the loop end to end.
+- `MODULE-6-THEME-STUDIO-SPEC.md` · `MODULE-6-GAP-REVIEW.md` · `MODULE-6-DECISIONS.md`
+  (D1–D16) · `MODULE-6-UI-UX-REVIEW.md` — the Theme Studio.
+- `THEME-STUDIO-BENCHMARK.md` — the competitive study (Shopify, Elementor,
+  Framer, Squarespace, Material 3, shadcn, DTCG) that produced gaps G1–G9; M6.1
+  implements the four Tier-A ones.
+- `MODULE-6.1-SPEC.md` · `MODULE-6.1-DECISIONS.md` (D1–D15) · `MODULE-6.1-UI-UX-REVIEW.md`
+  — the type scale, the four new roles, the specimen sheet, revisions, and the
+  Google Fonts library. `FONT-LICENSES.md` is its per-family licence register.
 - `MODULE-2-SPEC.md` — the accepted v2 layout for Sites & Domains.
 - `BACKEND-PLAN.md` — the backend contract: data model, every endpoint and CTA,
   RBAC/tenancy, publishing with compare-and-swap, analytics, jobs, SLOs,
-  security, build order (§7.19 covers the builder, §7.20 the CMS ⇄ CRM
-  interlink).
+  security, build order (§7.19 the builder, §7.20 the CMS ⇄ CRM interlink,
+  §7.27 the Theme Studio, §7.28 its version-2 document and font pipeline).
 - `uploads/` — the reference mocks the product was specified against, kept in
   Git with a manifest and a restore recipe (`uploads/README.md`).
 - `PUSH-TO-GIT.md` — the exact state of the GitHub push: what is on

@@ -16,6 +16,7 @@ import { Node as BlockView, type RenderCtx } from "@/components/builder/Blocks";
 import { DEVICE_W, type Device } from "@/components/builder/Canvas";
 import type { BlockNode } from "@/lib/builder";
 import { previewVars, type ThemeTokens } from "@/lib/theme-db";
+import { ThemeSpecimen } from "./ThemeSpecimen";
 import { DEVICES } from "./ThemeControls";
 
 const INERT: RenderCtx = {
@@ -25,7 +26,7 @@ const INERT: RenderCtx = {
   onSelectEl: () => undefined
 };
 
-export function ThemePreview({ tokens, device, onDevice, chip, pages, page, onPage, blocks, empty, zoomLabel }: {
+export function ThemePreview({ tokens, device, onDevice, chip, pages, page, onPage, blocks, empty, zoomLabel, mode, onMode }: {
   tokens: ThemeTokens;
   device: Device;
   onDevice: (d: Device) => void;
@@ -36,12 +37,18 @@ export function ThemePreview({ tokens, device, onDevice, chip, pages, page, onPa
   blocks: BlockNode[];
   empty: ReactNode;
   zoomLabel: string;
+  /** G3 — page, or the specimen sheet drawn from the same tokens */
+  mode: "page" | "specimen";
+  onMode: (m: "page" | "specimen") => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<HTMLDivElement>(null);
   const [stageW, setStageW] = useState(0);
   const [docH, setDocH] = useState(0);
-  const width = DEVICE_W[device];
+  /* The specimen is a document, not a page: it is reviewed at the studio's own
+     width, so it renders 1:1 instead of being scaled to 42% and turned into
+     unreadable 6px labels. Tablet and phone still constrain it. */
+  const width = mode === "specimen" && device === "desktop" ? Math.max(420, Math.round((stageW || 900) - 26)) : DEVICE_W[device];
 
   useLayoutEffect(() => {
     const el = stageRef.current;
@@ -59,9 +66,9 @@ export function ThemePreview({ tokens, device, onDevice, chip, pages, page, onPa
     ro.observe(el);
     setDocH(el.offsetHeight);
     return () => ro.disconnect();
-  }, [blocks, device]);
+  }, [blocks, device, mode]);
 
-  const scale = stageW ? Math.min(1, (stageW - 26) / width) : 1;
+  const scale = mode === "specimen" ? 1 : stageW ? Math.min(1, (stageW - 26) / width) : 1;
 
   return (
     <main className="m6-main" aria-label="Website preview">
@@ -71,7 +78,23 @@ export function ThemePreview({ tokens, device, onDevice, chip, pages, page, onPa
           {chip}
         </div>
         <div className="m6-main-tools">
-          {pages.length > 1 && (
+          <div className="m6-pvmode" role="group" aria-label="Preview surface">
+            <button
+              type="button" className={`m6-pvmode-btn ${mode === "page" ? "is-on" : ""}`}
+              aria-pressed={mode === "page"} onClick={() => onMode("page")}
+              title="The site's own page, rendered by Module 4's renderer"
+            >
+              <Icon name="file" size={12} />Page
+            </button>
+            <button
+              type="button" className={`m6-pvmode-btn ${mode === "specimen" ? "is-on" : ""}`}
+              aria-pressed={mode === "specimen"} onClick={() => onMode("specimen")}
+              title="Every primitive in the current tokens — buttons, inputs, alerts, table, focus ring"
+            >
+              <Icon name="layers" size={12} />Specimen
+            </button>
+          </div>
+          {mode === "page" && pages.length > 1 && (
             <label className="m6-pages">
               <Icon name="file" size={12} />
               <select value={page ?? ""} onChange={(e) => onPage(e.target.value)} aria-label="Preview page">
@@ -105,7 +128,7 @@ export function ThemePreview({ tokens, device, onDevice, chip, pages, page, onPa
           <span className="m6-stage-sep" />
           <span className="m6-stage-lock"><Icon name="eye" size={11} />Read-only</span>
         </div>
-        {blocks.length === 0 ? (
+        {(mode === "page" && blocks.length === 0) ? (
           <div className="m6-pv-empty">{empty}</div>
         ) : (
           <div className="m6-scale" style={{ width: width * scale, height: docH ? docH * scale : undefined }}>
@@ -115,7 +138,9 @@ export function ThemePreview({ tokens, device, onDevice, chip, pages, page, onPa
               style={{ width, transform: `scale(${scale})`, ...previewVars(tokens) } as React.CSSProperties}
               data-device={device}
             >
-              {blocks.map((n) => <BlockView key={n.id} node={n} ctx={INERT} />)}
+              {mode === "specimen"
+                ? <ThemeSpecimen tokens={tokens} />
+                : blocks.map((n) => <BlockView key={n.id} node={n} ctx={INERT} />)}
             </div>
           </div>
         )}
