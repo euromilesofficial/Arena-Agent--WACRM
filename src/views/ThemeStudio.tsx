@@ -17,7 +17,7 @@ import { seedStudyAbroad, type BlockNode } from "@/lib/builder";
 import {
   BASE_SIZES, COLOR_ROLES, CONTAINER_OPTIONS, DEFAULT_TOKENS, DENSITY_OPTIONS, FALLBACK_STACKS,
   FONT_CATALOG, FONT_STATS, PAIRINGS, RADIUS_OPTIONS, SCALE_RATIOS, TYPE_STEPS, ThemeAPI, blocksOf,
-  ensureFontFaces, exportDocument, formatRatio, isDocumentValid, onPrimary, spacingScale, summarise,
+  ensureFontFaces, exportBundle, exportDocument, formatRatio, isDocumentValid, onPrimary, spacingScale, summarise,
   typeSizeCss, typeSizes, typeStamp, validateImport,
   type ColorRole, type ContrastRow, type ImportResult, type Preset, type ThemePayload,
   type ThemeRevision, type ThemeTokens, type TypeStep, type Usage
@@ -146,7 +146,7 @@ export function ThemeStudio() {
 
   /* ---- popovers ---- */
   const [colorFor, setColorFor] = useState<{ role: ColorRole; el: HTMLButtonElement } | null>(null);
-  const [fontFor, setFontFor] = useState<{ role: "heading" | "body"; el: HTMLButtonElement } | null>(null);
+  const [fontFor, setFontFor] = useState<{ role: "heading" | "body"; el: HTMLButtonElement; all?: boolean } | null>(null);
   const [presetMenu, setPresetMenu] = useState<{ preset: Preset; el: HTMLButtonElement } | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const exportBtn = useRef<HTMLSpanElement>(null);
@@ -336,6 +336,22 @@ export function ThemeStudio() {
     ThemeAPI.seen.exports += 1;
     download(doc.filename, doc.json);
     app.toast({ type: "success", title: `Exported ${doc.filename}`, sub: "Sanitised: no tenant ids, tokens or signed URLs." });
+  };
+
+  /* M6.2 — the complete bundle: tokens + font bytes + imagery + layout slots +
+     the pages the theme was judged against. This is the "everything" export. */
+  const doExportBundle = (mode: "draft" | "live") => {
+    const bundlePages = pages.map((p) => ({ id: p.id, title: p.title, blocks: blocksOf(p.id) }));
+    const res = exportBundle(siteId, mode, bundlePages);
+    setExportOpen(false);
+    if (!res) { app.toast({ type: "error", title: "Nothing to export", sub: `This site has no ${mode} revision.` }); return; }
+    ThemeAPI.seen.exports += 1;
+    download(res.filename, res.json);
+    app.toast({
+      type: "success",
+      title: `Exported ${res.filename}`,
+      sub: `Complete: ${res.fonts} font faces, ${res.images} image${res.images === 1 ? "" : "s"}, ${res.pages} page${res.pages === 1 ? "" : "s"} — ${(res.bytes / 1024).toFixed(0)} KB.`
+    });
   };
 
   const readFile = async (file: File) => {
@@ -677,9 +693,9 @@ export function ThemeStudio() {
             {/* ---------- TYPOGRAPHY ---------- */}
             {tab === "type" && (
               <>
-                <div className="m6-banner is-soft">
+                <div className="m6-banner is-soft" data-m6="font-banner">
                   <Icon name="shield" size={13} />
-                  {FONT_STATS.embedded} of {FONT_STATS.total.toLocaleString()} Google Fonts families ship inside this build as self-hosted woff2 ({(FONT_STATS.bytes / 1e6).toFixed(1)} MB). The other {(FONT_STATS.total - FONT_STATS.embedded).toLocaleString()} are searchable — “Get” hands you the command to pull any of them in.
+                  {FONT_STATS.embedded} of {FONT_STATS.total.toLocaleString()} families ship inside this build as self-hosted woff2 ({(FONT_STATS.bytes / 1e6).toFixed(1)} MB). The other {(FONT_STATS.total - FONT_STATS.embedded).toLocaleString()} are searchable, and “Get” downloads the font file — or the build command, if you want it permanent.<button type="button" className="m6-banner-all" onClick={(e) => setFontFor({ role: "heading", el: e.currentTarget as HTMLElement as HTMLButtonElement, all: true })}>Browse all {FONT_STATS.total.toLocaleString()}</button>
                 </div>
 
                 {(["heading", "body"] as const).map((role) => {
@@ -1137,6 +1153,7 @@ export function ThemeStudio() {
           anchor={fontFor.el}
           open
           roleLabel={fontFor.role}
+          initialAll={fontFor.all}
           value={working.typography[fontFor.role].family}
           onPick={(family) => {
             const fam = FONT_CATALOG.find((f) => f.family === family);
@@ -1148,9 +1165,12 @@ export function ThemeStudio() {
       )}
 
       <Popover anchor={exportBtn.current} open={exportOpen} onClose={() => setExportOpen(false)} align="right">
-        <MenuLabel>Export theme JSON</MenuLabel>
-        <MenuItem onClick={() => doExport("draft")} icon="file" meta={`#${payload.draft.seq}`}>Export saved draft</MenuItem>
-        <MenuItem onClick={() => doExport("live")} icon="shield" meta={`#${payload.live.seq}`}>Export live theme</MenuItem>
+        <MenuLabel>Complete bundle · theme + assets</MenuLabel>
+        <MenuItem onClick={() => doExportBundle("draft")} icon="download" meta={`#${payload.draft.seq}`}>Export complete draft</MenuItem>
+        <MenuItem onClick={() => doExportBundle("live")} icon="shield" meta={`#${payload.live.seq}`}>Export complete live</MenuItem>
+        <MenuLabel>Tokens only · portable JSON</MenuLabel>
+        <MenuItem onClick={() => doExport("draft")} icon="file" meta={`#${payload.draft.seq}`}>Export draft tokens</MenuItem>
+        <MenuItem onClick={() => doExport("live")} icon="file" meta={`#${payload.live.seq}`}>Export live tokens</MenuItem>
         <MenuLabel>Working copy</MenuLabel>
         <MenuItem onClick={() => { setExportOpen(false); setTab("presets"); }} icon="upload">
           Import JSON…

@@ -3973,6 +3973,24 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
    Every rule here reads a `--t-*` variable written on `.m6-pv` only, so a
    token edit repaints the website preview and never the admin shell.
    ================================================================== */
+/* M6.2 — the builder canvas wears the site theme (M6 → M4). Same token
+   document as the studio preview, scoped to the document root. */
+.wb-themed{font-family:var(--t-font-body);background:var(--t-bg);color:var(--t-text)}
+.wb-themed .wb-wrap{max-width:var(--t-container)}
+.wb-themed .wb-blk{padding-top:var(--t-band) !important;padding-bottom:var(--t-band) !important}
+.wb-themed .wb-bg-white{background:var(--t-bg)}
+.wb-themed .wb-bg-soft{background:var(--t-surface);background-image:none}
+.wb-themed .wb-bg-brand{background:var(--t-primary);background-image:none}
+.wb-themed .wb-bg-dark{background:var(--t-secondary)}
+.wb-themed .wb-h1,.wb-themed .wb-h2,.wb-themed .wb-h3,.wb-themed .wb-quote-text,.wb-themed .wb-tier-price,.wb-themed .wb-fg-stat,.wb-themed .wb-faq-q{font-family:var(--t-font-heading);font-weight:var(--t-heading-weight);color:var(--t-text);letter-spacing:var(--t-ls-heading);line-height:var(--t-lh-heading)}
+.wb-themed .wb-btn-primary,.wb-themed .wb-fg-btn{background:var(--t-primary);color:var(--t-on-primary);border-radius:var(--t-radius)}
+.wb-themed .wb-btn-ghost{border-radius:var(--t-radius);border-color:var(--t-border);color:var(--t-text)}
+.wb-themed .wb-btn-secondary{background:transparent;border-color:var(--t-border);color:var(--t-text)}
+.wb-themed .wb-tr.wb-th{background:var(--t-surface);color:var(--t-text)}
+.wb-themed .wb-tr{border-color:var(--t-border)}
+.wb-themed .wb-td,.wb-themed .wb-tbl{color:var(--t-text);border-color:var(--t-border)}
+.wb-themed .wb-eyebrow,.wb-themed .wb-lead{color:var(--t-muted)}
+.wb-themed .wb-card,.wb-themed .wb-fg-field{border-radius:var(--t-radius);border-color:var(--t-border);background:var(--t-surface)}
 .m6-pv{font-family:var(--t-font-body);color:var(--t-text);background:var(--t-bg);border-radius:10px;transition:background 200ms ease,color 200ms ease}
 .m6-pv .wb-blk{font-family:var(--t-font-body);padding-top:var(--t-band) !important;padding-bottom:var(--t-band) !important}
 .m6-pv .wb-wrap{max-width:var(--t-container)}
@@ -4183,6 +4201,17 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m6-fc-cmd code{flex:1 1 auto;border:0;background:transparent;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .m6-fc-copy{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line-strong);background:var(--surface);border-radius:5px;padding:2px 5px;font:inherit;font-size:9px;font-weight:700;color:var(--ink-2);cursor:pointer}
 .m6-fc-copy:hover{border-color:var(--brand-line);color:var(--brand-ink)}
+.m6-fc-getrow{display:flex;align-items:center;gap:6px;margin:0 0 6px}
+.m6-fc-dl{font-size:10px;padding:4px 8px;height:auto;min-height:0}
+.m6-fc-dl[disabled]{opacity:.7;cursor:progress}
+.m6-fc-open{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:650;color:var(--brand-ink);text-decoration:none;border:1px solid var(--brand-line);background:#fff;border-radius:5px;padding:3px 6px}
+.m6-fc-open:hover{background:var(--brand-soft)}
+.m6-fc-getstate{display:flex;align-items:flex-start;gap:4px;margin:0 0 6px;padding:5px 7px;border-radius:6px;font-size:9.5px;line-height:1.45}
+.m6-fc-getstate svg{flex:0 0 auto;margin-top:1px}
+.m6-fc-getstate.is-ok{background:#ECFDF3;border:1px solid #ABEFC6;color:#067647}
+.m6-fc-getstate.is-bad{background:#FEF3F2;border:1px solid #FDA29B;color:#B42318}
+.m6-banner-all{display:inline-flex;align-items:center;gap:3px;margin-left:6px;border:1px solid var(--brand-line);background:#fff;border-radius:5px;padding:1px 6px;font:inherit;font-size:9.5px;font-weight:700;color:var(--brand-ink);cursor:pointer}
+.m6-banner-all:hover{background:var(--brand-soft)}
 .m6-fc-more{width:100%;border:1px dashed var(--line);background:var(--surface-2);border-radius:7px;padding:6px;margin-top:4px;font:inherit;font-size:10px;font-weight:650;color:var(--brand-ink);cursor:pointer}
 .m6-fc-more:hover{background:var(--brand-soft);border-color:var(--brand-line)}
 

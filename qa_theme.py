@@ -9,7 +9,7 @@ that the state it claims is the state it is in.
 
 Run:  source scripts/qa-env.sh && python3 qa_theme.py
 """
-import asyncio, json, re, sys
+import asyncio, json, os, re, sys
 from playwright.async_api import async_playwright
 
 URL = "file:///home/user/wacrm-app/WACRM-CMS.html"
@@ -308,12 +308,55 @@ async def main():
         await pg.locator(".m6-tab").nth(2).click()
         await pg.wait_for_timeout(420)
         base_cards = await n(pg, ".m6-preset")
-        ck("6.1 the seeded preset library renders", base_cards == 5, str(base_cards))
+        ck("6.1 the seeded preset library renders", base_cards == 10, str(base_cards))
         names = [t.strip() for t in await pg.locator(".m6-preset-name").all_inner_texts()]
-        ck("6.2 the three built-ins are present",
-           all(x in names for x in ["Modern Violet", "Ocean Professional", "Warm Editorial"]), str(names))
+        ck("6.2 the five built-ins are present",
+           all(x in names for x in ["Modern Violet", "Ocean Professional", "Warm Editorial",
+                                    "Midnight Product", "Cobalt Corporate"]), str(names))
         ck("6.3 scope filters carry computed counts",
-           await n(pg, ".m6-chiprow .m6-chip") == 4 and "5" in await txt(pg, ".m6-chiprow .m6-chip"))
+           await n(pg, ".m6-chiprow .m6-chip") == 4 and "10" in await txt(pg, ".m6-chiprow .m6-chip"))
+        # ---- M6.2: the second five are real sets, not filler cards ----
+        ck("6.3a all ten names are distinct", len(set(names)) == 10, str(names))
+        descs = [t.strip() for t in await pg.locator(".m6-preset-desc").all_inner_texts()]
+        ck("6.3b every preset carries its own description",
+           len(descs) >= 10 and len(set(descs)) >= 10, str(len(set(descs))))
+        swatches = await pg.evaluate("""() => [...document.querySelectorAll('.m6-preset')].map(c =>
+            [...c.querySelectorAll('.m6-preset-sw span')].map(s => getComputedStyle(s).backgroundColor).join('|'))""")
+        ck("6.3c the ten presets render ten distinct swatch sets",
+           len(set(swatches)) >= 8, str(len(set(swatches))))
+        scopes = await pg.evaluate("""() => [...document.querySelectorAll('.m6-preset-scope, .m6-preset .m6-scope, .m6-preset-tag')].map(e => e.textContent.trim())""")
+        ck("6.3d the scope chips are distributed, not all Built-in",
+           (not scopes) or len(set(scopes)) >= 3, str(sorted(set(scopes))))
+
+        # apply one of the new dark presets and prove the tokens moved
+        read_vars = """() => {
+            const el = document.querySelector('.m6-pv');
+            const cs = getComputedStyle(el);
+            return { bg: cs.getPropertyValue('--t-bg').trim(), text: cs.getPropertyValue('--t-text').trim(),
+                     font: cs.getPropertyValue('--t-font-heading').trim(), radius: cs.getPropertyValue('--t-radius').trim() };
+        }"""
+        before = await pg.evaluate(read_vars)
+        await pg.locator(".m6-preset", has_text="Midnight Product").first.get_by_role("button", name="Apply").click()
+        await pg.wait_for_timeout(420)
+        ck("6.3e-i Apply is a review step, not a silent write",
+           await n(pg, '.modal:has-text("Review Preset Changes")') == 1)
+        await pg.locator('.modal .btn:has-text("Apply to Draft")').first.click()
+        await pg.wait_for_timeout(800)
+        after = await pg.evaluate(read_vars)
+        ck("6.3e-ii applying a new preset repaints the preview",
+           before["bg"] != after["bg"] and before["font"] != after["font"], f"{before} -> {after}")
+        ck("6.3f the dark preset actually renders dark, in the compiled variables", after["bg"].lower() == "#0b1020", after["bg"])
+        ck("6.3g the dark preset swaps both families",
+           "Space Grotesk" in after["font"], after["font"])
+        # walk it back: the token tab owns the undo stack
+        await pg.locator(".m6-tab").nth(0).click()
+        await pg.wait_for_timeout(400)
+        await pg.locator(".m6-undo").first.click()
+        await pg.wait_for_timeout(600)
+        restored = await pg.evaluate(read_vars)
+        ck("6.3h undo returns the preview to the saved tokens", restored["bg"] == before["bg"], restored["bg"])
+        await pg.locator(".m6-tab").nth(2).click()
+        await pg.wait_for_timeout(420)
 
         await pg.locator(".m6-preset").nth(1).get_by_role("button", name="Preview").click()
         await pg.wait_for_timeout(420)
@@ -395,9 +438,60 @@ async def main():
         await pg.wait_for_timeout(300)
         export_items = [t.split("\n")[0].strip() for t in await pg.locator(".dropdown .menu-item").all_inner_texts()]
         ck("7.1 export offers draft and live, named explicitly",
-           any("saved draft" in x.lower() for x in export_items) and any("live" in x.lower() for x in export_items), str(export_items))
-        await pg.keyboard.press("Escape")
-        await pg.wait_for_timeout(240)
+           any("draft" in x.lower() for x in export_items) and any("live" in x.lower() for x in export_items), str(export_items))
+        ck("7.1a export offers a complete bundle and a tokens-only file",
+           sum(1 for x in export_items if "complete" in x.lower()) == 2
+           and sum(1 for x in export_items if "tokens" in x.lower()) == 2, str(export_items))
+
+        # ---- M6.2: the complete bundle carries fonts, imagery, layout and pages ----
+        async with pg.expect_download(timeout=30000) as dl_info:
+            await pg.locator('.dropdown .menu-item:has-text("Export complete draft")').first.click()
+        dl = await dl_info.value
+        bundle_path = os.path.join("/tmp", dl.suggested_filename)
+        await dl.save_as(bundle_path)
+        bundle_raw = open(bundle_path, encoding="utf-8").read()
+        bundle = json.loads(bundle_raw)
+        ck("7.1b the bundle is named as a bundle", "theme-bundle" in dl.suggested_filename, dl.suggested_filename)
+        ck("7.1c it declares schemaVersion 3 and its kind",
+           bundle.get("schemaVersion") == 3 and bundle.get("kind") == "wacrm.theme.bundle", str(bundle.get("kind")))
+        th = bundle.get("theme", {})
+        ck("7.1d it still carries the whole token document",
+           all(k in th for k in ("colors", "typography", "geometry", "blockStyling")) and len(th["colors"]) >= 13,
+           str(sorted(th.keys())))
+        ck("7.1e the token document survives the round trip to a preset import",
+           bundle.get("theme", {}).get("typography", {}).get("heading", {}).get("family") is not None)
+        fonts = bundle.get("fonts", [])
+        ck("7.1f both font roles are exported", len(fonts) == 2, str([f.get("role") for f in fonts]))
+        faces = [fc for f in fonts for fc in f.get("faces", [])]
+        ck("7.1g the font bytes are in the file, not a command",
+           faces and all(len(fc.get("content", "")) > 500 for fc in faces), str(len(faces)))
+        ck("7.1h each face records its format, size and licence",
+           all(fc.get("format") == "woff2" and fc.get("bytes") and f.get("licence") for f in fonts for fc in f["faces"]))
+        imgs = bundle.get("assets", {}).get("images", [])
+        ck("7.1i the imagery is exported as base64 content",
+           len(imgs) > 0 and all(len(i.get("content", "")) > 100 and i.get("mime", "").startswith("image/") for i in imgs),
+           str(len(imgs)))
+        ck("7.1j the logo slot is declared with its owner",
+           "logo" in bundle.get("assets", {}) and "Media library" in bundle.get("assets", {}).get("note", ""))
+        lay = bundle.get("layout", {})
+        ck("7.1k layout carries container, radius and the spacing scale",
+           lay.get("containerWidthPx") in (960, 1080, 1200, 1280) and isinstance(lay.get("spacing", {}).get("scalePx"), list),
+           str(lay.get("containerWidthPx")))
+        ck("7.1l the future modules are hooked, and named",
+           lay.get("starterLayouts") == {} and "Module 7" in lay.get("deferredTo", {}).get("starterLayouts", "")
+           and "Module 8" in lay.get("deferredTo", {}).get("navigation", ""))
+        comp = bundle.get("computed", {})
+        ck("7.1m computed type sizes are exported for all six steps",
+           set(comp.get("typeScale", {}).keys()) == {"h1", "h2", "h3", "body", "small", "caption"}, str(sorted(comp.get("typeScale", {}).keys())))
+        ck("7.1n the WCAG verdicts travel with the file",
+           len(comp.get("contrast", [])) >= 14 and all("verdict" in r and "ratio" in r for r in comp["contrast"]), str(len(comp.get("contrast", []))))
+        ck("7.1o the reference pages are in the bundle",
+           len(bundle.get("pages", [])) >= 1 and all("blocks" in p for p in bundle["pages"]), str(len(bundle.get("pages", []))))
+        ck("7.1p provenance names the revision and an integrity stamp",
+           bundle.get("x-wacrm", {}).get("revision") and bundle["x-wacrm"].get("integrity", {}).get("algorithm") == "fnv1a-32")
+        ck("7.1q the bundle is materially bigger than a token file",
+           len(bundle_raw) > 200_000, str(len(bundle_raw)))
+        await pg.wait_for_timeout(300)
 
         bad = {"schemaVersion": 9, "colors": {"primary": "nope"}, "stray": 1}
         open("/tmp/qa_theme_bad.json", "w").write(json.dumps(bad))
@@ -574,7 +668,7 @@ async def main():
         await pg.locator(".m6-tab").nth(1).click()
         await pg.wait_for_timeout(500)
         banner = await txt(pg, ".m6-banner.is-soft")
-        m = re.search(r"(\d[\d,]*) of ([\d,]+) Google Fonts families", banner)
+        m = re.search(r"(\d[\d,]*) of ([\d,]+) families ship inside this build", banner)
         ck("14.1 the banner states the embedded vs indexed split", m is not None, banner[:80])
         embedded_n, total_n = (int(m.group(1).replace(",", "")), int(m.group(2).replace(",", ""))) if m else (0, 0)
         ck("14.2 the embedded set is the top-50 popularity cut", embedded_n == 50, str(embedded_n))
@@ -610,6 +704,43 @@ async def main():
            "no network" in panel.lower() or "next build" in panel.lower())
         ck("14.21 the command has a copy control",
            await pg.locator(".m6-fc-copy").count() == 1)
+        # ---- M6.2: Get hands over a font FILE, not only a command ----
+        dlbtn = pg.locator(".m6-fc-dl")
+        ck("14.22 Get offers a font download button", await dlbtn.count() == 1)
+        ck("14.23 the download button names the file it will produce",
+           "Abril Fatface" in (await txt(pg, ".m6-fc-dl")) and ".woff2" in (await txt(pg, ".m6-fc-dl")),
+           await txt(pg, ".m6-fc-dl"))
+        ck("14.24 the panel links the specimen on Google Fonts",
+           await pg.locator(".m6-fc-open").count() == 1)
+        got_file = False
+        try:
+            async with pg.expect_download(timeout=25000) as dl2:
+                await dlbtn.click()
+            d = await dl2.value
+            fp = os.path.join("/tmp", d.suggested_filename)
+            await d.save_as(fp)
+            raw = open(fp, "rb").read()
+            got_file = raw[:4] == b"wOF2" and len(raw) > 2000 and d.suggested_filename.endswith(".woff2")
+            ck("14.25 clicking Get downloads a real woff2 file", got_file,
+               f"{d.suggested_filename} {len(raw)}B {raw[:4]!r}")
+        except Exception as e:
+            # No network in this environment: the panel must say so instead of pretending
+            state = await pg.locator(".m6-fc-getstate").count()
+            ck("14.25 with no network, Get reports the failure honestly", state > 0, str(e)[:70])
+            ck("14.25b the offline message is specific, not generic",
+               "Google Fonts" in (await txt(pg, ".m6-fc-getstate")))
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(300)
+
+        # ---- the banner escape hatch opens the picker on the full index ----
+        await pg.locator(".m6-banner-all").click()
+        await pg.wait_for_timeout(700)
+        ck("14.26 the banner's Browse-all opens the picker",
+           await pg.locator(".m6-fc-search input").count() == 1)
+        ck("14.27 it opens on the full index, not the embedded 50",
+           await pg.locator(".m6-fc-toggle.is-on").count() == 0)
+        ck("14.28 the full index shows families that need downloading",
+           await pg.locator(".m6-fc-get").count() > 0)
         await pg.keyboard.press("Escape")
         await pg.wait_for_timeout(300)
 
@@ -841,6 +972,54 @@ async def main():
            "no type scale" in body.lower() or "default" in body.lower())
         await pg.keyboard.press("Escape")
         await pg.wait_for_timeout(300)
+
+        # ============ 22 · interlinks (M6.2) ============
+        # the theme is not an island: a saved draft must reach the builder canvas
+        await go(pg)
+        await pg.locator(".m6-tab").nth(2).click()
+        await pg.wait_for_timeout(500)
+        await pg.locator(".m6-preset", has_text="Midnight Product").first.get_by_role("button", name="Apply").click()
+        await pg.wait_for_timeout(400)
+        await pg.locator('.modal .btn:has-text("Apply to Draft")').first.click()
+        await pg.wait_for_timeout(700)
+        seq_before = await txt(pg, ".m6-draft-chip")
+        await pg.locator('button:has-text("Save Brand Tokens")').first.click()
+        await pg.wait_for_timeout(1400)
+        ck("22.1 a theme change saves as a new draft revision",
+           await txt(pg, ".m6-draft-chip") != seq_before, f"{seq_before} -> {await txt(pg, '.m6-draft-chip')}")
+        ck("22.2 the save lands clean, not stuck dirty",
+           "Unsaved" not in await txt(pg, ".m6-draft-chip"), await txt(pg, ".m6-draft-chip"))
+
+        # → M4 Visual Builder
+        await pg.evaluate("() => { location.hash = '#/builder'; }")
+        await pg.wait_for_timeout(2200)
+        canvas = """() => { const d = document.querySelector('.wb-doc');
+            if (!d) return null; const cs = getComputedStyle(d);
+            return { themed: d.classList.contains('wb-themed'), bg: cs.getPropertyValue('--t-bg').trim(),
+                     font: cs.getPropertyValue('--t-font-heading').trim(), painted: cs.backgroundColor,
+                     foot: (document.querySelector('.wb-doc-foot') || {}).innerText || '' }; }"""
+        cv = await pg.evaluate(canvas)
+        ck("22.3 the builder canvas is rendered as a themed document", bool(cv) and cv["themed"], str(cv))
+        ck("22.4 the canvas carries the theme's background token", cv and cv["bg"].lower() == "#0b1020", str(cv and cv["bg"]))
+        ck("22.5 the canvas paints that token, not just declares it",
+           bool(cv) and cv["painted"].replace(" ", "") == "rgb(11,16,32)", str(cv and cv["painted"]))
+        ck("22.6 the canvas carries the theme's heading family",
+           bool(cv) and "Space Grotesk" in cv["font"], str(cv and cv["font"]))
+        ck("22.7 the canvas names the theme revision it is rendering",
+           bool(cv) and "Theme ·" in cv["foot"] and "draft #" in cv["foot"], str(cv and cv["foot"])[:90])
+        ck("22.8 the canvas still renders the page's blocks under the theme",
+           await n(pg, ".wb-doc [data-block-id]") > 0, str(await n(pg, ".wb-doc [data-block-id]")))
+
+        # back to the studio without a reload: the workspace keeps the saved state
+        await pg.evaluate("() => { location.hash = '#/theme'; }")
+        await pg.wait_for_timeout(1500)
+        await pg.locator(".m6-tab").nth(0).click()
+        await pg.wait_for_timeout(400)
+        row = (await txt(pg, '.m6-crow[data-role="primary"]')).upper()
+        ck("22.9 the token editor carries the saved draft's primary across views",
+           "#A78BFA" in row, row[:80])
+        ck("22.10 the draft revision survives the round trip through M4",
+           await txt(pg, ".m6-draft-chip") != seq_before, f"{seq_before} -> {await txt(pg, '.m6-draft-chip')}")
 
         await pg.screenshot(path=f"{OUT}/m6-default.png")
         await pg.locator(".m6-tab").nth(1).click()

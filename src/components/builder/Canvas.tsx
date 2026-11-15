@@ -32,6 +32,8 @@ export interface CanvasCtl {
   onAcceptAi: () => void;
   onToolbar: (action: "drag" | "settings" | "duplicate" | "delete", id: string, e?: React.PointerEvent | React.MouseEvent) => void;
   onEditMaster: () => void;
+  /** the site's theme tokens, applied to the document root (M6 → M4 interlink) */
+  theme?: { vars: Record<string, string>; label: string } | null;
 }
 
 interface Rect { top: number; left: number; width: number; height: number }
@@ -111,8 +113,8 @@ export function Canvas({ doc, ctl }: { doc: BlockNode[]; ctl: CanvasCtl }) {
       <div className="wb-scale" style={{ width: DEVICE_W[ctl.device] * scale, height: docH ? docH * scale : undefined }}>
       <div
         ref={docRef}
-        className={`wb-doc wb-dev-${ctl.device} ${wide ? "is-wide" : ""}`}
-        style={{ width: DEVICE_W[ctl.device], transform: `scale(${scale})` }}
+        className={`wb-doc wb-dev-${ctl.device} ${wide ? "is-wide" : ""} ${ctl.theme ? "wb-themed" : ""}`}
+        style={{ width: DEVICE_W[ctl.device], transform: `scale(${scale})`, ...(ctl.theme?.vars ?? {}) }}
         data-device={ctl.device}
         onClick={(e) => {
           const hit = (e.target as HTMLElement).closest("[data-block-id]");
@@ -141,7 +143,7 @@ export function Canvas({ doc, ctl }: { doc: BlockNode[]; ctl: CanvasCtl }) {
         <div className="wb-slot-end" data-slot-end="1" aria-hidden />
 
         <div className="wb-doc-foot">
-          <span>Rendered from the draft · {doc.length} sections</span>
+          <span>Rendered from the draft · {doc.length} sections{ctl.theme ? ` · ${ctl.theme.label}` : ""}</span>
           <span className="wb-doc-foot-sp" />
           <span>{DEVICE_W[ctl.device]} px viewport</span>
         </div>
