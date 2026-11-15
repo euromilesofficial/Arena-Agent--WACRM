@@ -1372,3 +1372,103 @@ POST   /cms/sites/:siteId/library/import                → gated until the v1 i
 **Invariants the API must hold** (they are QA-asserted in the prototype): `kpi.*` and the `rows` for the
 same query come from one snapshot; `sum(facets.*) == total` before chips/scope filters; a placement row
 exists for every materialized copy and survives template deletion; `expectRevision` is mandatory.
+
+## 7.27 Module 6 — Theme Studio contracts
+
+The studio edits one token document per site and saves **draft revisions**. It never
+publishes: a release manifest carries the revision id, and publishing happens in the
+release flow (Module 4 today, Module 11 when the Publishing screen ships). Everything
+below is the server contract the prototype simulates in `src/lib/theme-db.ts`.
+
+### 7.27.1 Storage
+
+```
+theme_token_sets        id, organization_id, site_id, name, created_at, created_by
+theme_tokens            token_set_id, revision_id, key, value_json, CONSTRAINT type IN (
+                          'color','font_family','font_weight','fallback_stack','radius','spacing_base',
+                          'density','container_width','card_density','elevation')
+theme_revisions         id, token_set_id, seq, base_revision_id, status('draft'|'live'),
+                          tokens_json, created_at, created_by, preset_id NULL
+theme_presets           id, organization_id NULL, site_id NULL, scope('workspace'|'site'),
+                          name, description, tokens_json, built_in, archived_at, created_by, updated_at
+site_release_manifest   … existing … + theme_revision_id NOT NULL
+```
+
+`enum` domains are closed server-side and must match the client exactly:
+`radiusPx ∈ {0,4,8,12,16,24}`, `spacing.base ∈ {4,8}`, `density ∈ {compact,comfortable,spacious}`,
+`containerWidthPx ∈ {960,1080,1200,1280}`, `cardDensity ∈ {compact,comfortable}`,
+`elevation ∈ {flat,soft}`, `colors` = exactly the nine persisted roles. The tenth value the
+UI shows — the on-primary label colour — is **derived, never stored**: the server recomputes it
+with the same rule (`#FFFFFF` vs `#0F172A`, whichever measures higher against `primary`) so an
+export can never disagree with the renderer.
+
+### 7.27.2 Endpoints
+
+```
+GET    /cms/sites/:siteId/theme
+       → { live:{…revision}, draft:{…revision}, history:[…], usage:{pages,blocks,templates,websites},
+           previewPage:{pageId,title}|null, fontCatalog:[…] }
+
+PUT    /cms/sites/:siteId/theme/draft          (compare-and-swap)
+       body { tokens, baseRevisionId }
+       200  { revision }
+       409  conflict { latestRevision }        — the client must show the diff, never overwrite
+       422  invalid  { errors:[{path,message}] }
+       403  denied
+       503  service_down
+
+GET    /cms/sites/:siteId/theme/history?cursor=
+GET    /cms/sites/:siteId/theme/export?revision=draft|live|:id
+       → application/json, sanitised; carries x-wacrm{site,revision,exportedAt,exportedBy}
+
+POST   /cms/sites/:siteId/theme/presets            (create / import landing)
+       body { name, description, scope, tokens }
+       409  name_taken(scope)
+POST   /cms/sites/:siteId/theme/presets/:id/duplicate
+PATCH  /cms/sites/:siteId/theme/presets/:id        { name } → 409 name_taken, 403 built_in
+DELETE /cms/sites/:siteId/theme/presets/:id        → 409 in_use { references[] }, 403 built_in
+POST   /cms/sites/:siteId/theme/presets/:id/archive → 200 (keeps references resolvable)
+
+POST   /cms/sites/:siteId/theme/import/validate    body: raw JSON ≤256 KB
+       → { ok, errors:[{path,message}], warnings[], summary:{colors,typography,geometry,
+           blockStyling,starterLayouts,navigation} }
+```
+
+Import validation is the same code path for the three entry points (header button, Presets tab,
+drag-and-drop) and is **validate-only**: it returns an enumerated result, and the client asks the
+user which scope to apply. Unknown top-level keys, unknown colour roles, unknown block-style
+enums, prototype-pollution keys (`__proto__`, `constructor`, `prototype`), depth > 8, payloads
+> 256 KB and any `schemaVersion ≠ 1` are hard errors with a `$.path`. Starter layouts and
+navigation may appear in a file; this build reports them as *Present in file — not applied*
+and Module 7 owns the path that would ingest them.
+
+### 7.27.3 Font pipeline
+
+Fonts are **not** fetched at save time in the prototype: six OFL 1.1 families are subsetted to
+`latin` and embedded in the artifact (242 KB woff2 → 333 KB of base64 TypeScript). The server
+contract keeps the original shape and adds the verification step:
+
+```
+POST   /cms/sites/:siteId/fonts/ingest   body { family, weights[], source:"google" }
+       → { jobId }  · job states: queued → fetching → subsetting → checksum → ready | failed
+GET    /cms/sites/:siteId/fonts          → [{ family, weights[], artifactUrl, sha256, license }]
+```
+
+Rules: subset to the locales the site actually serves, store the artifact in tenant storage, serve
+under `font-src 'self'`, record the licence, and refuse a save whose selected family has no
+`ready` artifact (`422 font_not_ready`). Families without an artifact stay listed in the catalogue
+as *Requires ingestion* and are disabled in the picker — the prototype never previews a font it
+cannot render. Sanitise the provider URL (no SSRF, no path traversal) and pin the SHA-256 into the
+release manifest so a swapped file invalidates the release.
+
+### 7.27.4 Publishing + audit
+
+Publishing a theme is publishing a release. `site_release_manifest.theme_revision_id` is what makes
+`theme_revisions.status = 'live'`; there is no separate "publish theme" endpoint, and no
+"rollback theme" either — restoring a release restores its tokens, layout and menu references
+atomically. Every mutating route above writes an audit row (`actor`, `action`, `site`, `preset?`,
+`revision`, `diff`) covering save, import, apply, export, archive, delete and publish.
+Contrast warnings are **advisory**: they are stored on the revision, listed in the release review,
+and never block a draft save. RBAC: read + preview for any site reader, edit/save/import/apply for
+an explicit theme-edit right, preset delete/archive for owner/admin, publish only with the
+publishing permission.

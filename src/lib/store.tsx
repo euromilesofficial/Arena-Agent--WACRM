@@ -485,7 +485,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (s === "default") setRole("Owner");
     /* the visual builder resolves its own draft conflicts, so the publish-conflict
        dialog only opens on screens where publishing is the operation in flight */
-    if (s === "conflict" && screen !== "builder") setModal({ kind: "conflict" });
+    if (s === "conflict" && screen !== "builder" && screen !== "theme") setModal({ kind: "conflict" });
     /* the prototype's conflict state also makes the pages API reject a stale save,
        so the editor's Reload/Keep-mine path is reachable without two browsers */
     API.mode.conflict = s === "conflict";

@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 02:09:25 UTC · **generated against commit** `942b600` · **working tree** 2 uncommitted file(s)
+**Generated** 2026-11-15 02:58:21 UTC · **generated against commit** `aa904b7` · **working tree** 19 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -30,22 +30,24 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | M3 | Pages & Routes | `#/pages?site=&tab=&q=&page=&sel=` | **done** | qa_pages.py 106/106 · qa_states_m3.py 40/40 |
 | M4 | Visual Builder | `#/builder?site=&page=&sel=&lib=&insp=` | **done** | qa_builder.py 97/97 · qa_states_m4.py 47/47 |
 | M5 | Block Library | `#/library` | **done** | qa_library.py 90/90 · qa_builder.py 98/98 |
+| M6 | Theme Studio | `#/theme` | **done** | qa_theme.py 127/127 |
 
 - **M1 Overview** — Dashboard grid, 6 KPI drawers, funnel, acquisition, site health, publishing rail, release wizard, rollback.
 - **M2 Sites & Domains** — Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks.
 - **M3 Pages & Routes** — Registry + tree + inspector, 8 modals, slug/route guards, deep links, trash with restore window.
 - **M4 Visual Builder** — 3-panel editor, 19 blocks / 23 sections / 5 templates, drag with refusal reasons, token-bounded style, autosave 2 s + CAS, revisions with block diff + restore, AI copy stream, publish handoff into M1.
 - **M5 Block Library** — Four views (All · Native 20 · Sections 23 · Saved 14), computed KPI/in-use counts, filter rail, grouped grid + list, inspector (Overview/Properties/Compatibility · Overview/Structure/Usage), Insert into Page with six outcomes, Create from page section, duplicate, guarded delete.
+- **M6 Theme Studio** — Three tabs (Brand Tokens · Typography · Presets), nine colour roles + derived on-primary, computed WCAG pairs, discrete geometry, six embedded self-hosted font families (242 KB woff2 in the artifact), live read-only preview through the M4 renderer at 1440/768/375, preset library with import/export, CAS draft save, conflict + unsaved guards, publish hand-off into M4's release flow.
 
 ## 3. Build artifact (measured now)
 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 1,146,834 B (1120 kB) · gzip 391 kB |
-| md5 | `a9fc8c13a3a178a0b9b3c48a04d10896` |
-| sha256 (first 16) | `39ed2c10fc9f358d` |
-| Built | 2026-11-15 02:04:28 |
+| Size | 1,599,794 B (1562 kB) · gzip 665 kB |
+| md5 | `52dc60291425c064ce56672be812531e` |
+| sha256 (first 16) | `cc95d4975cbe6d5c` |
+| Built | 2026-11-15 02:58:20 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -58,19 +60,21 @@ npm run dev        # http://localhost:5173 while developing
 
 ## 4. Verification (last recorded run)
 
-Recorded 2026-11-14 06:32:36 UTC · node v20.20.2. Re-run with `npm run qa`.
+Recorded 2026-11-15 02:57:46 UTC · node v20.20.2. Re-run with `npm run qa`.
 
 | Suite | Passed | Failed | Time | Covers |
 | --- | --- | --- | --- | --- |
-| `qa_ai.py` | 60 | 0 | 34.4 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
-| `qa_builder.py` | 97 | 0 | 42.4 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
-| `qa_states_m4.py` | 47 | 0 | 43.6 s | M4 state matrix |
-| `qa_pages.py` | 106 | 0 | 121.2 s | M3 registry, tree, inspector, modals, deep links |
+| `qa_ai.py` | 60 | 0 | 36.6 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
+| `qa_theme.py` | 127 | 0 | 68.8 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
+| `qa_builder.py` | 98 | 0 | 42.8 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
+| `qa_states_m4.py` | 47 | 0 | 43.5 s | M4 state matrix |
+| `qa_pages.py` | 106 | 0 | 121.0 s | M3 registry, tree, inspector, modals, deep links |
 | `qa_states_m3.py` | 40 | 0 | 56.7 s | M3 state matrix |
-| `qa_module2.py` | 48 | 0 | 34.8 s | M2 layout, geometry, data consistency |
-| `qa_states_m1.py` | 39 | 0 | 45.7 s | M1 state matrix |
-| `qa_flows.py` | 38 | 0 | 59.1 s | cross-module interaction script |
-| `qa_react.py` | — | 0 | 4.4 s | full-page render, console clean, no overflow |
+| `qa_module2.py` | 48 | 0 | 34.6 s | M2 layout, geometry, data consistency |
+| `qa_states_m1.py` | 39 | 0 | 45.5 s | M1 state matrix |
+| `qa_flows.py` | 38 | 0 | 55.7 s | cross-module interaction script |
+| `qa_react.py` | — | 0 | 4.0 s | full-page render, console clean, no overflow |
+| `qa_library.py` | 90 | 0 | 54.2 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
 
 > All recorded suites are green.
 
@@ -86,32 +90,32 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **52 source files, 18,654 lines** of TS/TSX/CSS (27,498 lines across all tracked text files).
+Source inventory: **59 source files, 22,359 lines** of TS/TSX/CSS (32,210 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 11 | 4,187 | data seams, registries, formatting, no JSX |
-| `src/components/` | 30 | 7,193 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 6 | 3,606 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 3,598 | one tokenised stylesheet (design system) |
+| `src/lib/` | 13 | 5,181 | data seams, registries, formatting, no JSX |
+| `src/components/` | 34 | 8,285 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/views/` | 7 | 4,814 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 4,007 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 3,598 |
-| `BACKEND-PLAN.md` | 1,375 |
+| `src/styles/app.css` | 4,007 |
+| `BACKEND-PLAN.md` | 1,475 |
+| `src/views/ThemeStudio.tsx` | 1,208 |
 | `src/views/Library.tsx` | 1,070 |
 | `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
 | `MODULE-6-THEME-STUDIO-SPEC.md` | 880 |
 | `src/lib/library-db.ts` | 856 |
 | `src/lib/builder.ts` | 828 |
+| `src/lib/theme-db.ts` | 818 |
 | `src/views/Pages.tsx` | 789 |
-| `src/lib/store.tsx` | 569 |
-| `src/components/pages/PageModals.tsx` | 552 |
-| `src/views/Sites.tsx` | 538 |
+| `qa_theme.py` | 578 |
 
 ## 6. Data seam and contracts
 
@@ -166,23 +170,27 @@ Decisions already made — do not reopen without the user:
 | D8 | Deep links are the QA contract: every screen must restore from its hash on a cold load. | locked |
 | D13 | undefined | undefined |
 | D14 | undefined | undefined |
+| D15 | Theme Studio publishes nothing: Save writes a draft revision, and the release flow (Module 4 today, Module 11 when it ships) is the only publish path. | locked |
+| D16 | Nine persisted colour roles plus one derived, read-only on-primary label colour chosen for 4.5:1 — the token the spec assumed but never defined. | locked |
+| D17 | Spacing = base (4|8) × density (compact/comfortable/spacious); radius and container width come from closed enums, so every export can be re-imported exactly. | locked |
+| D18 | Fonts ship inside the artifact as subsetted woff2 (6 families, OFL 1.1); families without an asset stay visible in the catalogue as Requires ingestion and cannot be selected. | locked |
 
 ## 8. What is next
 
-**Module 5 (Block Library) is complete: four views, computed counts, inspector tab sets and the single Insert-into-Page mutation path. Nothing is blocked.**
+**Module 6 (Theme Studio) is complete: three tabs, a computed contrast engine, an embedded font catalogue, a real draft/release split and a read-only preview that renders the site through Module 4's renderer. Nothing is blocked.**
 
 Blocked on:
 
-- Module 6 (Forms & Leads) waits on the next specification or on a go-ahead to use the shape recorded in MODULE-5-REVIEW.md §5.
-- Import Template stays disabled until the v1 native interchange format is written (deferred to Module 7).
+- Module 7 (Layouts & Templates) waits on its specification; the theme contract already reserves the layout/navigation import fields and keeps them switched off.
+- Module 11 (Publishing & Releases) is the future owner of the publish surface — until then the theme draft rides Module 4's release dialog.
 - The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost).
 
 First tasks:
 
 1. Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.
-2. Write the Module 6 spec (Forms & Leads): form builder, public submit endpoint, consent snapshot, crm_form:<slug> lead source. The shape is already in MODULE-5-REVIEW.md §5 and BACKEND-PLAN.md.
-3. Only then: Import Template's v1 interchange validator (Module 5 §16), and the deferred 19 → 38 palette expansion if it is still wanted.
-4. Keep the count contract: the library, the builder palette and the KPI strip must return the same numbers after every change.
+2. Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.
+3. Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.
+4. Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md — implementing it is what unblocks 'Requires ingestion'.
 
 ## 9. Traps that cost time last time
 
@@ -216,13 +224,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `942b600` — docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST.
-- Working tree: 2 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `aa904b7` — docs(module-6): persist the Theme Studio spec and the gap review — 31 findings, 10 decisions.
+- Working tree: 19 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `aa904b7` | 2026-11-15 | docs(module-6): persist the Theme Studio spec and the gap review — 31 findings, 10 decisions |
 | `942b600` | 2026-11-15 | docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST |
 | `f5f0309` | 2026-11-15 | fix(module-5): restore the mock's responsive strip; verify uploads manifest |
 | `edc189b` | 2026-11-15 | docs(uploads): add the inspector-overview close-up mock; rebuild MANIFEST; restore script exec bits |
@@ -234,7 +243,6 @@ First tasks:
 | `1b377ab` | 2026-11-14 | docs(module-5): gap & decision review, canonical spec, 11 mocks as WebP |
 | `725c9da` | 2026-11-14 | docs: record the real token expiry (17 Nov) and key the warning to it |
 | `d53dbd3` | 2026-11-14 | chore: the mirror no longer carries HANDOVER.md — the hook owns that file |
-| `a2df16c` | 2026-11-14 | noop |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
