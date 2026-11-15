@@ -7,6 +7,7 @@ import { Sites } from "./views/Sites";
 import { Pages } from "./views/Pages";
 import { Builder } from "./views/Builder";
 import { Library } from "./views/Library";
+import { ThemeStudio } from "./views/ThemeStudio";
 import { Placeholder } from "./views/Placeholder";
 import { DrawerHost } from "./components/overlays/DrawerHost";
 import { ModalHost } from "./components/overlays/ModalHost";
@@ -21,6 +22,7 @@ function Screen() {
         : screen === "pages" ? <Pages />
         : screen === "builder" ? <Builder />
         : screen === "library" ? <Library />
+        : screen === "theme" ? <ThemeStudio />
         : <Placeholder screen={screen} />}
     </div>
   );
