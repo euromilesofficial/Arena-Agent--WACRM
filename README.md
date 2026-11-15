@@ -259,6 +259,16 @@ Closes the four Tier-A gaps found by a competitive benchmark against Shopify, El
 
 Document schema is **version 2**; a version-1 file still imports, with the four derived roles and the default scale named in the review.
 
+### M7 · Layouts & Templates — reviewed, awaiting build
+
+The specification for the next module has been reviewed against nine production CMSs before
+any code: **`MODULE-7-SPEC.md`** (the submitted contract, persisted verbatim),
+**`MODULE-7-BENCHMARK.md`** (how Shopify, WordPress, Webflow, Elementor, AEM, Sitecore SXA,
+HubSpot, Sanity and Squarespace actually model layouts) and **`MODULE-7-GAP-REVIEW.md`**
+(22 findings, decisions on the spec's own 16 open questions, the data model, the interlink
+contract and the build plan). The headline: shared chrome must become its own object, the
+content slot needs a policy, and the slot needs seed content.
+
 ### M6.2 · Ten presets, real font downloads, the complete bundle — `#/theme`
 
 Full audit: **`MODULE-6.2-REVIEW.md`**.
