@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-15 20:11:25 UTC · **generated against commit** `ef83d41` · **working tree** 22 uncommitted file(s)
+**Generated** 2026-11-15 20:13:00 UTC · **generated against commit** `b48f9dd` · **working tree** 1 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -49,7 +49,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 4,751,566 B (4640 kB) · gzip 2897 kB |
 | md5 | `6f112386b712c249f92ddcd78371f761` |
 | sha256 (first 16) | `7119705949e61b25` |
-| Built | 2026-11-15 20:11:24 |
+| Built | 2026-11-15 20:12:59 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -92,7 +92,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **61 source files, 23,497 lines** of TS/TSX/CSS (34,596 lines across all tracked text files).
+Source inventory: **61 source files, 23,497 lines** of TS/TSX/CSS (34,609 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -238,13 +238,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `ef83d41` — docs: STORAGE.md numbers, the clone-restore incident, README pointer.
-- Working tree: 22 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `b48f9dd` — perf: top-50 font set, one repository, workspace 140.6 MB → 46 MB; picker gains a Get action for any indexed family.
+- Working tree: 1 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
-- Tags: `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
+- Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `b48f9dd` | 2026-11-15 | perf: top-50 font set, one repository, workspace 140.6 MB → 46 MB; picker gains a Get action for any indexed family |
 | `ef83d41` | 2026-11-15 | docs: STORAGE.md numbers, the clone-restore incident, README pointer |
 | `0b8ae43` | 2026-11-15 | chore: cut the workspace from 119 MB to ~80 MB — one on-disk copy of the font library and the artifact, a zip that omits regenerable source, repacked history |
 | `fa27d41` | 2026-11-15 | docs: PUSH-TO-GIT head + package facts after the M6.1 push |
@@ -256,7 +257,6 @@ First tasks:
 | `942b600` | 2026-11-15 | docs(uploads): add the three Module 6 Theme Studio mocks; rebuild MANIFEST |
 | `f5f0309` | 2026-11-15 | fix(module-5): restore the mock's responsive strip; verify uploads manifest |
 | `edc189b` | 2026-11-15 | docs(uploads): add the inspector-overview close-up mock; rebuild MANIFEST; restore script exec bits |
-| `78f8fab` | 2026-11-14 | feat(module-5): close the mock-fidelity audit — 25-block catalogue, mock categories, icon cards, property inspector |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

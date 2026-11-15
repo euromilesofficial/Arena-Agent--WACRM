@@ -1,6 +1,6 @@
 # Where the bytes live
 
-The workspace hit its 128 MB ceiling with five modules still to build. It is now **~46 MB**,
+The workspace hit its 128 MB ceiling with five modules still to build. It is now **52 MB**,
 and this file is the map — because the fix was not "delete things", it was "stop storing the
 same bytes twice, and stop embedding fonts nobody picks".
 
@@ -56,13 +56,15 @@ git gc --aggressive --prune=now
 before  .git 36 MB   →   after 16 MB
 ```
 
-The pack is now dominated by the 26 MB of reference mocks that must stay in Git.
+The pack is now dominated by the **26 MB of reference mocks** — which have to stay in Git
+(they are the source of truth for every module's mock, and a standing requirement). That is
+the one part of the history that cannot be shrunk without deleting them.
 
 ## Where it stands
 
 | | Before | After |
 |---|---|---|
-| whole workspace | **140.6 MB** (over the 128 MB cap) | **~46 MB** |
+| whole workspace | **140.6 MB** (over the 128 MB cap) | **52 MB** |
 | artifact | 15.5 MB | 4.8 MB |
 | zip | 31 MB | 3.6 MB |
 | clone | 57 MB | 0 |
@@ -70,3 +72,14 @@ The pack is now dominated by the 26 MB of reference mocks that must stay in Git.
 Runtime cost of the trim: the picker's default list is 50 families instead of 247, and the
 specimen/preview load 3.3 MB of font data instead of 14 MB — measurably faster first paint.
 Nothing renders differently: every family the UI can name is still embedded.
+
+## Final composition (52 MB)
+
+```
+29 MB  .git          26 MB of it the reference mocks · the rest is docs and the trimmed artifact
+20 MB  working tree  artifact 4.8 MB · font source 3.3 MB · QA captures 9.5 MB · source ~2 MB
+ 3.7 MB zip
+```
+
+The QA captures are local only — gitignored and excluded from the zip — so deleting them
+costs nothing but the screenshots; they are ~9.5 MB of the 52.
