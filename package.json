@@ -11,7 +11,10 @@
     "handover": "node scripts/handover.mjs",
     "qa": "node scripts/qa-all.mjs",
     "qa:check": "node scripts/handover.mjs --check",
-    "package": "node scripts/package.mjs"
+    "package": "node scripts/package.mjs",
+    "fonts": "node scripts/fetch-theme-fonts.mjs --budget=10.5",
+    "prebuild": "node scripts/ensure-font-data.mjs",
+    "predev": "node scripts/ensure-font-data.mjs"
   },
   "dependencies": {
     "react": "^19.2.0",
