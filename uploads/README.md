@@ -1,8 +1,8 @@
 # Reference mocks (source material for every module)
 
-The screenshots the product was specified against — the visual builder mock with the **AI Copy** chip, ten dashboard frames plus eleven Module 5 frames, the Sites & Domains / Pages / Overview / Spec dashboards, and a stray `vite.config.ts` that arrived with them.
+The screenshots the product was specified against — the visual builder mock with the **AI Copy** chip, ten dashboard frames plus eleven Module 5 frames, the Sites & Domains / Pages / Overview / Spec dashboards, a close-up of the inspector Overview (the composition flowchart), and a stray `vite.config.ts` that arrived with them.
 
-**27 images + 1 config · 4.8 MB · WebP q86.** Module 5 added 11 frames (2.1 MB as WebP). The originals were 1672×941 (a few 1536×1024) PNGs totalling **27.1 MB**; at q86 WebP they are 10.8 % of that with no visible loss — text in the builder mock, including 9 px inspector labels, is still crisp. PNG is a terrible format for flat UI at this size and every extra second of `git clone` was paying for it.
+**28 images + 1 config · 4.8 MB · WebP q86.** Module 5 added 11 frames (2.1 MB as WebP). The originals were 1672×941 (a few 1536×1024) PNGs totalling **27.1 MB**; at q86 WebP they are 10.8 % of that with no visible loss — text in the builder mock, including 9 px inspector labels, is still crisp. PNG is a terrible format for flat UI at this size and every extra second of `git clone` was paying for it.
 
 They live **in Git, and only in Git**. The working copies are marked `skip-worktree` and removed from disk: a committed file otherwise costs twice (once in `.git`, once in the tree). Reading one needs no restore at all:
 
