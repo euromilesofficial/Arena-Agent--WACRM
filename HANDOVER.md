@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-14 23:55:13 UTC · **generated against commit** `0fbd45c` · **working tree** 9 uncommitted file(s)
+**Generated** 2026-11-15 02:00:07 UTC · **generated against commit** `edc189b` · **working tree** 3 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -42,10 +42,10 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 1,146,821 B (1120 kB) · gzip 391 kB |
-| md5 | `5b74ce418e5818f60dc8345c06482a3e` |
-| sha256 (first 16) | `87dc111fefbdb3af` |
-| Built | 2026-11-14 23:55:11 |
+| Size | 1,146,834 B (1120 kB) · gzip 391 kB |
+| md5 | `a9fc8c13a3a178a0b9b3c48a04d10896` |
+| sha256 (first 16) | `39ed2c10fc9f358d` |
+| Built | 2026-11-15 02:00:05 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -86,13 +86,13 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **52 source files, 18,655 lines** of TS/TSX/CSS (26,379 lines across all tracked text files).
+Source inventory: **52 source files, 18,654 lines** of TS/TSX/CSS (26,386 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
 | `src/lib/` | 11 | 4,187 | data seams, registries, formatting, no JSX |
 | `src/components/` | 30 | 7,193 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 6 | 3,607 | one file per screen; routes are hash-based |
+| `src/views/` | 6 | 3,606 | one file per screen; routes are hash-based |
 | `src/styles/` | 1 | 3,598 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
@@ -102,7 +102,7 @@ Top files by size:
 | --- | --- |
 | `src/styles/app.css` | 3,598 |
 | `BACKEND-PLAN.md` | 1,375 |
-| `src/views/Library.tsx` | 1,071 |
+| `src/views/Library.tsx` | 1,070 |
 | `src/views/Builder.tsx` | 1,018 |
 | `src/lib/data.ts` | 974 |
 | `src/lib/library-db.ts` | 856 |
@@ -216,13 +216,15 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `0fbd45c` — docs(module-5): audit the ten block-library mocks against the build.
-- Working tree: 9 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `edc189b` — docs(uploads): add the inspector-overview close-up mock; rebuild MANIFEST; restore script exec bits.
+- Working tree: 3 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `edc189b` | 2026-11-15 | docs(uploads): add the inspector-overview close-up mock; rebuild MANIFEST; restore script exec bits |
+| `78f8fab` | 2026-11-14 | feat(module-5): close the mock-fidelity audit — 25-block catalogue, mock categories, icon cards, property inspector |
 | `0fbd45c` | 2026-11-14 | docs(module-5): audit the ten block-library mocks against the build |
 | `10530b7` | 2026-11-14 | chore(qa): write screenshots as WebP directly, drop stray PNGs |
 | `d76e638` | 2026-11-14 | feat(module-5): composition diagram on the inspector overview tab |
@@ -233,8 +235,6 @@ First tasks:
 | `a2df16c` | 2026-11-14 | noop |
 | `22c68d8` | 2026-11-14 | noop |
 | `a41df35` | 2026-11-14 | chore: the handover hook no longer manufactures a commit on every checkpoint |
-| `a572c7c` | 2026-11-14 | noop |
-| `28838cc` | 2026-11-14 | security: rotated the credential — 2-day token stored 0600, scope-probed, with an expiry warning at 40h |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
