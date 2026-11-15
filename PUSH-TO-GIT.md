@@ -3,14 +3,17 @@
 **Status: in sync.** `origin/main` = the workspace, verified by cloning the repository back out.
 
 ```
-origin/main   aca7109   ← M6.1, verified with git ls-remote after the push
-local main    aca7109   ← identical; 0 ahead / 0 behind
+origin/main   aca7109   ← M6.1 code, verified with git ls-remote after the push
+              99dac4d   ← this document on top of it
+local main    99dac4d   ← identical to the remote; 0 ahead / 0 behind
 files         152 tracked (133 source/docs/QA + 19 reference mocks on disk-less uploads/)
 tags          module-1-and-2-import · module-2-complete · module-3-complete · module-4-complete
               module-4-ai · module-5-complete · m6-theme-studio · m6-theme-studio-benchmark
               m6.1-theme-studio (5fcaff4)
 artifact      WACRM-CMS.html 15,487,295 B · md5 3b6612e18fc6f9c3e81d08b51145d25e
-package       wacrm-app.zip 32,106,180 B · 195 files · md5 86641a5643d051160964f2854d02dd6a
+package       wacrm-app.zip 32,106,576 B · 195 files · md5 9c906889a4183a287a8f069e6ada739c
+              (the zip md5 moves with every doc edit, because docs are inside it — `npm run
+              package` prints the current one; the artifact md5 is the stable one)
 ```
 
 Since then every module has landed the same way and the remote has never drifted: Module 3, Module 4 (builder + AI mode), Module 5 (block library), Module 6 (Theme Studio), the competitive benchmark, and now **Module 6.1** — the type scale, the four new colour roles, the specimen sheet, revision diffs and the 247-family Google Fonts library. The zip grew from 10.55 MB to **30.6 MB** because it now carries 14 MB of embedded font source; it is still well inside the 128 MB workspace ceiling.
