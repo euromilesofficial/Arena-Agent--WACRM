@@ -67,6 +67,24 @@ const ago = (iso: string) => {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
+/** Parsed once, synchronously, before React mounts — the store rewrites the
+    hash on boot, so reading it later is a race. */
+function bootLink(): { tab?: Tab; itab?: ITab; sel?: string } {
+  if (typeof location === "undefined") return {};
+  const raw = location.hash.replace(/^#\/?/, "");
+  const [path, qs] = raw.split("?");
+  if (path !== "layouts") return {};
+  const p = new URLSearchParams(qs ?? "");
+  const t = p.get("tab");
+  const i = p.get("itab");
+  const s2 = p.get("sel");
+  return {
+    tab: t === "layouts" || t === "templates" ? t : undefined,
+    itab: i === "overview" || i === "structure" || i === "usage" ? i : undefined,
+    sel: s2 ?? undefined
+  };
+}
+
 export function Layouts() {
   const app = useApp();
   const siteId = app.siteId === "all" ? "site_main" : app.siteId;
@@ -76,9 +94,10 @@ export function Layouts() {
   const [error, setError] = useState("");
   const [tick, setTick] = useState(0);
 
-  const [tab, setTab] = useState<Tab>("layouts");
-  const [sel, setSel] = useState<string | null>(null);
-  const [itab, setItab] = useState<ITab>("overview");
+  const boot = useRef(bootLink()).current;
+  const [tab, setTab] = useState<Tab>(boot.tab ?? "layouts");
+  const [sel, setSel] = useState<string | null>(boot.sel ?? null);
+  const [itab, setItab] = useState<ITab>(boot.itab ?? "overview");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("recent");
   const [archivedOpen, setArchivedOpen] = useState(false);
@@ -135,21 +154,6 @@ export function Layouts() {
       .catch((e: Error) => { if (!dead) { setError(e.message); setStatus("error"); } });
     return () => { dead = true; };
   }, [siteId, tick, app.demo]);
-
-  /* hash boot: `#/layouts?site=&tab=&itab=&sel=` — the same contract the
-     other screens use, so a deep link from Pages or the builder lands here */
-  useEffect(() => {
-    const raw = location.hash.replace(/^#\/?/, "");
-    const [path, qs] = raw.split("?");
-    if (path !== "layouts") return;
-    const p = new URLSearchParams(qs ?? "");
-    const t = p.get("tab");
-    const i = p.get("itab");
-    const s = p.get("sel");
-    if (t === "layouts" || t === "templates") setTab(t);
-    if (i === "overview" || i === "structure" || i === "usage") setItab(i);
-    if (s) setSel(s);
-  }, []);
 
   const layouts = payload?.layouts ?? [];
   const templates = payload?.templates ?? [];
@@ -616,7 +620,14 @@ export function Layouts() {
                   className="m7-name" value={draft.name} disabled={readOnly || draft.archived}
                   onChange={(e) => patch((d) => { d.name = e.target.value; })} aria-label="Layout name"
                 />
-                <span className="m7-scope">{draft.scope === "builtin" ? "Built in · workspace" : draft.scope === "site" ? "This site only" : "Workspace"}</span>
+                <span className="m7-pane-meta">
+                  <span className="m7-scope">{draft.scope === "builtin" ? "Built in · workspace" : draft.scope === "site" ? "This site only" : "Workspace"}</span>
+                  <button className={`m7-seo-pill ${draft.seoChecklist.every((c) => c.ok) ? "is-ok" : "is-warn"}`} onClick={() => setSeoOpen(true)}>
+                    <Icon name={draft.seoChecklist.every((c) => c.ok) ? "shield" : "alert"} size={11} />
+                    {draft.seoChecklist.every((c) => c.ok) ? "SEO-ready" : "Not SEO-ready"}
+                    <em>{draft.seoChecklist.filter((c) => c.ok).length}/{draft.seoChecklist.length}</em>
+                  </button>
+                </span>
               </div>
               <textarea
                 className="m7-desc" value={draft.desc} rows={3} disabled={readOnly} aria-label="Description"
@@ -643,16 +654,6 @@ export function Layouts() {
                   <p>{draft.slot.seed.length} seed blocks · {draft.slot.policy.allow.length || 20} allowed types · max {draft.slot.policy.maxBlocks}</p>
                 </div>
                 {regionRow("footer", "Global Footer", draft.footer, (v) => setVariant("footer", v), () => toggleRef("footer"))}
-              </div>
-
-              <div className="m7-sec is-compact">
-                <div className="m7-sec-h"><h4>Readiness</h4></div>
-                <button className="m7-seo" onClick={() => setSeoOpen(true)}>
-                  <Icon name={draft.seoChecklist.every((c) => c.ok) ? "shield" : "alert"} size={13} />
-                  <span>{draft.seoChecklist.every((c) => c.ok) ? "SEO-ready" : "Not SEO-ready"}</span>
-                  <em>{draft.seoChecklist.filter((c) => c.ok).length}/{draft.seoChecklist.length}</em>
-                </button>
-                <div className="m7-kv"><span>{usage.length} page{usage.length === 1 ? "" : "s"} applied · r{draft.rev}{dirty ? " unsaved" : ""}</span><b>{ago(draft.updatedAt)}</b></div>
               </div>
 
               <div className="m7-insp-foot">
@@ -730,6 +731,7 @@ export function Layouts() {
             </div>
           ) : itab === "usage" && tab === "layouts" && draft ? (
             <div className="m7-pane">
+              <div className="m7-kv m7-usage-sub"><span>r{draft.rev} · {dirty ? "unsaved changes" : `saved ${ago(draft.updatedAt)}`} · by {draft.updatedBy}</span><b>{draft.seoChecklist.every((c) => c.ok) ? "SEO-ready" : "SEO incomplete"}</b></div>
               <div className="m7-usage-head">
                 <div><b>{usage.length}</b><span>pages bound</span></div>
                 <div><b>{usage.filter((u) => u.status === "published").length}</b><span>published</span></div>
