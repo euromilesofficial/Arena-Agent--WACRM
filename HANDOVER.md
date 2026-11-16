@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-16 06:40:34 UTC · **generated against commit** `c9cb4cf` · **working tree** 23 uncommitted file(s)
+**Generated** 2026-11-16 13:09:41 UTC · **generated against commit** `ea0cb5f`
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -49,7 +49,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 5,036,263 B (4918 kB) · gzip 2968 kB |
 | md5 | `1b7c1669307b210160e52a57ae482a91` |
 | sha256 (first 16) | `f0b3bc2b8f3671d0` |
-| Built | 2026-11-16 06:40:33 |
+| Built | 2026-11-16 13:09:40 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -62,27 +62,7 @@ npm run dev        # http://localhost:5173 while developing
 
 ## 4. Verification (last recorded run)
 
-Recorded 2026-11-16 06:38:34 UTC · node v20.20.2. Re-run with `npm run qa`.
-
-| Suite | Passed | Failed | Time | Covers |
-| --- | --- | --- | --- | --- |
-| `qa_ai.py` | 60 | 0 | 36.7 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
-| `qa_theme.py` | 241 | 0 | 115.5 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
-| `qa_builder.py` | 98 | 0 | 42.5 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
-| `qa_states_m4.py` | 47 | 0 | 43.4 s | M4 state matrix |
-| `qa_pages.py` | 106 | 0 | 124.4 s | M3 registry, tree, inspector, modals, deep links |
-| `qa_states_m3.py` | 40 | 0 | 56.8 s | M3 state matrix |
-| `qa_module2.py` | 48 | 0 | 35.2 s | M2 layout, geometry, data consistency |
-| `qa_states_m1.py` | 39 | 0 | 45.6 s | M1 state matrix |
-| `qa_flows.py` | 38 | 0 | 55.2 s | cross-module interaction script |
-| `qa_react.py` | — | 0 | 4.4 s | full-page render, console clean, no overflow |
-| `qa_library.py` | 90 | 0 | 54.9 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
-| `qa_layouts.py` | 99 | 0 | 34.5 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
-| `qa_states_m7.py` | 38 | 0 | 44.4 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
-| `qa_import.py` | 65 | 0 | 34.4 s | prebuilt browser (14 kits, search, category, provenance), HTML import report, script non-execution, dropped chrome, brand hints, bad file refusal, JSON bundle + page-builder project, unknown block naming, mapping editor + retype undo, export round trip, builder Save-as-template |
-| `qa_m7_links.py` | 33 | 0 | 20.7 s | revision drawer (list, current marker, guarded restore, restore-as-new-revision, empty state), M3 resolved-shell read-out and deep link, M5 block usage counts, M8 navigation source card |
-
-> All recorded suites are green.
+No run recorded yet. `npm run qa` executes every suite, parses the tallies and writes `qa/last-run.json`.
 
 Host prerequisite on a bare Linux container (Chromium will not start without it):
 
@@ -96,7 +76,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **70 source files, 28,784 lines** of TS/TSX/CSS (44,175 lines across all tracked text files).
+Source inventory: **70 source files, 28,784 lines** of TS/TSX/CSS (44,199 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -104,7 +84,7 @@ Source inventory: **70 source files, 28,784 lines** of TS/TSX/CSS (44,175 lines 
 | `src/components/` | 39 | 10,294 | reusable UI: shell, ui kit, charts, and per-module parts |
 | `src/views/` | 8 | 6,232 | one file per screen; routes are hash-based |
 | `src/styles/` | 1 | 4,759 | one tokenised stylesheet (design system) |
-| `qa/` | 90 | — | 90 WebP captures of audited states (evidence, not fixtures) |
+| `qa/` | 7 | — | 7 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
@@ -242,25 +222,25 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `c9cb4cf` — M7 import: 14 MIT prebuilt starters in-repo + in the artefact, HTML/JSON import with sanitised extraction and provenance, JSON export round trip, builder Save-as-template now writes the M7 registry; 14 suites · 999 assertions green.
-- Working tree: 23 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `ea0cb5f` — STORAGE: measured budget after the history prune, archive reference, and the rules that keep the snapshot under the ceiling.
+- Working tree: clean.
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
-| `c9cb4cf` | 2026-11-16 | M7 import: 14 MIT prebuilt starters in-repo + in the artefact, HTML/JSON import with sanitised extraction and provenance, JSON export round trip, builder Save-as-template now writes the M7 registry; 14 suites · 999 assertions green |
-| `3f93deb` | 2026-11-16 | M7 polish: readiness pill, working-copy canvas frame, synchronous deep-link boot, seed-block menu; 13/13 suites · 944 assertions green |
-| `bb7b9a8` | 2026-11-16 | M7 build: Layouts & Templates screen, layout-db store, slot policy, 12 templates, bulk reassign, preflight; M3/M4/M6 interlinks; 2 new QA suites (137 checks) |
-| `7e977bd` | 2026-11-15 | M7 review: spec persisted, 9-CMS benchmark, 22 findings + decisions; six M7 mocks added as WebP |
-| `949b66f` | 2026-11-15 | M6.2: ten presets, real font downloads, complete theme bundle, builder canvas themed by the site theme |
-| `c413491` | 2026-11-15 | docs: README rewritten as the complete project guide — install, architecture, all six modules, testing, git, backend contract, roadmap, troubleshooting; START-HERE brought in line |
-| `ec90c97` | 2026-11-15 | docs: final workspace numbers after the slim pass (52 MB, history 29 MB, mocks 26 MB) |
-| `b48f9dd` | 2026-11-15 | perf: top-50 font set, one repository, workspace 140.6 MB → 46 MB; picker gains a Get action for any indexed family |
-| `ef83d41` | 2026-11-15 | docs: STORAGE.md numbers, the clone-restore incident, README pointer |
-| `0b8ae43` | 2026-11-15 | chore: cut the workspace from 119 MB to ~80 MB — one on-disk copy of the font library and the artifact, a zip that omits regenerable source, repacked history |
-| `fa27d41` | 2026-11-15 | docs: PUSH-TO-GIT head + package facts after the M6.1 push |
-| `99dac4d` | 2026-11-15 | docs: PUSH-TO-GIT and ROLLBACK reflect the M6.1 push (aca7109, 9 tags, 152 files) |
+| `ea0cb5f` | 2026-11-16 | STORAGE: measured budget after the history prune, archive reference, and the rules that keep the snapshot under the ceiling |
+| `b20d165` | 2026-11-16 | space: budget report (scripts/space.mjs), guarded history prune with remote archive (scripts/prune-history.mjs), QA captures cleared after runs, 2 MB less per checkpoint |
+| `75d4113` | 2026-11-16 | M7 completion pass: revision-history drawer with real structure restore, per-block mapping editor (import + prebuilt, with undo), and the three open interlinks closed (M3 resolved-shell read-out + deep link, M5 block usage counts, M8 nav source); hashchange deep links; 15 suites · 1042 assertions green |
+| `de734ba` | 2026-11-16 | M7 import: 14 MIT prebuilt starters in-repo + in the artefact, HTML/JSON import with sanitised extraction and provenance, JSON export round trip, builder Save-as-template now writes the M7 registry; 14 suites · 999 assertions green |
+| `2422169` | 2026-11-16 | M7 polish: readiness pill, working-copy canvas frame, synchronous deep-link boot, seed-block menu; 13/13 suites · 944 assertions green |
+| `072ceb0` | 2026-11-16 | M7 build: Layouts & Templates screen, layout-db store, slot policy, 12 templates, bulk reassign, preflight; M3/M4/M6 interlinks; 2 new QA suites (137 checks) |
+| `9cfc48f` | 2026-11-15 | M7 review: spec persisted, 9-CMS benchmark, 22 findings + decisions; six M7 mocks added as WebP |
+| `311d580` | 2026-11-15 | M6.2: ten presets, real font downloads, complete theme bundle, builder canvas themed by the site theme |
+| `abe3d55` | 2026-11-15 | docs: README rewritten as the complete project guide — install, architecture, all six modules, testing, git, backend contract, roadmap, troubleshooting; START-HERE brought in line |
+| `163fd4d` | 2026-11-15 | docs: final workspace numbers after the slim pass (52 MB, history 29 MB, mocks 26 MB) |
+| `a6171ff` | 2026-11-15 | perf: top-50 font set, one repository, workspace 140.6 MB → 46 MB; picker gains a Get action for any indexed family |
+| `4e6183a` | 2026-11-15 | docs: STORAGE.md numbers, the clone-restore incident, README pointer |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
