@@ -80,15 +80,15 @@ Read in this order
   ROLLBACK.md             tags and revert recipes
   PUSH-TO-GIT.md          the exact remote state, with hashes
 
-QA — 14 suites, 999 assertions, against the built file
+QA — 15 suites, 1042 assertions, against the built file
 -----------------------------------------------------
   source scripts/qa-env.sh     (once per shell; installs Chromium's libs in /tmp)
   npm run qa                   → qa/last-run.json + regenerated HANDOVER.md
 
   qa_theme.py 241 · qa_pages.py 106 · qa_layouts.py 99 · qa_builder.py 98
-  qa_library.py 90 · qa_ai.py 60 · qa_import.py 55 · qa_module2.py 48
+  qa_library.py 90 · qa_import.py 65 · qa_ai.py 60 · qa_module2.py 48
   qa_states_m4.py 47 · qa_states_m3.py 40 · qa_states_m1.py 39
-  qa_states_m7.py 38 · qa_flows.py 38 · qa_react.py (smoke)
+  qa_states_m7.py 38 · qa_flows.py 38 · qa_m7_links.py 33 · qa_react.py (smoke)
 
 Module status
 -------------

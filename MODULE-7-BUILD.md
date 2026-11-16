@@ -5,7 +5,7 @@ findings, 16 decisions), then built. This is what actually shipped, how it is wi
 other modules, and what is honestly still missing.
 
 Screen: `#/layouts?site=&tab=&itab=&sel=`. QA: `qa_layouts.py` (99) + `qa_states_m7.py` (38) +
-`qa_import.py` (55).
+`qa_import.py` (65) + `qa_m7_links.py` (33).
 
 ---
 
@@ -97,15 +97,14 @@ templates · preflight clean and dirty · hidden-region-without-a-reason warning
 - **Import reads structure and copy, not design.** CSS, fonts, background images and
   JavaScript are discarded by contract. There is no CSS-to-token mapper, no image
   downloader and no style importer — the Theme Studio owns those tokens.
-- **No mapping editor.** The extractor decides the block per section (hero, grid, table,
-  FAQ, testimonials, CTA, form, list, heading + text) and reports what it chose. A user
-  cannot remap a section to a different block type inside the dialog; they import, then edit
-  in the builder.
+- ~~No mapping editor.~~ **Built** — see §7.2: every row in the prebuilt browser and the
+  import dialog can be retyped before it lands.
 - **No ZIP import.** One file at a time (.html, .htm, .json), 400 KB, 40 blocks.
 - **No scheduling or approval on bindings.** A reassignment is a draft change; publishing
   stays where it already lived — Modules 1 and 3.
-- **`Draft Changes` is a count of dirty layouts plus workspace templates**, not a diff
-  viewer. There is no per-property diff for a layout revision yet.
+- **`Draft Changes` is a count of dirty layouts plus workspace templates**, not a
+  per-property diff. The revision drawer shows what each step changed about the *block
+  count* and restores a whole structure; it does not diff two revisions field by field.
 - **Locale-neutral copy.** The module is written without a locale assumption, and the
   seed content is sample data — not verified fact about any real institution.
 
@@ -169,3 +168,52 @@ content — it is never presented as verified fact (`qa_import.py` B10, B13).
 revision, templates: [{ name, intent, layout, blocks: [{ type, variant, props }] }] }`.
 `qa_import.py` E1–E5 downloads a real file, parses it in Python, re-imports it through the
 dialog and asserts the block count survives.
+
+## 7. After the audit: mapping, history, and the three open interlinks
+
+The audit (`MODULE-7-AUDIT.md`) named four gaps. All four are now built.
+
+### 7.1 Revision history — the drawer that replaced a fake Revert
+
+`Revert` used to bump the revision counter and toast *"the previous structure was restored"*
+without restoring anything. Now:
+
+- `StructureSnapshot` is stored on every write (`structureOf`) — region refs, slot seed +
+  policy, or template blocks, plus the block count.
+- Seeded history entries predate stored structures; rather than leave them dead they are
+  back-filled with the structure the seed describes, because that is what they claim.
+- `LayoutsAPI.history(kind, id)` returns `RevisionEntry[]` with `restorable`, `isCurrent`
+  and a block-count `delta` against the entry below it.
+- `LayoutsAPI.revert(kind, id, rev)` restores the stored structure **as a new revision**;
+  it refuses with a reason when the entry has no snapshot or the layout is archived.
+- `HistoryModal` lists them, marks the current draft, guards restore behind an inline
+  confirm, and says in its footer that restoring never rewrites in place.
+- Both layouts and templates have the entry point in the inspector footer.
+
+Proof: `qa_m7_links.py` A1–A14 (34 → 15 assertions on restore semantics) and B1–B3.
+
+### 7.2 Mapping editor
+
+Retype any block — in the import dialog and in the prebuilt browser — before it lands.
+`remapBlock()` keeps the props whose key exists on the target type (coercing numbers and
+booleans to text where the target wants a string) and falls back to that type's defaults for
+the rest, so nothing silently keeps a field the new type cannot render. Retyped rows are
+highlighted and counted; the prebuilt browser can undo its edits back to the curated mapping.
+
+Proof: `qa_import.py` H1–H10, including the round trip through Structure after saving.
+
+### 7.3 The three open interlinks, closed
+
+| Interlink | What it does now | Proof |
+|---|---|---|
+| **M3 → M7** | the page inspector names the *resolved* layout, says whether the page follows the website default or is pinned, and shows the header variant with its link count; the variant name deep-links to that layout | `qa_m7_links.py` C1–C6 |
+| **M5 → M7** | every native block card shows `nL · nT` — layouts and templates that actually use it — and the inspector lists layout seeds, templates and chrome variants separately | `qa_m7_links.py` D1–D4 |
+| **M8 ← M7** | Module 8 is not built, so its placeholder now shows the navigation it will inherit: the header variant the site default resolves to, its links in order, and a deep link to the one place they can be edited today | `qa_m7_links.py` E1–E5 |
+
+The M8 card is deliberately labelled as the current source, not as a finished menu editor —
+the module is still a placeholder and the copy says so.
+
+In-app deep links also got a fix found by these tests: `#/layouts?tab=&itab=&sel=` arriving as
+a **hash change** (from Module 3) never reached the module-scope boot parse, so the selection
+was dropped. The screen now listens for `hashchange` and applies whatever parameters are
+present, idempotently, because the store rewrites the hash itself.

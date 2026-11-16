@@ -108,6 +108,19 @@ export interface PageTemplateDoc {
   origin?: TemplateOrigin;
 }
 
+/** The part of a layout or template a revision can actually restore. */
+export interface StructureSnapshot {
+  name: string;
+  desc: string;
+  announcement?: RegionRef;
+  header?: RegionRef;
+  footer?: RegionRef;
+  slot?: { seed: BlockNode[]; policy: SlotPolicy };
+  allowedCount?: number;
+  blocks?: BlockNode[];
+  blocks_n?: number;
+}
+
 export interface LayoutRevision {
   id: string;
   targetId: string;
@@ -116,7 +129,16 @@ export interface LayoutRevision {
   at: string;
   by: string;
   summary: string;
-  snapshot: unknown;
+  /** null only for entries recorded before structure history existed */
+  snapshot: StructureSnapshot | null;
+}
+
+/** What the history drawer renders. */
+export interface RevisionEntry extends LayoutRevision {
+  restorable: boolean;
+  isCurrent: boolean;
+  /** +n −n on the block count against the entry below it */
+  delta: string;
 }
 
 export interface Kpis { layouts: number; templates: number; pagesAssigned: number; draftChanges: number }
@@ -369,6 +391,14 @@ function get(): Db {
         { id: "rev_seed_4", targetId: "tpl_lead-generation", kind: "template", rev: 1, at: "2026-11-02T10:20:00Z", by: "Priya Nair", summary: "Created from Product Landing", snapshot: null }
       ]
     };
+    /* the seeded history predates stored structures; the seed *is* the structure
+       those revisions describe, so record it rather than pretending they cannot
+       be restored. */
+    db.revisions = db.revisions.map((r) => {
+      if (r.snapshot) return r;
+      const target = r.kind === "layout" ? db!.layouts.find((l) => l.id === r.targetId) : db!.templates.find((t) => t.id === r.targetId);
+      return target ? { ...r, snapshot: structureOf(r.kind, target) } : r;
+    });
   }
   return db;
 }
@@ -516,6 +546,69 @@ export function frameOf(l: LayoutDraft): LayoutFrame {
   };
 }
 
+/** How much of the workspace each block type is actually used in.
+    Module 5 reads this so the library can rank by real usage, not by taste. */
+export interface BlockUsage { layouts: number; templates: number; chrome: number; total: number }
+
+export function blockUsage(): Record<string, BlockUsage> {
+  const d = get();
+  const out: Record<string, BlockUsage> = {};
+  const bump = (type: string, field: "layouts" | "templates" | "chrome") => {
+    if (!out[type]) out[type] = { layouts: 0, templates: 0, chrome: 0, total: 0 };
+    out[type][field] += 1;
+    out[type].total += 1;
+  };
+  const seenL = new Map<string, Set<string>>();
+  const seenT = new Map<string, Set<string>>();
+  for (const l of d.layouts) {
+    for (const b of l.slot.seed) {
+      if (!seenL.has(b.type)) seenL.set(b.type, new Set());
+      if (seenL.get(b.type)!.has(l.id)) continue;
+      seenL.get(b.type)!.add(l.id);
+      bump(b.type, "layouts");
+    }
+  }
+  for (const t of d.templates) {
+    for (const b of t.blocks) {
+      if (!seenT.has(b.type)) seenT.set(b.type, new Set());
+      if (seenT.get(b.type)!.has(t.id)) continue;
+      seenT.get(b.type)!.add(t.id);
+      bump(b.type, "templates");
+    }
+  }
+  for (const r of d.regions) for (const v of r.variants) for (const b of v.blocks) bump(b.type, "chrome");
+  return out;
+}
+
+/** The navigation M8 will own: the header variant the resolved layout actually points at. */
+export interface HeaderNav {
+  layoutId: string | null;
+  layoutName: string;
+  variantId: string | null;
+  variantName: string;
+  items: string[];
+  visible: boolean;
+  hideReason?: string;
+}
+
+export function headerNavFor(pageLayout: string): HeaderNav {
+  const id = resolveLayoutId(pageLayout);
+  const l = get().layouts.find((x) => x.id === id) ?? null;
+  if (!l) return { layoutId: null, layoutName: "No layout", variantId: null, variantName: "—", items: [], visible: false };
+  const reg = get().regions.find((r) => r.id === l.header.regionId);
+  const v = reg?.variants.find((x) => x.id === l.header.variantId) ?? null;
+  const props = (v?.blocks[0]?.props ?? {}) as { nav?: string[] };
+  return {
+    layoutId: l.id,
+    layoutName: l.name,
+    variantId: v?.id ?? null,
+    variantName: v?.name ?? "—",
+    items: l.header.visible ? (props.nav ?? []) : [],
+    visible: l.header.visible,
+    hideReason: l.header.hideReason
+  };
+}
+
 export function frameFor(_siteId: string, pageLayout: string): LayoutFrame {
   const l = get().layouts.find((x) => x.id === resolveLayoutId(pageLayout));
   if (!l) {
@@ -538,10 +631,28 @@ const hash = (v: unknown) => {
   return h.toString(16).slice(0, 6);
 };
 
+function structureOf(kind: "layout" | "template", target: LayoutDraft | PageTemplateDoc): StructureSnapshot {
+  if (kind === "layout") {
+    const l = target as LayoutDraft;
+    return {
+      name: l.name, desc: l.desc,
+      announcement: clone(l.announcement), header: clone(l.header), footer: clone(l.footer),
+      slot: { seed: clone(l.slot.seed), policy: clone(l.slot.policy) },
+      allowedCount: l.slot.policy.allow.length || ALL.length,
+      blocks_n: l.slot.seed.length
+    };
+  }
+  const t = target as PageTemplateDoc;
+  return { name: t.name, desc: t.desc, blocks: clone(t.blocks), blocks_n: t.blocks.length };
+}
+
 function snapshot(target: LayoutDraft | PageTemplateDoc, kind: "layout" | "template", summary: string) {
   const d = get();
   d.seq += 1;
-  d.revisions.unshift({ id: `rev_${d.seq}`, targetId: target.id, kind, rev: target.rev, at: now(), by: "Priya Nair", summary, snapshot: null });
+  d.revisions.unshift({
+    id: `rev_${d.seq}`, targetId: target.id, kind, rev: target.rev, at: now(), by: "Priya Nair",
+    summary, snapshot: structureOf(kind, target)
+  });
 }
 
 export const LayoutsAPI = {
@@ -794,21 +905,63 @@ export const LayoutsAPI = {
     return clone(touched);
   },
 
-  /** revert to a stored revision (structure snapshots are kept lazily) */
-  async revert(kind: "layout" | "template", id: string, rev: number): Promise<void> {
-    await wait(220, 420);
+  /** every recorded revision of one target, newest first, with what can be restored */
+  async history(kind: "layout" | "template", id: string): Promise<RevisionEntry[]> {
+    await wait(160, 340);
     const d = get();
+    const live = kind === "layout" ? d.layouts.find((x) => x.id === id) : d.templates.find((x) => x.id === id);
+    const currentRev = live ? live.rev : -1;
+    const rows = d.revisions.filter((r) => r.targetId === id && r.kind === kind);
+    return rows.map((r, i) => {
+      const prev = rows[i + 1];
+      const a = r.snapshot?.blocks_n ?? 0;
+      const b = prev?.snapshot?.blocks_n ?? 0;
+      const diff = a - b;
+      return {
+        ...clone(r),
+        restorable: !!r.snapshot,
+        isCurrent: r.rev === currentRev,
+        delta: i === rows.length - 1 ? `${a} blocks` : diff === 0 ? "no block change" : diff > 0 ? `+${diff} blocks` : `${diff} blocks`
+      };
+    });
+  },
+
+  /** restore the structure a revision recorded — as a new revision, never in place */
+  async revert(kind: "layout" | "template", id: string, rev: number): Promise<void> {
+    await wait(240, 460);
+    const d = get();
+    const entry = d.revisions.find((r) => r.targetId === id && r.kind === kind && r.rev === rev);
+    if (!entry) throw new Err("E_MISSING", `Revision ${rev} is not in this record's history.`);
+    if (!entry.snapshot) throw new Err("E_MISSING", `Revision ${rev} has no stored structure, so there is nothing to restore.`);
+    const snap = entry.snapshot;
+
     if (kind === "layout") {
       const l = d.layouts.find((x) => x.id === id);
       if (!l) throw new Err("E_MISSING", "Layout not found.");
-      d.layouts = d.layouts.map((x) => x.id === id ? { ...x, rev: x.rev + 1, dirty: true, updatedAt: now() } : x);
-      snapshot({ ...l, rev: l.rev + 1 }, "layout", `Reverted to revision ${rev}`);
+      if (l.archived) throw new Err("E_POLICY", "Restore the layout before rewinding its structure.");
+      const next: LayoutDraft = {
+        ...l, rev: l.rev + 1, dirty: true, updatedAt: now(), updatedBy: "Priya Nair",
+        name: snap.name, desc: snap.desc,
+        announcement: snap.announcement ?? l.announcement,
+        header: snap.header ?? l.header,
+        footer: snap.footer ?? l.footer,
+        slot: snap.slot
+          ? { ...clone(snap.slot), allowedCount: snap.slot.policy.allow.length || ALL.length }
+          : l.slot
+      };
+      d.layouts = d.layouts.map((x) => x.id === id ? next : x);
+      snapshot(next, "layout", `Restored the structure recorded at r${rev}`);
       return;
     }
+
     const t = d.templates.find((x) => x.id === id);
     if (!t) throw new Err("E_MISSING", "Template not found.");
-    d.templates = d.templates.map((x) => x.id === id ? { ...x, rev: x.rev + 1, updatedAt: now() } : x);
-    snapshot({ ...t, rev: t.rev + 1 }, "template", `Reverted to revision ${rev}`);
+    const next: PageTemplateDoc = {
+      ...t, rev: t.rev + 1, updatedAt: now(), updatedBy: "Priya Nair",
+      name: snap.name, desc: snap.desc, blocks: snap.blocks ? clone(snap.blocks) : t.blocks
+    };
+    d.templates = d.templates.map((x) => x.id === id ? next : x);
+    snapshot(next, "template", `Restored the structure recorded at r${rev}`);
   },
 
   /** the picker list Module 3 and Module 4 both read */

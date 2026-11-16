@@ -27,6 +27,22 @@ import { KIT_CATEGORIES, KIT_COUNT, PREBUILT_SOURCE, kitContent, listKits } from
 
 const typeLabel = (t: string): string => (t in REGISTRY ? REGISTRY[t as BlockType].label : t);
 
+/** Retype a block without losing what it already carries: props whose key exists
+    on the target type are kept, everything else falls back to that type's defaults. */
+export function remapBlock(node: BlockNode, type: BlockType): BlockNode {
+  if (node.type === type) return node;
+  const base = REGISTRY[type].defaults();
+  const from = (node.props ?? {}) as Record<string, unknown>;
+  const props: Record<string, unknown> = { ...(base.props as Record<string, unknown>) };
+  for (const [k, v] of Object.entries(from)) {
+    if (!(k in props)) continue;
+    const a = props[k];
+    if (typeof a === typeof v) props[k] = v;
+    else if (typeof a === "string" && (typeof v === "number" || typeof v === "boolean")) props[k] = String(v);
+  }
+  return { ...base, id: node.id, style: node.style, variant: base.variant, props } as BlockNode;
+}
+
 function Mapped({ report }: { report: ImportReport }) {
   return (
     <div className="m7-imp-mapped">
@@ -50,7 +66,14 @@ function Notes({ notes }: { notes: ImportReport["notes"] }) {
   );
 }
 
-function BlockList({ blocks }: { blocks: BlockNode[] }) {
+const BLOCK_TYPES = Object.keys(REGISTRY) as BlockType[];
+
+function BlockList({ blocks, onChange, changed }: {
+  blocks: BlockNode[];
+  /** when given, every row gets a retype select (the mapping editor) */
+  onChange?: (i: number, type: BlockType) => void;
+  changed?: number[];
+}) {
   return (
     <div className="m7-imp-blocks">
       {blocks.map((b, i) => {
@@ -58,10 +81,25 @@ function BlockList({ blocks }: { blocks: BlockNode[] }) {
         const items = Array.isArray(p.items) ? p.items : null;
         const label = p.heading || p.title || p.text || p.body
           || (items ? `${items.length} ${b.type === "faq" ? "questions" : b.type === "pricing" ? "packages" : "items"}` : "");
+        const edited = changed?.includes(i);
         return (
-          <div key={b.id} className="m7-imp-block">
+          <div key={b.id} className={`m7-imp-block ${edited ? "is-edited" : ""}`}>
             <span className="m7-imp-i">{i + 1}</span>
-            <span className="m7-imp-type">{typeLabel(b.type)}</span>
+            {onChange ? (
+              <label className="m7-imp-map">
+                <span className="sr">{`Block ${i + 1} type`}</span>
+                <select
+                  value={b.type}
+                  aria-label={`Block ${i + 1} type`}
+                  onChange={(e) => onChange(i, e.target.value as BlockType)}
+                >
+                  {BLOCK_TYPES.map((t) => <option key={t} value={t}>{REGISTRY[t].label}</option>)}
+                </select>
+                <Icon name="chevDown" size={10} />
+              </label>
+            ) : (
+              <span className="m7-imp-type">{typeLabel(b.type)}</span>
+            )}
             <span className="m7-imp-copy">{String(label).slice(0, 90) || "—"}</span>
           </div>
         );
@@ -84,14 +122,27 @@ export function PrebuiltModal({ siteId, onClose, onDone }: {
   const [sel, setSel] = useState<string>(kits[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [added, setAdded] = useState<string[]>([]);
+  /* retyped blocks, per kit — the library is curated, but the mapping is the user's call */
+  const [mapped, setMapped] = useState<Record<string, BlockNode[]>>({});
+  const [edited, setEdited] = useState<Record<string, number[]>>({});
 
   const rows = kits.filter((k) => (cat === "All" || k.category === cat) && (!q || `${k.name} ${k.category}`.toLowerCase().includes(q.toLowerCase())));
   const kit = kits.find((k) => k.id === sel) ?? rows[0] ?? kits[0];
   const content = kit ? kitContent(kit.id) : null;
+  const shown = kit ? mapped[kit.id] ?? content?.blocks ?? [] : [];
+  const editedRows = kit ? edited[kit.id] ?? [] : [];
+  const remap = (i: number, type: BlockType) => {
+    if (!kit) return;
+    const cur = mapped[kit.id] ?? content?.blocks ?? [];
+    const next = cur.map((b, j) => (j === i ? remapBlock(b, type) : b));
+    setMapped((m) => ({ ...m, [kit.id]: next }));
+    setEdited((m) => ({ ...m, [kit.id]: Array.from(new Set([...(m[kit.id] ?? []), i])) }));
+  };
 
   const add = async () => {
     if (!kit || !content) return;
     setBusy(true);
+    const blocks = mapped[kit.id] ?? content.blocks;
     try {
       const origin: TemplateOrigin = {
         kind: "prebuilt",
@@ -100,12 +151,12 @@ export function PrebuiltModal({ siteId, onClose, onDone }: {
         license: kit.license,
         commit: kit.commit
       };
-      const made = await LayoutsAPI.importTemplates(siteId, [{ name: kit.name, blocks: content.blocks, intent: kit.category, origin }]);
+      const made = await LayoutsAPI.importTemplates(siteId, [{ name: kit.name, blocks, intent: kit.category, origin }]);
       setAdded((cur) => [...cur, kit.id]);
       app.toast({
         type: "success",
         title: `${made[0].name} added to this workspace`,
-        sub: `${content.blocks.length} blocks extracted from the ${kit.license} starter · demo copy, not verified fact.`,
+        sub: `${blocks.length} blocks extracted from the ${kit.license} starter${editedRows.length ? ` · ${editedRows.length} retyped by you` : ""} · demo copy, not verified fact.`,
         action: { label: "Open the template", onClick: () => onDone(made) }
       });
       onDone(made);
@@ -170,7 +221,15 @@ export function PrebuiltModal({ siteId, onClose, onDone }: {
                 </div>
                 <Pill tone="grey">{kit.license}</Pill>
               </div>
-              <BlockList blocks={content.blocks} />
+              <div className="m7-imp-mapbar">
+                <span><Icon name="columns" size={11} />{kit.sections} sections → {shown.length} blocks · retype any block before adding</span>
+                {editedRows.length > 0 && (
+                  <button onClick={() => { setMapped((m) => { const c = { ...m }; delete c[kit.id]; return c; }); setEdited((m) => ({ ...m, [kit.id]: [] })); }}>
+                    <Icon name="refresh" size={10} />Undo {editedRows.length} retype{editedRows.length === 1 ? "" : "s"}
+                  </button>
+                )}
+              </div>
+              <BlockList blocks={shown} onChange={remap} changed={editedRows} />
               <div className="m7-pre-report">
                 <Mapped report={content.report} />
                 <Notes notes={content.report.notes.slice(0, 3)} />
@@ -207,13 +266,14 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
   const [layoutId, setLayoutId] = useState(layouts.find((l) => l.isDefault)?.id ?? layouts[0]?.id ?? "");
   const [report, setReport] = useState<ImportReport | null>(null);
   const [parsed, setParsed] = useState<{ name: string; blocks: BlockNode[] }[]>([]);
+  const [edited, setEdited] = useState<number[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const parse = (source: string, kind: Mode, sourceName = "") => {
-    setError(""); setReport(null); setParsed([]);
+    setError(""); setReport(null); setParsed([]); setEdited([]);
     try {
       if (kind === "html") {
         const res = importHtml(source, { name: sourceName.replace(/\.html?$/i, "") });
@@ -247,6 +307,11 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
     const body = await file.text();
     setText(body);
     parse(body, kind, file.name);
+  };
+
+  const remap = (i: number, type: BlockType) => {
+    setParsed((p) => p.map((doc, di) => di !== 0 ? doc : { ...doc, blocks: doc.blocks.map((b, j) => (j === i ? remapBlock(b, type) : b)) }));
+    setEdited((e) => Array.from(new Set([...e, i])));
   };
 
   const save = async () => {
@@ -336,8 +401,16 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
           <Mapped report={report} />
           <div className="m7-imp-grid">
             <div>
-              <div className="m7-sec-h"><h4>What will land</h4><span>{parsed.reduce((s, p) => s + p.blocks.length, 0)} blocks</span></div>
-              {parsed.slice(0, 2).map((p) => <BlockList key={p.name} blocks={p.blocks} />)}
+              <div className="m7-sec-h">
+                <h4>What will land</h4>
+                <span>{parsed.reduce((s, p) => s + p.blocks.length, 0)} blocks{edited.length ? ` · ${edited.length} retyped` : ""}</span>
+              </div>
+              {parsed.slice(0, 2).map((p, di) => (
+                <BlockList key={p.name} blocks={p.blocks} onChange={di === 0 ? remap : undefined} changed={di === 0 ? edited : []} />
+              ))}
+              <p className="m7-imp-hint">
+                <Icon name="info" size={10} />Retype any block: fields both types share are kept, the rest fall back to that block's own defaults.
+              </p>
             </div>
             <div>
               <div className="m7-sec-h"><h4>What is dropped, and why</h4></div>

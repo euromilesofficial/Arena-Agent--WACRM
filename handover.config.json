@@ -303,8 +303,14 @@
       {
         "file": "qa_import.py",
         "name": "Module 7 — import & prebuilt library",
-        "assertions": 55,
-        "covers": "prebuilt browser (14 kits, search, category, provenance), HTML import report, script non-execution, dropped chrome, brand hints, bad file refusal, JSON bundle + page-builder project, unknown block naming, export round trip"
+        "assertions": 65,
+        "covers": "prebuilt browser (14 kits, search, category, provenance), HTML import report, script non-execution, dropped chrome, brand hints, bad file refusal, JSON bundle + page-builder project, unknown block naming, mapping editor + retype undo, export round trip, builder Save-as-template"
+      },
+      {
+        "file": "qa_m7_links.py",
+        "name": "Module 7 — revision history & interlinks",
+        "assertions": 33,
+        "covers": "revision drawer (list, current marker, guarded restore, restore-as-new-revision, empty state), M3 resolved-shell read-out and deep link, M5 block usage counts, M8 navigation source card"
       }
     ]
   },
