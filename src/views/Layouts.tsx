@@ -19,6 +19,7 @@ import {
   PolicyModal, PreflightModal, PreviewModal, ReassignModal, RegionDrawer, SeoModal, usageLabel
 } from "@/components/layouts/LayoutModals";
 import { ImportModal, PrebuiltModal, exportTemplate } from "@/components/layouts/ImportModals";
+import { HistoryModal } from "@/components/layouts/HistoryModal";
 import { KIT_COUNT, PREBUILT_SOURCE } from "@/lib/prebuilt-db";
 import {
   LayoutsAPI, frameOf, mode as LayoutsMode, usageRows,
@@ -126,6 +127,28 @@ export function Layouts() {
   const [policyOpen, setPolicyOpen] = useState(false);
   const [reassignSel, setReassignSel] = useState<string[] | null>(null);
   const [createPageFor, setCreatePageFor] = useState<PageTemplateDoc | null>(null);
+  const [historyFor, setHistoryFor] = useState<{ kind: "layout" | "template"; id: string; name: string } | null>(null);
+
+  /* In-app deep links (Module 3 → this screen) arrive as a hash change, not a
+     document load, so the module-scope boot parse cannot see them. Listen for
+     the parameters and apply only what is present — the store rewrites the
+     hash itself, and every rewrite lands here too, which is why this is
+     idempotent by design. */
+  useEffect(() => {
+    const onHash = () => {
+      const raw = window.location.hash;
+      if (!raw.startsWith("#/layouts")) return;
+      const q = new URLSearchParams(raw.split("?")[1] ?? "");
+      const t = q.get("tab");
+      const it = q.get("itab");
+      const id = q.get("sel");
+      if (t === "layouts" || t === "templates") setTab(t);
+      if (it === "overview" || it === "structure" || it === "usage") setItab(it);
+      if (id) setSel(id);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const [prebuiltOpen, setPrebuiltOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
@@ -670,10 +693,9 @@ export function Layouts() {
 
               <div className="m7-insp-foot">
                 <Btn icon="refresh" onClick={() => setDraft(current ? JSON.parse(JSON.stringify(current)) : null)} disabled={!dirty || readOnly}>Undo</Btn>
-                <Btn onClick={async () => {
-                  try { await LayoutsAPI.revert("layout", draft.id, Math.max(1, draft.rev - 1)); setTick((n) => n + 1); app.toast({ type: "success", title: "Reverted", sub: "The previous structure was restored as a new revision." }); }
-                  catch (e) { app.toast({ type: "error", title: "Could not revert", sub: (e as Error).message }); }
-                }} icon="clock" disabled={readOnly || draft.rev < 2}>Revert</Btn>
+                <Btn icon="clock" onClick={() => setHistoryFor({ kind: "layout", id: draft.id, name: draft.name })}>
+                  History
+                </Btn>
                 <Btn variant="primary" icon="check" loading={saving} onClick={() => void save()} disabled={!dirty || readOnly}>Save</Btn>
               </div>
             </div>
@@ -851,6 +873,7 @@ export function Layouts() {
                 <p className="m7-muted">Copy-on-create: pages created from a template are never updated by later template edits.</p>
               </div>
               <div className="m7-insp-foot">
+                <Btn icon="clock" onClick={() => setHistoryFor({ kind: "template", id: tplDraft.id, name: tplDraft.name })}>History</Btn>
                 <Btn variant="primary" icon="plus" disabled={readOnly} onClick={() => setCreatePageFor(tplDraft)}>Create page</Btn>
                 <Btn icon="check" disabled={readOnly || same(tplDraft, currentTpl)} onClick={async () => {
                   try {
@@ -981,6 +1004,16 @@ export function Layouts() {
           </>
         )}
       </Popover>
+
+      {historyFor && (
+        <HistoryModal
+          kind={historyFor.kind}
+          id={historyFor.id}
+          name={historyFor.name}
+          onClose={() => setHistoryFor(null)}
+          onRestored={() => { setTick((n) => n + 1); }}
+        />
+      )}
 
       {prebuiltOpen && (
         <PrebuiltModal

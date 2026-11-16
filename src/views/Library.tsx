@@ -15,6 +15,7 @@ import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { REGISTRY, type BlockNode } from "@/lib/builder";
 import { BuilderAPI } from "@/lib/builder-db";
+import { blockUsage } from "@/lib/layout-db";
 import {
   LibraryAPI, agoOf, compositionOf, countOf, dateLong, kpis, placementsFor, requirementsFor, structureOf,
   type LibEntry, type LibResult, type LibScope, type LibSort, type LibView, type Placement, type UpdatedFilter
@@ -241,6 +242,14 @@ function Card({ entry, selected, onSelect, onInsert, onMenu, menuOpen, readOnly 
           </div>
         )}
         <p className="m5-card-desc">{entry.desc}</p>
+        {compact && entry.type && (() => {
+          const u = blockUsage()[entry.type];
+          return u ? (
+            <span className="m5-m7use" title={`Used in ${u.layouts} master layout seed${u.layouts === 1 ? "" : "s"} and ${u.templates} template${u.templates === 1 ? "" : "s"} (Module 7)`}>
+              <Icon name="layers" size={10} />{u.layouts}L · {u.templates}T
+            </span>
+          ) : null;
+        })()}
         {entry.kind === "saved" && (
           <div className="m5-card-meta">
             <span className="m5-avatar" aria-hidden>{initials(entry.creator)}</span>
@@ -393,6 +402,26 @@ function Inspector({
                   : "Reusable — insert it on as many pages as you need"}
               </li>
             </ul>
+
+            {entry.type && (() => {
+              const u = blockUsage()[entry.type];
+              return (
+                <>
+                  <h4 className="m5-h4">Used in the shell</h4>
+                  <ul className="m5-cango">
+                    <li className={u && u.layouts > 0 ? "ok" : ""}>
+                      <Icon name="layers" size={11} />
+                      {u && u.layouts > 0 ? `${u.layouts} master layout seed${u.layouts === 1 ? "" : "s"}` : "No master layout seeds this block"}
+                    </li>
+                    <li className={u && u.templates > 0 ? "ok" : ""}>
+                      <Icon name="file" size={11} />
+                      {u && u.templates > 0 ? `${u.templates} page template${u.templates === 1 ? "" : "s"}` : "No page template includes it"}
+                    </li>
+                    {u && u.chrome > 0 && <li className="ok"><Icon name="lock" size={11} />Chrome variants: {u.chrome}</li>}
+                  </ul>
+                </>
+              );
+            })()}
 
             <h4 className="m5-h4">Where you can use it</h4>
             <ul className="m5-cango">

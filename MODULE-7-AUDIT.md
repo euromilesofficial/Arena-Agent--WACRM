@@ -4,14 +4,15 @@ Question asked: *"whatever we have planned to build in this module has been achi
 left something?"*
 
 Short answer: **the spec's normative surface is built and tested; five things from the spec's
-"recommended/mockup-only" list are deliberately not built, one blueprint requirement was
-missing and is now fixed, and three cross-module read-outs are still open.** Detail and
-evidence below — including the parts that are not done.
+"recommended/mockup-only" list are deliberately not built; one blueprint requirement, the
+mapping editor, the revision history and three cross-module read-outs were missing and are
+now built.** What genuinely remains is the list in §4 — shorter than it was, and nothing in it
+is a hole in the spec.
 
 Evidence base: `MODULE-7-SPEC.md` (spec), `MODULE-7-GAP-REVIEW.md` (22 findings, F1–F22),
 `MODULE-7-BUILD.md` (what shipped), `qa_layouts.py` 99 + `qa_states_m7.py` 38 +
-`qa_import.py` 55 (192 assertions on this module alone), 14/14 suites · 999 assertions
-overall.
+`qa_import.py` 65 + `qa_m7_links.py` 33 (235 assertions on this module alone), 15/15 suites ·
+1042 assertions overall.
 
 ---
 
@@ -64,9 +65,9 @@ Ordered by how much a real user would notice.
 1. **No layout import — only templates.** A layout is a shell that references shared regions
    and a slot policy; those ids do not exist in a third-party file, so an imported layout
    would arrive with a dangling header and footer. Layouts are created and bound here.
-2. **No mapping editor in the import dialog.** The extractor decides block per section and
-   reports its choice. A user cannot say "make this section a pricing table" before importing —
-   they import, then edit in the builder.
+2. ~~No mapping editor in the import dialog.~~ **Built** — every row in the prebuilt browser and
+   the import dialog can be retyped before it lands, with the shared fields preserved and an
+   undo back to the curated mapping (`qa_import.py` H1–H10).
 3. **No CSS / design import.** Colour, type and spacing always come from the active theme;
    there is no CSS-to-token mapper or image downloader. This is a policy, not an oversight:
    the Theme Studio owns those tokens.
@@ -77,9 +78,9 @@ Ordered by how much a real user would notice.
    lives in M4 and is not wired back yet.
 6. **Templates are composed in the builder.** The Structure tab reorders and removes starter
    blocks; adding new blocks links to the builder rather than embedding a second editor.
-7. **`Draft Changes` is a count, not a diff.** There is no per-property diff between two
-   layout revisions, and the revision log is recorded and used by *Revert* but is not
-   browsable as a list (M4 has that screen; M7 does not).
+7. **`Draft Changes` is a count, not a diff.** The revision drawer now lists and restores
+   every recorded revision, but it summarises a step by its block-count delta — it does not
+   diff two revisions field by field.
 8. **No rendered preview / thumbnail.** The canvas is a schematic of the resolved shell. There
    is no page renderer in a file-based prototype, so the stored `{url, revHash, renderedAt}`
    field stays empty.
@@ -89,20 +90,24 @@ Ordered by how much a real user would notice.
     change; publishing stays in M1/M3 (also explicitly deferred by spec §21).
 11. **No cross-site clone.** Duplicating a layout or template works inside one website; copying
     a layout between websites is not offered.
-12. **Three interlinks are still open** (tracked in `INTERLINK-PLAN.md` §7): the M3
-    `PageInspector` does not yet show which layout a page resolves to; the M5 block library does
-    not show how many layouts allow each block; M8 navigation does not yet read the header
-    variant's nav list.
+12. ~~Three interlinks are still open.~~ **Built**: M3 names the resolved shell and deep-links
+    to it, M5 counts layout and template usage per block, and M8's placeholder reads the header
+    variant instead of inventing a menu (`qa_m7_links.py` C1–E5). M8's actual editor is still
+    the next module — the placeholder shows the real source, it does not pretend to edit it.
 13. **One state row is covered by construction, not by a test.** Spec §13's *broken shared
     reference* cannot be reached because variants can be edited but never deleted — so there is
     no dangling-reference state to test. If variant deletion is ever added, that state becomes
     reachable and needs a suite.
 
-## 5. If you want the next three hours spent here
+## 5. What I did next, and what would come after
 
-1. **Mapping editor in the import dialog** (change a section's target block before saving) — the
-   single biggest usability gap in what was just added.
-2. **Revision history drawer for layouts** — the data is already recorded and `Revert` already
-   uses it; only the screen is missing.
-3. **Close the three open interlinks** — they are small, and they are the difference between
-   "modules" and "one product".
+Done in the pass that followed this audit: the mapping editor, the revision-history drawer with
+real structure restore, and the three interlinks (`MODULE-7-BUILD.md` §7).
+
+Next candidates, in order of user-visible value:
+
+1. **Region reorder inside the slot** — the shell order is fixed by contract, but the seed
+   blocks could be dragged in the canvas instead of the Structure list.
+2. **A real diff view for revisions** — the drawer has the two structures; rendering which
+   region or block changed is a small, contained job.
+3. **Batch import** (a zipped folder of HTML) with the same report, one entry per file.

@@ -198,8 +198,14 @@ owns the shell every other screen renders inside, and it binds pages without own
 | Import cannot execute what it imports | outside → M7 | scripts, styles, iframes, media, inline handlers and `javascript:` URLs are stripped before parsing; the document is never inserted into the page; `qa_import.py` C12 asserts an uploaded `window.__pwned = 1` never ran | `sanitizeHtml()` |
 | Imported structure is styled by the site, not the file | M7 → M6 | no CSS is read, so colour, type and spacing come from the active theme; the file's own palette and fonts are *reported* as hints and never applied | `ImportReport.brand`, Theme Studio |
 | Provenance survives the round trip | M7 ⇄ M7 | `PageTemplate.origin` (kind, name, source, licence, commit, importedAt) is written on import, shown as a pill and as inspector rows, and exported with the JSON bundle | `LayoutsAPI.importTemplates`, `exportTemplatesJson` |
+| A page names the shell it actually gets | M7 → M3 | the inspector resolves `CmsPage.layout` and shows the layout name, whether it is inherited or pinned, and the header variant with its link count; the variant name deep-links to that layout | `src/components/pages/PageInspector.tsx`, `qa_m7_links.py` C1–C6 |
+| The block library counts real use | M7 → M5 | `blockUsage()` counts the layouts and templates that contain each block type; the card shows `nL · nT` and the inspector splits layout seeds / templates / chrome | `src/lib/layout-db.ts`, `src/views/Library.tsx`, `qa_m7_links.py` D1–D4 |
+| Navigation has one source, not two | M7 → M8 | Module 8 is a placeholder, so it reads the header variant the site default resolves to (`headerNavFor`) and deep-links to where those links are edited — instead of owning a second, divergent menu | `src/views/Placeholder.tsx`, `qa_m7_links.py` E1–E5 |
+| Revisions restore what they claim | M7 ⇄ M7 | `StructureSnapshot` is stored on every write; `history()` returns restorable entries; `revert()` rewrites the structure as a **new** revision and refuses when nothing was stored | `src/lib/layout-db.ts`, `HistoryModal.tsx`, `qa_m7_links.py` A1–A14 |
+| Deep links survive an in-app route change | M3 → M7 | a `hashchange` listener applies `tab` / `itab` / `sel` when the parameters are present, because the store rewrites the hash and a fragment navigation never reloads the document | `src/views/Layouts.tsx` |
 | The CMS still owns no customer record | M7 → CRM | layouts and templates carry no PII and fire no lead event; form blocks reach the CRM through D1/D6 above | — |
 
 Deliberately **not** wired: importing a layout from a bundle (a layout can reference regions
-that do not exist in the target workspace), and editing chrome block-by-block from Module 7
-(that is Module 4's editor; the drawer edits variant metadata only).
+that do not exist in the target workspace), editing chrome block-by-block from Module 7
+(that is Module 4's editor; the drawer edits variant metadata only), and Module 8 itself —
+its screen still belongs to the next iteration, it just no longer invents its own menu.

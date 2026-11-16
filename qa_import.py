@@ -260,6 +260,44 @@ async def main():
         await pg.keyboard.press("Escape")
         await pg.wait_for_timeout(300)
 
+        # ---------------- H · mapping editor ----------------
+        await open_import(pg)
+        await paste_and_parse(pg, SAMPLE_HTML)
+        ck("H1 every parsed block can be retyped before it lands",
+           await n(pg, ".m7-imp-map select") >= 2, str(await n(pg, ".m7-imp-map select")))
+        ck("H2 the row shows the current type as a labelled select",
+           (await pg.locator(".m7-imp-map select").first.get_attribute("aria-label")) == "Block 1 type")
+        await pg.locator(".m7-imp-map select").nth(1).select_option("quote")
+        await pg.wait_for_timeout(300)
+        ck("H3 a retyped row is marked", await n(pg, ".m7-imp-block.is-edited") == 1)
+        ck("H4 the report counts the retype", "retyped" in await txt(pg, ".m7-imp-grid .m7-sec-h"))
+        ck("H5 the hint explains what survives a retype", "fields both types share" in await txt(pg, ".m7-imp-hint"))
+        await pg.locator(".m7-imp-fields input").first.fill("QA Mapped Import")
+        await pg.get_by_role("button", name="Save as template").click()
+        await pg.wait_for_timeout(1500)
+        await pg.locator(".m7-row:has-text('QA Mapped Import')").first.click()
+        await pg.wait_for_timeout(500)
+        await pg.get_by_role("tab", name="Structure").click()
+        await pg.wait_for_timeout(400)
+        types = await pg.locator(".m7-seed-type").all_inner_texts()
+        ck("H6 the retyped block is stored with its new type", "quote" in types, str(types))
+        ck("H7 the blocks that were not retyped keep their type", "hero" in types, str(types))
+
+        # the same control exists in the prebuilt browser, with an undo
+        await open_prebuilt(pg)
+        await pg.locator(".m7-pre-row").first.click()
+        await pg.wait_for_timeout(250)
+        ck("H8 the prebuilt browser offers the same mapping control", await n(pg, ".m7-pre-view .m7-imp-map select") >= 3)
+        await pg.locator(".m7-pre-view .m7-imp-map select").first.select_option("alert")
+        await pg.wait_for_timeout(250)
+        ck("H9 retyping a kit block is marked and counted", await n(pg, ".m7-pre-view .m7-imp-block.is-edited") == 1
+           and "Undo 1 retype" in await txt(pg, ".m7-imp-mapbar"))
+        await pg.locator(".m7-imp-mapbar button").click()
+        await pg.wait_for_timeout(300)
+        ck("H10 undo restores the library's own mapping", await n(pg, ".m7-pre-view .m7-imp-block.is-edited") == 0)
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(300)
+
         # ---------------- G · the builder writes into this registry ----------------
         await pg.goto(URL + "#/builder")
         await pg.wait_for_timeout(2400)

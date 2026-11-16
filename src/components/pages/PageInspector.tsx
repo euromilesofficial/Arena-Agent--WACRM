@@ -7,7 +7,8 @@
 import { Icon } from "../Icon";
 import { Btn, Pill } from "../ui";
 import type { CmsPage, PageIssue } from "@/lib/cms-pages";
-import { useEffect, useState } from "react";
+import { headerNavFor } from "@/lib/layout-db";
+import { useEffect, useMemo, useState } from "react";
 
 export function PageThumb({ page, big = false }: { page: CmsPage; big?: boolean }) {
   const seed = page.id.split("").reduce((n, c) => n + c.charCodeAt(0), 0);
@@ -144,7 +145,7 @@ export function PageInspector(p: Props) {
         <div className="d3-meta">
           <Meta label="Page type" value={page.type === "landing" ? "Landing page" : "Standard page"} />
           <Meta label="Template" value={page.template} />
-          <Meta label="Layout" value={page.layout} />
+          <Meta label="Layout" value={<LayoutReadout page={page} />} />
           <Meta label="Parent" value={p.parent?.title ?? "—"} />
           <Meta label="Language" value="English · default" />
           <Meta label="Created" value={`${page.createdAt} by ${page.createdBy}`} />
@@ -238,5 +239,40 @@ function Perf({ label, value, tone, icon }: { label: string; value: string; tone
       <span className="d3-perf-v num">{value}</span>
       <span className="d3-perf-l">{label}</span>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------
+   Module 7 read-out. A page stores a layout *label*; the shell it
+   actually gets is resolved here, so a page that follows the website
+   default says so instead of echoing the word "Site default".
+   ------------------------------------------------------------ */
+function LayoutReadout({ page }: { page: CmsPage }) {
+  const nav = useMemo(() => headerNavFor(page.layout), [page.layout]);
+  const inherited = page.layout === "Site default" || page.layout === "Blank landing";
+  const missing = !nav.layoutId;
+  return (
+    <span className="d3-layoutro">
+      <span className="d3-layoutro-name">
+        {missing ? nav.layoutName : nav.layoutName}
+        {!missing && <em>{inherited ? "follows the website default" : "pinned to this page"}</em>}
+      </span>
+      {!missing && (
+        <span className="d3-layoutro-shell">
+          <span className={`d3-layoutro-chip ${nav.visible ? "" : "is-off"}`}>
+            <Icon name="menu" size={9} />
+            {nav.visible ? `${nav.items.length} nav links` : "header hidden"}
+          </span>
+          <button
+            className="d3-linkval"
+            title={`Open ${nav.layoutName} in Layouts & Templates`}
+            onClick={() => { window.location.hash = `#/layouts?site=${page.siteId}&tab=layouts&itab=overview&sel=${nav.layoutId}`; }}
+          >
+            <span className="truncate">{nav.variantName}</span> <Icon name="external" size={10} />
+          </button>
+        </span>
+      )}
+      {missing && <Pill tone="amber" dot>layout not resolvable</Pill>}
+    </span>
   );
 }

@@ -233,6 +233,14 @@ Each gap has a contract row in `BACKEND-PLAN.md` §7.19.
 | 22 | Import · saved | the dialog closes, the template appears first in the library with an `Imported · HTML/JSON` pill, and provenance rows (origin, source, commit, date) sit in the inspector | **Save as template** | `POST /v1/templates` |
 | 23 | Prebuilt · browsing | 14 starters with search and category chips, a preview listing the exact blocks the extractor produced, the MIT licence and the source commit | header → **Prebuilt** | — |
 | 24 | Prebuilt · added | one template written with `origin.kind = prebuilt`; importing the same kit twice de-duplicates the name (`University 2`) | **Add "…"** twice | `POST /v1/templates` |
+| 26 | History · loading | three skeleton rows while `history()` resolves | `#/layouts` → **History** | `GET /v1/layouts/{id}/revisions` |
+| 27 | History · ready | rev pill, summary, author · time · block-count delta, `current draft` on the newest, `Restore` on the rest | **History** on any layout or template | same |
+| 28 | History · restore guarded | inline `Restore r3?` with Cancel and Restore before anything is written | click `Restore` on an older row | `POST /v1/layouts/{id}:revert` |
+| 29 | History · restored | the drawer closes, a toast names the source revision, and the list has one more row summarised `Restored the structure recorded at rN` | confirm a restore | `422 REVISION_NOT_STORED` when nothing was stored |
+| 30 | History · empty | `No revisions recorded yet` with the reason, never a blank panel | a template that has never been saved | — |
+| 31 | Mapping · retyped | the row highlights, the header counts `1 retyped`, the prebuilt browser offers `Undo 1 retype` | change any block's type select in Import or Prebuilt | — |
+| 32 | M3 read-out · inherited vs pinned | the inspector says `follows the website default` or `pinned to this page`, and flags `layout not resolvable` when the stored label has no live layout | `#/pages` with a page bound to the default, then to a specific layout | `GET /v1/pages/{id}` + `GET /v1/layouts` |
+| 33 | M8 · navigation source | the placeholder lists the header variant's links in order, or says the header is hidden and why | `#/menus` | `GET /v1/layouts/{id}` |
 | 25 | Export · round trip | a `.json` file downloads with `kind: wacrm.templates`; importing it back reproduces the same block count | template row menu → **Export as JSON** | `GET /v1/templates/export` |
 
 ### Fixed while building
