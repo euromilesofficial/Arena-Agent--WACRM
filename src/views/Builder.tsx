@@ -21,6 +21,7 @@ import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { takeHandoff } from "@/lib/builder-handoff";
 import type { CmsPage } from "@/lib/cms-pages";
+import { frameFor } from "@/lib/layout-db";
 import { BuilderAPI, PAGE_TOO_LARGE, streamCopy, streamPlan, topicFrom } from "@/lib/builder-db";
 import {
   canNest, docIssues, duplicateNode, findNode, insertNode, labelOf, moveNode,
@@ -680,6 +681,8 @@ export function Builder() {
             onDragStart={startDrag}
             onMove={move}
             emptyLibrary={BuilderAPI.mode.emptyLibrary}
+            policy={page ? frameFor(siteId, page.layout).slotPolicy : null}
+            layoutName={page ? frameFor(siteId, page.layout).layoutName : undefined}
             templates={[...PAGE_TEMPLATES, ...templatesExtra.current]}
           />
         )}
@@ -772,7 +775,11 @@ export function Builder() {
                   else if (action === "duplicate") dup(id);
                   else if (action === "delete") del(id);
                 },
-                onEditMaster: () => app.toast({ type: "info", title: "Master layout", sub: "Headers and footers are edited in Layouts & Templates." }),
+                frame: page ? frameFor(siteId, page.layout) : null,
+                onEditMaster: () => {
+                  const f = page ? frameFor(siteId, page.layout) : null;
+                  location.hash = `#/layouts?site=${siteId}&tab=layouts&itab=overview${f?.layoutId ? `&sel=${f.layoutId}` : ""}`;
+                },
                 theme: canvasTheme
               }} />
             )}

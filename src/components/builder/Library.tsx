@@ -9,7 +9,7 @@ import { Skel } from "@/components/ui";
 import {
   ARCHETYPES, CHIPS, chipCount, GROUP_ORDER, labelOf, PAGE_TEMPLATES, REGISTRY,
   SECTION_CATEGORIES, SECTION_PRESETS, sectionCount, type BlockDef, type BlockNode,
-  type LibChip, type PageTemplate, type SectionPreset
+  type BlockType, type LibChip, type PageTemplate, type SectionPreset
 } from "@/lib/builder";
 import { SAMPLE_IMAGES } from "@/lib/builder-images";
 
@@ -37,6 +37,10 @@ export interface LibraryProps {
   onMove: (id: string, dir: -1 | 1) => void;
   emptyLibrary: boolean;
   templates?: PageTemplate[];
+  /** M7 slot policy — when a layout narrows the allowed block types, the
+      library shows only those. Undefined or empty allow-list = all. */
+  policy?: { allow: BlockType[]; deny: BlockType[]; maxBlocks: number } | null;
+  layoutName?: string;
 }
 
 const Thumb = ({ preset }: { preset: SectionPreset }) => {
@@ -90,12 +94,22 @@ export function Library(p: LibraryProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const q = p.query.trim().toLowerCase();
 
+  /* A layout's slot policy is a real gate, not a label: the tiles here are the
+     only block types this page may receive (§F2 of the M7 review). */
+  const allowSet = p.policy && p.policy.allow.length ? new Set<string>(p.policy.allow) : null;
+  const denySet = p.policy ? new Set<string>(p.policy.deny) : new Set<string>();
+  const allowedTypes = ARCHETYPES.filter((d) => (allowSet ? allowSet.has(d.type) : true) && !denySet.has(d.type));
+  const policyNarrowed = !!p.policy && (allowedTypes.length < ARCHETYPES.length);
+
   const blocks = ARCHETYPES.filter((d) => {
     const chip = CHIPS.find((c) => c.id === p.chip)!;
     if (!chip.groups.includes(d.group)) return false;
+    if (allowSet && !allowSet.has(d.type)) return false;
+    if (denySet.has(d.type)) return false;
     if (!q) return true;
     return `${d.label} ${d.paletteLabel ?? ""} ${d.hint}`.toLowerCase().includes(q);
   });
+  const chipN = (id: LibChip) => ARCHETYPES.filter((d) => CHIPS.find((c) => c.id === id)!.groups.includes(d.group) && (allowSet ? allowSet.has(d.type) : true) && !denySet.has(d.type)).length;
 
   const sections = SECTION_PRESETS.filter((s) => {
     if (p.sectionCat !== "All" && s.category !== p.sectionCat) return false;
@@ -137,7 +151,7 @@ export function Library(p: LibraryProps) {
         {p.tab === "blocks"
           ? CHIPS.map((c) => (
             <button key={c.id} className={`wb-chip ${p.chip === c.id ? "is-on" : ""}`} aria-pressed={p.chip === c.id}
-              onClick={() => p.setChip(c.id)}>{c.label}<span className="wb-chip-n">{chipCount(c.id)}</span></button>
+              onClick={() => p.setChip(c.id)}disabled={chipN(c.id) === 0}>{c.label}<span className="wb-chip-n">{policyNarrowed ? chipN(c.id) : chipCount(c.id)}</span></button>
           ))
           : p.tab === "sections"
             ? SECTION_CATEGORIES.map((c) => (
@@ -146,6 +160,13 @@ export function Library(p: LibraryProps) {
             ))
             : null}
       </div>
+
+      {p.tab === "blocks" && policyNarrowed && (
+        <div className="wb-lib-policy" data-policy="1" title={`${p.layoutName ?? "This layout"} allows ${allowedTypes.length} of ${ARCHETYPES.length} block types`}>
+          <Icon name="lock" size={11} />
+          <span><b>{p.layoutName ?? "Layout"}</b> allows {allowedTypes.length}/{ARCHETYPES.length} blocks</span>
+        </div>
+      )}
 
       <div className="wb-lib-body" id="wb-lib-panel" role="tabpanel" aria-labelledby={`wb-tab-${p.tab}`}>
         {p.loading && p.tab !== "pages" && (

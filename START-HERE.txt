@@ -71,20 +71,22 @@ Read in this order
   MODULE-7-SPEC.md        M7 Layouts & Templates — submitted spec (persisted)
   MODULE-7-BENCHMARK.md   9 production CMSs, mechanism by mechanism
   MODULE-7-GAP-REVIEW.md  M7 review: 22 findings + decisions + build plan
+  MODULE-7-BUILD.md       M7 build record: what ships, interlink proof, deltas
   MODULE-*-SPEC / -DECISIONS / -REVIEW / -GAP-REVIEW   per-module documentation
   STATE-COVERAGE.md       every state per module, how to trigger it
   STORAGE.md              where the bytes go (52 MB workspace, why)
   ROLLBACK.md             tags and revert recipes
   PUSH-TO-GIT.md          the exact remote state, with hashes
 
-QA — 11 suites, 807 assertions, against the built file
+QA — 13 suites, 944 assertions, against the built file
 -----------------------------------------------------
   source scripts/qa-env.sh     (once per shell; installs Chromium's libs in /tmp)
   npm run qa                   → qa/last-run.json + regenerated HANDOVER.md
 
-  qa_theme.py 241 · qa_pages.py 106 · qa_builder.py 98 · qa_library.py 90
-  qa_ai.py 60 · qa_module2.py 48 · qa_states_m4.py 47 · qa_states_m3.py 40
-  qa_states_m1.py 39 · qa_flows.py 38 · qa_react.py (smoke)
+  qa_theme.py 241 · qa_pages.py 106 · qa_layouts.py 99 · qa_builder.py 98
+  qa_library.py 90 · qa_ai.py 60 · qa_module2.py 48 · qa_states_m4.py 47
+  qa_states_m3.py 40 · qa_states_m1.py 39 · qa_states_m7.py 38 · qa_flows.py 38
+  qa_react.py (smoke)
 
 Module status
 -------------
@@ -97,7 +99,8 @@ Module status
                       revisions, 10 presets, 50 embedded + 1,746 indexed fonts
                       with real woff2 downloads, complete theme bundle,
                       builder canvas rendered in the site theme)
-  M7 · M9 · M10 · M11 next, one at a time
+  M7 Layouts & Templates  built · 99 module + 38 state checks
+  M8 · M9 · M10 · M11 next, one at a time
 
 If the page is ever blank
 -------------------------

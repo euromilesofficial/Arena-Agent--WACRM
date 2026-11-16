@@ -13,6 +13,7 @@
 import { DBX } from "./data";
 import { SECTION_PRESETS, REGISTRY, type BlockNode, type BlockType } from "./builder";
 import { ensureDraft } from "./builder-db";
+import { LayoutsAPI } from "./layout-db";
 import { FONT_ASSETS, EMBEDDED_COUNT, EMBEDDED_TOTAL_BYTES } from "./theme-font-data";
 import { SAMPLE_IMAGES } from "./builder-images";
 import { GOOGLE_FONT_ROWS, CATALOG_COUNT, type FontCategory } from "./theme-font-catalog";
@@ -1237,9 +1238,9 @@ export function exportBundle(siteId: string, mode: ExportMode, pages: BundlePage
       spacing: { base: t.geometry.spacing.base, density: t.geometry.spacing.density, scalePx: spacingScale(t) },
       blockStyling: t.blockStyling,
       /* declared now, filled by the modules that own them */
-      starterLayouts: {},
+      starterLayouts: (() => { try { return LayoutsAPI.exportStarterLayouts(); } catch { return {}; } })(),
       navigation: {},
-      deferredTo: { starterLayouts: "Module 7 · Layouts", navigation: "Module 8 · Navigation" }
+      deferredTo: { starterLayouts: "Module 7 · Layouts (exported, refused on import)", navigation: "Module 8 · Navigation" }
     },
     computed: {
       typeScale: Object.fromEntries(TYPE_STEPS.map((step) => [step, type[step]])),

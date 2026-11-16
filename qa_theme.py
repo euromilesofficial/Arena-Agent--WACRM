@@ -477,9 +477,12 @@ async def main():
         ck("7.1k layout carries container, radius and the spacing scale",
            lay.get("containerWidthPx") in (960, 1080, 1200, 1280) and isinstance(lay.get("spacing", {}).get("scalePx"), list),
            str(lay.get("containerWidthPx")))
-        ck("7.1l the future modules are hooked, and named",
-           lay.get("starterLayouts") == {} and "Module 7" in lay.get("deferredTo", {}).get("starterLayouts", "")
-           and "Module 8" in lay.get("deferredTo", {}).get("navigation", ""))
+        sl = lay.get("starterLayouts", {})
+        ck("7.1l the bundle carries Module 7 starter layouts and still names Module 8",
+           isinstance(sl, dict) and len(sl.get("layouts", [])) >= 5 and len(sl.get("templates", [])) == 12
+           and "Module 7" in lay.get("deferredTo", {}).get("starterLayouts", "")
+           and "Module 8" in lay.get("deferredTo", {}).get("navigation", ""),
+           f"{len(sl.get('layouts', []))} layouts · {len(sl.get('templates', []))} templates")
         comp = bundle.get("computed", {})
         ck("7.1m computed type sizes are exported for all six steps",
            set(comp.get("typeScale", {}).keys()) == {"h1", "h2", "h3", "body", "small", "caption"}, str(sorted(comp.get("typeScale", {}).keys())))
