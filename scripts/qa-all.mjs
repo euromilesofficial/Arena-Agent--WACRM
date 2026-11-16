@@ -86,4 +86,19 @@ fs.writeFileSync(path.join(ROOT, "qa", "last-run.json"), JSON.stringify(payload,
 
 console.log(`\n${results.length - failed}/${results.length} suites green · wrote qa/last-run.json`);
 spawnSync("node", [path.join(ROOT, "scripts", "handover.mjs")], { cwd: ROOT, stdio: "inherit" });
+
+/* Captures are local evidence, never deliverables: they are gitignored, excluded from
+   the zip, and a full run writes ~10 MB of them. Keep only when a human asked. */
+if (process.env.QA_KEEP_SHOTS !== "1") {
+  const shotDir = path.join(ROOT, "qa");
+  let freed = 0;
+  for (const f of fs.existsSync(shotDir) ? fs.readdirSync(shotDir) : []) {
+    if (!/\.(webp|png|jpe?g)$/i.test(f)) continue;
+    const p = path.join(shotDir, f);
+    freed += fs.statSync(p).size;
+    fs.unlinkSync(p);
+  }
+  if (freed) console.log(`· cleared ${(freed / 1048576).toFixed(1)} MB of captures (QA_KEEP_SHOTS=1 keeps them)`);
+}
+
 process.exit(failed === 0 ? 0 : 1);

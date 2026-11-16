@@ -44,7 +44,7 @@ const mb = (buf.length / 1048576).toFixed(2);
 
 console.log(`zip  ${path.relative(process.cwd(), ZIP)}`);
 console.log(`     ${buf.length.toLocaleString()} B (${mb} MB) · ${files} files · md5 ${md5}`);
-console.log("     omitted (regenerable, present in Git): theme-font-data.ts, theme-font-catalog.ts, qa/");
+console.log("     omitted (regenerable): theme-font-data.ts, theme-font-catalog.ts, qa/ (untracked local captures)");
 
 /* A stale zip is worse than no zip: warn loudly if the artefact inside it does
    not match the one just built. */

@@ -14,7 +14,9 @@
     "package": "node scripts/package.mjs",
     "fonts": "node scripts/fetch-theme-fonts.mjs --budget=10.5",
     "prebuild": "node scripts/ensure-font-data.mjs",
-    "predev": "node scripts/ensure-font-data.mjs"
+    "predev": "node scripts/ensure-font-data.mjs",
+    "space": "node scripts/space.mjs",
+    "prune": "node scripts/prune-history.mjs"
   },
   "dependencies": {
     "react": "^19.2.0",
