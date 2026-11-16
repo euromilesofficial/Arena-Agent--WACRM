@@ -226,6 +226,15 @@ Each gap has a contract row in `BACKEND-PLAN.md` §7.19.
 | 16 | Deep link | `#/layouts?site=&tab=&itab=&sel=` restores tab, inspector and selection on a cold load | paste a link | — |
 | 17 | Layout | no page scrollbar at 1440×900; three columns never overlap; the inspector footer stays visible while the pane scrolls | resize | — |
 
+| 18 | Import · empty | the dialog opens with the drop zone, a collapsed "paste the markup" panel and a disabled primary button | `#/layouts` → **Import** | `POST /v1/templates/import` |
+| 19 | Import · parsed | four stat tiles (blocks, sections, dropped, KB), the block-by-block "what will land" list, the "what is dropped, and why" notes, and brand hints read from the file's CSS but not applied | paste any multi-section HTML and press **Parse** | — |
+| 20 | Import · refused | a red panel naming the reason — wrong extension, over 400 KB, invalid JSON, no blocks, unrecognised shape — and the primary button stays disabled | drop a `.txt`, or paste `{ not json` in the JSON tab | `E_SIZE` `E_JSON` `E_SHAPE` `E_VALID` |
+| 21 | Import · unknown block | a note naming the block type this workspace does not have, instead of a silent replacement | import a bundle containing `holoDeck` | `E_VALID` |
+| 22 | Import · saved | the dialog closes, the template appears first in the library with an `Imported · HTML/JSON` pill, and provenance rows (origin, source, commit, date) sit in the inspector | **Save as template** | `POST /v1/templates` |
+| 23 | Prebuilt · browsing | 14 starters with search and category chips, a preview listing the exact blocks the extractor produced, the MIT licence and the source commit | header → **Prebuilt** | — |
+| 24 | Prebuilt · added | one template written with `origin.kind = prebuilt`; importing the same kit twice de-duplicates the name (`University 2`) | **Add "…"** twice | `POST /v1/templates` |
+| 25 | Export · round trip | a `.json` file downloads with `kind: wacrm.templates`; importing it back reproduces the same block count | template row menu → **Export as JSON** | `GET /v1/templates/export` |
+
 ### Fixed while building
 
 - **The canvas showed the saved layout, not the working copy** — `frameFor` resolved from the store, so a variant swap only appeared after Save. It now builds the frame from the draft object (`frameOf`).

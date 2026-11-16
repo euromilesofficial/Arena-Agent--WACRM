@@ -21,7 +21,7 @@ import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { takeHandoff } from "@/lib/builder-handoff";
 import type { CmsPage } from "@/lib/cms-pages";
-import { frameFor } from "@/lib/layout-db";
+import { LayoutsAPI, frameFor, resolveLayoutId } from "@/lib/layout-db";
 import { BuilderAPI, PAGE_TOO_LARGE, streamCopy, streamPlan, topicFrom } from "@/lib/builder-db";
 import {
   canNest, docIssues, duplicateNode, findNode, insertNode, labelOf, moveNode,
@@ -879,7 +879,17 @@ export function Builder() {
             forceTpl((n) => n + 1);
             setOverlay({ k: "none" });
             setLibTab("pages");
-            app.toast({ type: "success", title: "Template saved", sub: `${name} · visible in Pages` });
+            /* the template must exist outside this tab: Layouts & Templates owns the registry */
+            const blocks = JSON.parse(JSON.stringify(doc)) as BlockNode[];
+            const boundLayout = resolveLayoutId(page?.layout) ?? undefined;
+            void LayoutsAPI.importTemplates(siteId, [{
+              name, blocks, intent: "Saved page", layoutId: boundLayout,
+              origin: { kind: "builder", name: page?.title ?? "a page" }
+            }]).then(() => {
+              app.toast({ type: "success", title: "Template saved", sub: `${name} · in Pages and in Layouts & Templates` });
+            }).catch((e: Error) => {
+              app.toast({ type: "error", title: "Saved locally, not in the template library", sub: e.message });
+            });
           }} />
       )}
       {overlay.k === "leave" && (

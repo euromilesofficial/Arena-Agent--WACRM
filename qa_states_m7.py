@@ -24,6 +24,13 @@ async def n(pg, sel):
 async def txt(pg, sel):
     return (await pg.locator(sel).first.inner_text()).strip() if await n(pg, sel) else ""
 
+async def until(pg, js, timeout=4000):
+    """Poll a predicate — a cold boot settles on its own schedule."""
+    try:
+        await pg.wait_for_function(js, timeout=timeout); return True
+    except Exception:
+        return False
+
 async def close_overlays(pg):
     for _ in range(3):
         if await n(pg, ".overlay"):
@@ -179,10 +186,13 @@ async def main():
         await pg.screenshot(path="/home/user/wacrm-app/qa/m7-policy.webp", type="webp", quality=82)
 
         # ---------------- K · cold deep links ----------------
+        # a genuinely cold load: fragment-only navigation would not reload the document,
+        # and reload() after the store rewrites the hash drops the deep-link parameters.
+        await pg.goto("about:blank")
         await pg.goto(URL + "#/layouts?site=site_main&tab=layouts&itab=structure&sel=lay_blog")
-        await pg.reload()
         await pg.wait_for_timeout(1600)
-        ck("K1 a cold deep link restores the tab, inspector and selection", "Blog Article Layout" in await txt(pg, ".m7-crumbs") and "is-on" in await pg.get_attribute(".m7-insp-tabs button:nth-child(2)", "class"))
+        await until(pg, "() => { const c = document.querySelector('.m7-crumbs'); return !!c && c.innerText.includes('Blog Article Layout'); }")
+        ck("K1 a cold deep link restores the tab, inspector and selection", "Blog Article Layout" in await txt(pg, ".m7-crumbs") and "is-on" in (await pg.get_attribute(".m7-insp-tabs button:nth-child(2)", "class") or ""))
         ck("K2 no console or page errors across the whole run", not errs, "; ".join(errs[:3]))
 
         await b.close()

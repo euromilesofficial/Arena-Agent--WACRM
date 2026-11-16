@@ -194,6 +194,10 @@ owns the shell every other screen renders inside, and it binds pages without own
 | Slot policy is a gate, not a label | M7 → M4/M5 | the library filters to the layout's allow-list and shows `Layout allows N/20 blocks`; denied seed blocks are flagged on the canvas | `src/components/builder/Library.tsx` |
 | Layouts travel with a theme bundle | M7 → M6 | `exportBundle().layout.starterLayouts` carries every live layout (regions, policy, seed count) and all 12 templates | `src/lib/theme-db.ts` |
 | Creating a page from a template hands over a real draft | M7 → M4 | `createPageFromTemplate` writes the page, then seeds the builder draft with the template's blocks | `src/lib/layout-db.ts` |
+| A third-party page enters through one door | outside → M7 | `importHtml()` reduces any HTML file (and the 14 prebuilt starters, through the same function) to registry blocks; `importJson()` accepts a WACRM export, a block array, or a page-builder project whose HTML goes through the same extractor | `src/lib/html-import.ts`, `src/lib/prebuilt-db.ts` |
+| Import cannot execute what it imports | outside → M7 | scripts, styles, iframes, media, inline handlers and `javascript:` URLs are stripped before parsing; the document is never inserted into the page; `qa_import.py` C12 asserts an uploaded `window.__pwned = 1` never ran | `sanitizeHtml()` |
+| Imported structure is styled by the site, not the file | M7 → M6 | no CSS is read, so colour, type and spacing come from the active theme; the file's own palette and fonts are *reported* as hints and never applied | `ImportReport.brand`, Theme Studio |
+| Provenance survives the round trip | M7 ⇄ M7 | `PageTemplate.origin` (kind, name, source, licence, commit, importedAt) is written on import, shown as a pill and as inspector rows, and exported with the JSON bundle | `LayoutsAPI.importTemplates`, `exportTemplatesJson` |
 | The CMS still owns no customer record | M7 → CRM | layouts and templates carry no PII and fire no lead event; form blocks reach the CRM through D1/D6 above | — |
 
 Deliberately **not** wired: importing a layout from a bundle (a layout can reference regions

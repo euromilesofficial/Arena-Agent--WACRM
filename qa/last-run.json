@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16 00:38:51 UTC",
+  "generatedAt": "2026-11-16 03:37:43 UTC",
   "node": "v20.20.2",
   "artifact": "WACRM-CMS.html",
   "suites": [
@@ -7,79 +7,85 @@
       "file": "qa_ai.py",
       "passed": 60,
       "failed": 0,
-      "seconds": 37.02
+      "seconds": 37.962
     },
     {
       "file": "qa_theme.py",
       "passed": 241,
       "failed": 0,
-      "seconds": 117.966
+      "seconds": 117.898
     },
     {
       "file": "qa_builder.py",
       "passed": 98,
       "failed": 0,
-      "seconds": 43.483
+      "seconds": 43.008
     },
     {
       "file": "qa_states_m4.py",
       "passed": 47,
       "failed": 0,
-      "seconds": 44.134
+      "seconds": 43.718
     },
     {
       "file": "qa_pages.py",
       "passed": 106,
       "failed": 0,
-      "seconds": 125.221
+      "seconds": 121.634
     },
     {
       "file": "qa_states_m3.py",
       "passed": 40,
       "failed": 0,
-      "seconds": 57.103
+      "seconds": 56.86
     },
     {
       "file": "qa_module2.py",
       "passed": 48,
       "failed": 0,
-      "seconds": 35.422
+      "seconds": 35.502
     },
     {
       "file": "qa_states_m1.py",
       "passed": 39,
       "failed": 0,
-      "seconds": 45.699
+      "seconds": 45.729
     },
     {
       "file": "qa_flows.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 56.767
+      "seconds": 57.089
     },
     {
       "file": "qa_react.py",
       "passed": null,
       "failed": 0,
-      "seconds": 4.455
+      "seconds": 4.26
     },
     {
       "file": "qa_library.py",
       "passed": 90,
       "failed": 0,
-      "seconds": 55.26
+      "seconds": 54.997
     },
     {
       "file": "qa_layouts.py",
       "passed": 99,
       "failed": 0,
-      "seconds": 34.983
+      "seconds": 35.008
     },
     {
       "file": "qa_states_m7.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 44.36
+      "seconds": 44.588
+    },
+    {
+      "file": "qa_import.py",
+      "passed": 55,
+      "failed": 0,
+      "seconds": 27.407
     }
   ]
 }
