@@ -4,7 +4,8 @@ Reviewed first (`MODULE-7-SPEC.md`, `MODULE-7-BENCHMARK.md`, `MODULE-7-GAP-REVIE
 findings, 16 decisions), then built. This is what actually shipped, how it is wired to the
 other modules, and what is honestly still missing.
 
-Screen: `#/layouts?site=&tab=&itab=&sel=`. QA: `qa_layouts.py` (99) + `qa_states_m7.py` (38).
+Screen: `#/layouts?site=&tab=&itab=&sel=`. QA: `qa_layouts.py` (99) + `qa_states_m7.py` (38) +
+`qa_import.py` (55).
 
 ---
 
@@ -39,7 +40,7 @@ Three rules the code enforces rather than documents:
 
 | Area | Behaviour |
 |---|---|
-| Header | Website selector (all screens share it), **Preflight** with a live finding count, **Preview Layout**, contextual **+ Create Layout / + Create Template** |
+| Header | Website selector (all screens share it), **Prebuilt** (14) library, **Import** (HTML / JSON), **Preflight** with a live finding count, **Preview Layout**, contextual **+ Create Layout / + Create Template** |
 | KPIs | Master Layouts · Page Templates · Pages Assigned · Draft Changes — each derived, each with a definition tooltip (`Tip`) because "assigned" has three plausible meanings |
 | Library | Master Layouts \| Page Templates with counts; search; sort (updated / name / pages); archived opt-in; per-row menu (preview, reassign, set default, duplicate, archive/restore) |
 | Canvas | The resolved shell drawn from the working copy: announcement text, header brand/nav/CTA, slot seed blocks, footer columns. 1440 / 768 / 375 with a fit scale that never exceeds 1:1, zoom, and a **Draft preview — not live** chip |
@@ -48,8 +49,8 @@ Three rules the code enforces rather than documents:
 | Inspector · Overview | Inline name, description, website-default switch, three region rows (variant select, visibility switch, required reason when hidden, edit shared variant), the slot summary, computed SEO readiness, applied-to count, last save, author, revision; Undo / Revert / Save |
 | Inspector · Structure | Fixed region order, policy chips + editor, block ceiling, seed list (add / reorder / remove), binding facts |
 | Inspector · Usage | Pages bound / published / draft changes, search, 8-row pages, binding-mode labels, "Open in builder", row selection, bulk reassign with an impact step |
-| Templates | 12 starters with intent, blocks, bound layout, revision; create page (copy-on-create), duplicate, delete guard for built-ins, starter preview in the shell it would use |
-| Overlays | Create layout, create template, archive (guarded), bulk reassign (pick → impact → move), preview (page + width), shared-region editor with blast radius, SEO checklist, preflight, policy editor, CAS conflict, unsaved-leave |
+| Templates | 12 starters + anything imported, with intent, blocks, bound layout, revision; create page (copy-on-create), duplicate, **export as JSON**, **import a file**, delete guard for built-ins, starter preview in the shell it would use |
+| Overlays | Create layout, create template, archive (guarded), bulk reassign (pick → impact → move), preview (page + width), shared-region editor with blast radius, SEO checklist, preflight, policy editor, **prebuilt browser**, **import dialog**, CAS conflict, unsaved-leave |
 
 ## 3. Interlinks, and the proof for each
 
@@ -62,6 +63,7 @@ Three rules the code enforces rather than documents:
 | M7 → M4 | slot policy filters the library and marks denied blocks | `Library` `policy` prop; `data-policy` banner | `qa_states_m7.py` J6–J7 |
 | M7 → M4 | "Open in builder" from a usage row, and "Create page" from a template, both deep-link | `#/builder?site=&page=` | `qa_layouts.py` H7, `qa_states_m7.py` J2 |
 | M7 → M5 | the slot policy uses the same registry the library lists (20 types), and an allow-list is filtered against it so a typo cannot hide everything | `REGISTRY` parity | policy editor lists 20; `qa_layouts.py` F9 |
+| M4 → M7 | **Save current page as template** writes a real template into this registry, not a tab-local copy, and carries its origin (`builder`) and the page it came from | `LayoutsAPI.importTemplates` inside `SaveTemplateModal`'s handler | `qa_import.py` G1–G3 (saved in `#/builder`, asserted in `#/layouts`) |
 | M7 → M6 | the theme bundle's `layout.starterLayouts` is now filled: every live layout with its region refs and policy, plus all 12 templates | `LayoutsAPI.exportStarterLayouts()` in `exportBundle()` | `qa_theme.py` 7.1l (was asserting `{}`) |
 | M7 → M1 | `Pages Assigned` / draft-change counts agree with the Pages registry; preflight is the shell-level counterpart of the release preflight | shared `DBX().cmsPages` | `qa_layouts.py` B5 |
 | M7 → CRM | none directly — bindings, slots and templates are workspace config, not lead events. Form blocks reach the CRM through D1/D6 in `INTERLINK-PLAN.md` | — | — |
@@ -88,12 +90,82 @@ templates · preflight clean and dirty · hidden-region-without-a-reason warning
   of chrome belongs to Module 4 and is not wired back yet.
 - **Template bodies are composed in the builder.** The Structure tab reorders and removes
   starter blocks; adding blocks links to the library instead of embedding a second editor.
-- **No import.** Export is implemented (theme bundle); importing layouts is refused by
-  decision, with the reason shown, because a layout can reference regions that do not exist
-  in the target workspace.
+- **Import covers templates, not master layouts.** A layout is a shell that references
+  shared regions and a slot policy; those ids do not exist in an arbitrary file, so an
+  imported layout would arrive with a dangling header and footer. Layouts are created and
+  bound here; *templates* are what a third-party HTML page can honestly become.
+- **Import reads structure and copy, not design.** CSS, fonts, background images and
+  JavaScript are discarded by contract. There is no CSS-to-token mapper, no image
+  downloader and no style importer — the Theme Studio owns those tokens.
+- **No mapping editor.** The extractor decides the block per section (hero, grid, table,
+  FAQ, testimonials, CTA, form, list, heading + text) and reports what it chose. A user
+  cannot remap a section to a different block type inside the dialog; they import, then edit
+  in the builder.
+- **No ZIP import.** One file at a time (.html, .htm, .json), 400 KB, 40 blocks.
 - **No scheduling or approval on bindings.** A reassignment is a draft change; publishing
   stays where it already lived — Modules 1 and 3.
 - **`Draft Changes` is a count of dirty layouts plus workspace templates**, not a diff
   viewer. There is no per-property diff for a layout revision yet.
 - **Locale-neutral copy.** The module is written without a locale assumption, and the
   seed content is sample data — not verified fact about any real institution.
+
+## 6. Import & the prebuilt library
+
+Added after the build, on request: real third-party starters in the artefact, and a
+user-facing door for any HTML or JSON template.
+
+### 6.1 What ships inside the build
+
+`templates/` holds 14 open-source templates (MIT, from
+`github.com/mmrahmanbappi/free-html-templates`, commit `bab6ec6c8900`), fetched by
+`scripts/fetch-prebuilt.mjs`, cleaned of scripts/styles/iframes/inline handlers/inline SVG,
+and committed with their upstream licence text. `templates/PROVENANCE.md` is generated and
+lists every file, its category, its raw and cleaned size, and the commit it came from.
+`src/lib/prebuilt-kits.ts` inlines the same HTML into the artefact, so the artefact opens
+offline with no runtime fetch and the zip stays self-contained.
+
+The 14 kits: university, language school, online course, tutoring, coding bootcamp, travel
+agency, consulting firm, creative agency, webinar signup, ebook download, product launch,
+conference event, nonprofit/charity, SaaS product. 88 KB total, 3–12 KB each.
+
+**The library and the importer are the same code.** `prebuilt-db.ts` parses each kit with
+`importHtml()` on first use, so a fix to the extractor fixes the library too, and the
+"what will land" list a user sees for a kit is the same list the extractor produced.
+
+### 6.2 The import contract
+
+`src/lib/html-import.ts`:
+
+- `sanitizeHtml()` strips `<script>`, `<style>`, `<noscript>`, `<iframe>`, `<object>`,
+  `<embed>`, `<canvas>`, inline `on*` handlers and `javascript:` URLs **before** a node is
+  read. Nothing in an uploaded file is executed; `qa_import.py` C12 proves it by asserting
+  a `window.__pwned` script never ran.
+- The document is parsed with `DOMParser`, not inserted into the page.
+- Sections are ranked and mapped to registry blocks: first section with a heading + copy →
+  `hero`; `b`+`span` pairs → `featureGrid · stats`; repeated heading+copy children →
+  `featureGrid`; `<table>` → `table`; `<details>` or headed pairs → `faq`; `<blockquote>` →
+  `testimonials`; a form → `form`; a long `<ul>` → `list`; otherwise `heading` + `text`.
+- Chrome is dropped **with a reason**: nav/header/footer are Global Regions in this module,
+  so repeating them inside a template would double the shell. The report says so.
+- `JSON` accepts four shapes: a WACRM export (`kind: "wacrm.templates"`), a bare block
+  array, `{ blocks: [...] }`, and a GrapesJS-style `{ pages: [{ html }] }` whose HTML goes
+  through the *same* extractor. Unknown block types are named in the report, never silently
+  replaced (`qa_import.py` D3).
+- Limits: 400 KB, 40 blocks, 20 templates per bundle, 120 templates per workspace; every
+  refusal states the number (`E_SIZE`, `E_JSON`, `E_SHAPE`, `E_EMPTY`, `E_VALID`,
+  `E_LIMIT`).
+
+### 6.3 Provenance is stored, not implied
+
+`PageTemplate.origin = { kind: builtin | prebuilt | html | json, name, source, license,
+commit, importedAt }` is written by `LayoutsAPI.importTemplates()`, shown as a pill in the
+library row and in the inspector (`Prebuilt · MIT`, `Imported · HTML`), and repeated as
+`Origin / Source / Commit / Imported` key-value rows. Imported copy is labelled sample
+content — it is never presented as verified fact (`qa_import.py` B10, B13).
+
+### 6.4 Round trip
+
+`Export as JSON` writes `{ kind: "wacrm.templates", schemaVersion: 1, site, template,
+revision, templates: [{ name, intent, layout, blocks: [{ type, variant, props }] }] }`.
+`qa_import.py` E1–E5 downloads a real file, parses it in Python, re-imports it through the
+dialog and asserts the block count survives.

@@ -18,6 +18,8 @@ import {
   ArchiveModal, ConflictModal, CreateLayoutModal, CreatePageModal, CreateTemplateModal, LeaveModal,
   PolicyModal, PreflightModal, PreviewModal, ReassignModal, RegionDrawer, SeoModal, usageLabel
 } from "@/components/layouts/LayoutModals";
+import { ImportModal, PrebuiltModal, exportTemplate } from "@/components/layouts/ImportModals";
+import { KIT_COUNT, PREBUILT_SOURCE } from "@/lib/prebuilt-db";
 import {
   LayoutsAPI, frameOf, mode as LayoutsMode, usageRows,
   type LayoutDraft, type LayoutPayload, type PageTemplateDoc, type SharedRegion
@@ -124,6 +126,8 @@ export function Layouts() {
   const [policyOpen, setPolicyOpen] = useState(false);
   const [reassignSel, setReassignSel] = useState<string[] | null>(null);
   const [createPageFor, setCreatePageFor] = useState<PageTemplateDoc | null>(null);
+  const [prebuiltOpen, setPrebuiltOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [usageQ, setUsageQ] = useState("");
   const [usagePage, setUsagePage] = useState(1);
@@ -394,6 +398,10 @@ export function Layouts() {
               {DBX().sites.filter((s) => !s.archived).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </label>
+          <Btn icon="book" onClick={() => setPrebuiltOpen(true)}>
+            Prebuilt<span className="m7-count">{KIT_COUNT}</span>
+          </Btn>
+          <Btn icon="upload" onClick={() => setImportOpen(true)}>Import</Btn>
           <Btn icon="link" onClick={() => setPfOpen(true)}>
             Preflight{pf.length > 0 && <span className={`m7-badge ${pfErrors ? "is-bad" : "is-warn"}`}>{pf.length}</span>}
           </Btn>
@@ -498,7 +506,11 @@ export function Layouts() {
             </button>
           )}
           {tab === "templates" && (
-            <div className="m7-lib-foot is-static"><Icon name="shield" size={12} />Built-in templates cannot be deleted</div>
+            <div className="m7-lib-foot m7-lib-foot-import">
+              <button onClick={() => setPrebuiltOpen(true)}><Icon name="book" size={12} />{KIT_COUNT} prebuilt templates</button>
+              <button onClick={() => setImportOpen(true)}><Icon name="upload" size={12} />Import HTML or JSON</button>
+              <span className="m7-lib-foot-note"><Icon name="shield" size={11} />Built-in templates cannot be deleted · {PREBUILT_SOURCE.license} library ships offline</span>
+            </div>
           )}
         </aside>
 
@@ -803,6 +815,13 @@ export function Layouts() {
               <div className="m7-pane-h">
                 <input className="m7-name" value={tplDraft.name} disabled={readOnly} onChange={(e) => patchTpl((t) => { t.name = e.target.value; })} aria-label="Template name" />
                 <span className="m7-scope">{tplDraft.builtIn ? "Built-in · workspace" : "Workspace"}</span>
+                {tplDraft.origin && tplDraft.origin.kind !== "builtin" && (
+                  <Pill tone={tplDraft.origin.kind === "prebuilt" ? "violet" : "blue"}>
+                    {tplDraft.origin.kind === "prebuilt"
+                      ? `Prebuilt · ${tplDraft.origin.license ?? "MIT"}`
+                      : tplDraft.origin.kind === "builder" ? "Saved from a page" : `Imported · ${tplDraft.origin.kind.toUpperCase()}`}
+                  </Pill>
+                )}
               </div>
               <textarea className="m7-desc" rows={3} value={tplDraft.desc} disabled={readOnly} aria-label="Template description" onChange={(e) => patchTpl((t) => { t.desc = e.target.value; })} />
               <div className="m7-sec">
@@ -817,6 +836,14 @@ export function Layouts() {
                 <div className="m7-kv"><span>Blocks</span><b>{tplDraft.blocks.length}</b></div>
                 <div className="m7-kv"><span>SEO</span><b>{tplDraft.seoReady ? "ready" : "incomplete"}</b></div>
                 <div className="m7-kv"><span>Revision</span><b>r{tplDraft.rev}</b></div>
+                {tplDraft.origin && tplDraft.origin.kind !== "builtin" && (
+                  <>
+                    <div className="m7-kv"><span>Origin</span><b>{tplDraft.origin.name ?? "Uploaded file"}</b></div>
+                    {tplDraft.origin.source && <div className="m7-kv"><span>Source</span><b className="m7-kv-src">{tplDraft.origin.source.replace("https://github.com/", "")}</b></div>}
+                    {tplDraft.origin.commit && <div className="m7-kv"><span>Commit</span><b className="m7-kv-src">{tplDraft.origin.commit}</b></div>}
+                    {tplDraft.origin.importedAt && <div className="m7-kv"><span>Imported</span><b>{new Date(tplDraft.origin.importedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</b></div>}
+                  </>
+                )}
               </div>
               <div className="m7-sec">
                 <div className="m7-sec-h"><h4>Used by</h4></div>
@@ -902,6 +929,8 @@ export function Layouts() {
                 <MenuItem icon="eye" onClick={() => { choose(t.id, "templates"); setPreviewOpen(false); }}>Preview starter</MenuItem>
                 <MenuItem icon="plus" disabled={readOnly} onClick={() => { setMenuFor(null); setCreatePageFor(t); }}>Create page from this</MenuItem>
                 <MenuItem icon="copy" disabled={readOnly} onClick={() => { setMenuFor(null); setCreateKind("templates"); }}>Duplicate…</MenuItem>
+                <MenuItem icon="download" onClick={() => { setMenuFor(null); exportTemplate(t, layouts.find((l) => l.id === t.layoutId)?.name ?? "Website default"); app.toast({ type: "success", title: `${t.name} exported as JSON`, sub: "Round-trips: import that file anywhere, including here." }); }}>Export as JSON</MenuItem>
+                <MenuItem icon="upload" disabled={readOnly} onClick={() => { setMenuFor(null); setImportOpen(true); }}>Import a file…</MenuItem>
                 <MenuItem icon="trash" danger disabled={!canDelete || t.builtIn} onClick={() => { setMenuFor(null); setArchiveFor({ kind: "template", id: t.id, name: t.name, builtIn: t.builtIn, isDefault: false, pages: 0 }); }}>Delete template</MenuItem>
               </>
             );
@@ -952,6 +981,23 @@ export function Layouts() {
           </>
         )}
       </Popover>
+
+      {prebuiltOpen && (
+        <PrebuiltModal
+          siteId={siteId}
+          onClose={() => setPrebuiltOpen(false)}
+          onDone={(made) => { setPrebuiltOpen(false); setTick((n) => n + 1); setTab("templates"); setItab("overview"); setSel(made[0]?.id ?? null); }}
+        />
+      )}
+
+      {importOpen && (
+        <ImportModal
+          siteId={siteId}
+          layouts={layouts}
+          onClose={() => setImportOpen(false)}
+          onDone={(made) => { setImportOpen(false); setTick((n) => n + 1); setTab("templates"); setItab("overview"); setSel(made[0]?.id ?? null); }}
+        />
+      )}
 
       {createKind === "layouts" && (
         <CreateLayoutModal

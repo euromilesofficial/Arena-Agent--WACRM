@@ -81,6 +81,16 @@ export interface LayoutDraft {
   createdAt: string;
 }
 
+/** Where a template came from. Provenance is stored, not inferred. */
+export interface TemplateOrigin {
+  kind: "builtin" | "prebuilt" | "html" | "json" | "builder";
+  name?: string;
+  source?: string;
+  license?: string;
+  commit?: string;
+  importedAt?: string;
+}
+
 export interface PageTemplateDoc {
   id: string;
   siteId: string;
@@ -95,6 +105,7 @@ export interface PageTemplateDoc {
   rev: number;
   updatedAt: string;
   updatedBy: string;
+  origin?: TemplateOrigin;
 }
 
 export interface LayoutRevision {
@@ -337,7 +348,8 @@ const TEMPLATES: PageTemplateDoc[] = TP.map((t, i) => ({
   seoReady: i !== 4 && i !== 11,
   rev: 1 + (i % 5),
   updatedAt: `2026-11-0${1 + (i % 9)}T09:${String(10 + i).padStart(2, "0")}:00Z`,
-  updatedBy: ["Priya Nair", "Arjun Mehta", "Neha Kulkarni"][i % 3]
+  updatedBy: ["Priya Nair", "Arjun Mehta", "Neha Kulkarni"][i % 3],
+  origin: { kind: "builtin" }
 }));
 
 /* ---------------- mutable store ---------------- */
@@ -689,6 +701,49 @@ export const LayoutsAPI = {
     });
     snapshot(target, "layout", `Reassigned ${moved} page${moved > 1 ? "s" : ""} to this layout`);
     return { moved, label };
+  },
+
+  /** import: prebuilt kits, HTML uploads and JSON bundles all land here */
+  async importTemplates(siteId: string, items: { name: string; blocks: BlockNode[]; intent?: string; layoutId?: string; origin: TemplateOrigin }[]): Promise<PageTemplateDoc[]> {
+    await wait(320, 640);
+    if (mode.fail) throw new Err("E_SAVE", "The template service is unreachable — nothing was imported.");
+    const d = get();
+    if (!items.length) throw new Err("E_VALID", "Nothing to import.");
+    const budget = 120;
+    if (d.templates.length + items.length > budget) throw new Err("E_LIMIT", `This workspace holds ${budget} templates. Import fewer, or delete one first.`);
+    const made: PageTemplateDoc[] = [];
+    for (const item of items) {
+      const base = (item.name || "Imported template").trim().slice(0, 60);
+      let name = base || "Imported template";
+      let n = 2;
+      while (d.templates.some((t) => t.name.toLowerCase() === name.toLowerCase())) name = `${base} ${n++}`.slice(0, 60);
+      const blocks = clone(item.blocks).slice(0, 40);
+      if (!blocks.length) throw new Err("E_VALID", `“${base}” produced no blocks.`);
+      const doc: PageTemplateDoc = {
+        id: `tpl_${slug(name)}_${d.templates.length + 1}`,
+        siteId,
+        name,
+        intent: item.intent ?? "Imported",
+        desc: item.origin.kind === "prebuilt"
+          ? `Imported from the prebuilt library · ${item.origin.name ?? "open-source starter"} (${item.origin.license ?? "MIT"}). Structure and copy only.`
+          : item.origin.kind === "builder"
+            ? `Saved from ${item.origin.name ?? "a page"} in the builder. ${blocks.length} sections copied; the page it came from is untouched.`
+            : `Imported ${item.origin.kind === "html" ? "from HTML" : "from a JSON bundle"}${item.origin.name ? ` · ${item.origin.name}` : ""}. ${blocks.length} blocks extracted.`,
+        scope: "workspace",
+        builtIn: false,
+        layoutId: item.layoutId || d.layouts.find((l) => l.isDefault)?.id || "lay_default",
+        blocks,
+        seoReady: false,
+        rev: 1,
+        updatedAt: now(),
+        updatedBy: "Priya Nair",
+        origin: { ...item.origin, importedAt: now() }
+      };
+      d.templates = [doc, ...d.templates];
+      snapshot(doc, "template", `Imported (${doc.origin?.kind})`);
+      made.push(doc);
+    }
+    return clone(made);
   },
 
   /** copy-on-create: template blocks become page blocks, once */
