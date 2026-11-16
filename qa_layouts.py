@@ -23,6 +23,14 @@ async def n(pg, sel):
 async def txt(pg, sel):
     return (await pg.locator(sel).first.inner_text()).strip() if await n(pg, sel) else ""
 
+async def until(pg, js, timeout=3000):
+    """Poll a predicate — the canvas and the tables settle on their own schedule."""
+    try:
+        await pg.wait_for_function(js, timeout=timeout)
+        return True
+    except Exception:
+        return False
+
 async def go(pg, qs=""):
     await pg.goto(URL + "#/layouts" + qs)
     await pg.reload()
@@ -130,7 +138,7 @@ async def main():
         await pg.select_option("select[aria-label='Global Header variant']", "hdr_min")
         await pg.wait_for_timeout(320)
         ck("E5 swapping a header variant marks the layout dirty", "Unsaved changes" in await txt(pg, ".m7-crumbs"))
-        ck("E6 the canvas header follows the working copy", "Minimal Header" in await pg.evaluate("() => document.querySelector('.m7l-header')?.innerText ?? ''") or await pg.evaluate("() => document.querySelector('.m7l-header-cta')?.textContent") == "Apply Now")
+        ck("E6 the canvas header follows the working copy", await until(pg, "() => document.querySelector('.m7l-header-cta')?.textContent === 'Apply Now'"))
         ck("E7 save becomes available", not await pg.is_disabled(".m7-insp-foot .btn-primary"))
         rev_before = await txt(pg, ".m7-kv:last-of-type b")
         await pg.click(".m7-insp-foot .btn-primary")
@@ -211,7 +219,7 @@ async def main():
         ck("G12 the target layout now owns those pages", "2 pages" in await txt(pg, ".m7-row.is-on .m7-row-meta"), await txt(pg, ".m7-row.is-on .m7-row-meta"))
         await pg.click(".m7-insp-tabs button:nth-child(3)")
         await pg.wait_for_timeout(420)
-        ck("G13 the moved pages read as explicit assignments", "Explicitly assigned" in await txt(pg, ".m7-pane") and await n(pg, ".m7-usage-row") == 2, str(await n(pg, ".m7-usage-row")))
+        ck("G13 the moved pages read as explicit assignments", await until(pg, "() => document.querySelectorAll('.m7-usage-row').length === 2") and "Explicitly assigned" in await txt(pg, ".m7-pane"), str(await n(pg, ".m7-usage-row")))
 
         # ---------------- H · templates ----------------
         await pg.click(".m7-lib-tabs button:nth-child(2)")
@@ -281,7 +289,7 @@ async def main():
         await pg.wait_for_timeout(320)
         ck("J4 preview width switching works", await n(pg, ".m7-pv-frame.is-mobile") == 1)
         await close_overlays(pg)
-        await pg.click(".m7-seo")
+        await pg.click(".m7-seo-pill")
         await pg.wait_for_timeout(340)
         ck("J5 SEO readiness is a computed checklist", await n(pg, ".m7-seo-list > div") >= 3)
         ck("J6 the checklist shows pass states", await n(pg, ".m7-seo-list .is-ok") >= 1)
