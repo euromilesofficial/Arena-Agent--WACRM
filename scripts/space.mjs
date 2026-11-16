@@ -26,8 +26,10 @@ const CEILING = 128 * 1024 * 1024;
 const EXCLUDED = new Set([
   "node_modules", ".git", ".cache", ".local", "dist", "build", "out", "target",
   "coverage", "__pycache__", ".next", ".nuxt", ".svelte-kit", ".turbo", ".parcel-cache",
-  ".pytest_cache", ".ruff_cache", ".mypy_cache", ".vite", ".playwright-cli", ".arena"
+  ".pytest_cache", ".ruff_cache", ".mypy_cache", ".vite", ".playwright-cli", ".arena",
+  ".npm", ".nox", ".output", ".tox", ".nuxt", ".parcel-cache"
 ]);
+/* Mirrors the snapshotter's list (see the system note). Keep these two in step. */
 
 const size = (p) => {
   try {
