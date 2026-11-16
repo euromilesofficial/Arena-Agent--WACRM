@@ -1,7 +1,7 @@
 # Where the bytes live
 
-The workspace hit its 128 MB ceiling with five modules still to build. It is now **52 MB**,
-and this file is the map — because the fix was not "delete things", it was "stop storing the
+The workspace hit its 128 MB ceiling with five modules still to build. It is now
+**30.1 MB** of 128 MB, and this file is the map — because the fix was not "delete things", it was "stop storing the
 same bytes twice, and stop embedding fonts nobody picks".
 
 ## What was actually large
@@ -73,13 +73,35 @@ Runtime cost of the trim: the picker's default list is 50 families instead of 24
 specimen/preview load 3.3 MB of font data instead of 14 MB — measurably faster first paint.
 Nothing renders differently: every family the UI can name is still embedded.
 
-## Final composition (52 MB)
+## Final composition (measured, `node scripts/space.mjs`)
 
 ```
-29 MB  .git          26 MB of it the reference mocks · the rest is docs and the trimmed artifact
-20 MB  working tree  artifact 4.8 MB · font source 3.3 MB · QA captures 9.5 MB · source ~2 MB
- 3.7 MB zip
+30.1 MB  total snapshot  (23.5% of 128 MB; 37 checkpoints of headroom)
+17.3 MB  working tree    artifact 4.8 MB · zip 4.8 MB · source + docs ~2 MB · uploads 0.9 MB · qa 0.5 MB
+12.8 MB  .git            pack 12.7 MB · 75 commits
 ```
 
-The QA captures are local only — gitignored and excluded from the zip — so deleting them
-costs nothing but the screenshots; they are ~9.5 MB of the 52.
+## What changed in the second pass (M7 completion → space)
+
+The first pass reached 82 MB. Three things were still being stored that did not need to be:
+
+| Item | Cost | Fix |
+|---|---|---|
+| `/home/user/uploads/` — PNG originals of the six mocks | 9.5 MB | removed. Every original has a WebP counterpart in `wacrm-app/uploads/` (in Git), which is the mock source of truth. |
+| `qa/` — 94 screenshots from the last full run | 11 MB | `qa-all` now clears them after each run (`QA_KEEP_SHOTS=1` keeps them). Only the M7 captures stay in the tree. They were already gitignored, so Git was never the problem. |
+| Old history: 21 superseded blobs ≥ 400 KB (old artifacts, font-data versions, QA captures) | 65 MB raw in history | history rewritten with `git-filter-repo`: `.git` **46 MB → 13 MB**. HEAD keeps every file it has today. |
+
+### The history rewrite, and what it means
+
+- Every commit hash changed. The old `main` (`863a3f0`) is kept at **`archive/pre-prune-863a3f0`** on GitHub, so nothing is lost.
+- Old **rollback tags were not moved.** They still point at the archived commits and keep their full trees.
+- Old revisions no longer contain their own built `WACRM-CMS.html`. You can still rebuild any of them from its source with `npm run build`, but you cannot open an old artifact from history.
+- The QA screenshots of old runs were removed from history too. They were regenerable and gitignored.
+
+## Rules so this does not come back
+
+1. **Build outputs are not history.** `WACRM-CMS.html` and the zip are rebuilt from source on each checkpoint. Do not commit extra copies (no `dist/`, no `*.html` snapshots).
+2. **Evidence is not stored twice.** Screenshots go in `qa/`, are cleared after a run, and are never committed.
+3. **One tree, no mirror.** `wacrm-app/` is the repository.
+4. **Check before a big module.** `node scripts/space.mjs` prints the budget and the biggest items. Run it at the start of a module, not after the ceiling.
+5. **Pruning rewrites public history**, so it never runs on its own. `checkpoint.sh` warns above 78%; `node scripts/prune-history.mjs --apply --push` does the rewrite, archives the old head to the remote first, and force-pushes with a lease on that head.
