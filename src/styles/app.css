@@ -4302,13 +4302,14 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m7-devices button.is-on{background:#fff;color:var(--brand-ink);box-shadow:var(--sh-1)}
 .m7-zoom{height:25px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface);font-size:11px;color:var(--ink-2);padding:0 4px}
 .m7-stage{flex:1;min-height:0;background:linear-gradient(180deg,#F7F8FA,#EFF1F5);border:1px solid var(--line);border-top:0;border-bottom:0;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:10px}
+.m7-stage>.m7l-stage{align-self:stretch;height:100%;min-height:0}
 .m7-stage-skel{width:100%;padding:6px}
 .m7-stage>.empty-state{margin:auto}
 
 /* ---------- the canvas ---------- */
-.m7l-stage{width:100%;display:flex;align-items:flex-start;justify-content:center;overflow:hidden}
-.m7l-scale{position:relative;width:100%;display:flex;justify-content:center}
-.m7l-frame{position:absolute;top:0;left:50%;transform-origin:top center;will-change:transform;background:#fff;border-radius:10px;box-shadow:0 18px 44px -18px rgba(16,24,40,.28),0 0 0 1px rgba(16,24,40,.07);overflow:hidden;display:flex;flex-direction:column}
+.m7l-stage{width:100%;overflow:auto;padding:14px 0 18px;scrollbar-width:thin}
+.m7l-scale{width:fit-content;min-width:100%;margin:0 auto}
+.m7l-frame{position:relative;background:#fff;border-radius:10px;box-shadow:0 18px 44px -18px rgba(16,24,40,.28),0 0 0 1px rgba(16,24,40,.07);overflow:hidden;display:flex;flex-direction:column}
 .m7l-frame[data-device="mobile"]{border-radius:18px}
 .m7l-browser{height:26px;flex:0 0 auto;display:flex;align-items:center;gap:4px;padding:0 10px;background:#F7F8FA;border-bottom:1px solid var(--line)}
 .m7l-browser span{width:7px;height:7px;border-radius:50%;background:#DFE3E9}
@@ -4756,3 +4757,18 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m7-hist-sum{white-space:normal;line-height:1.35}
 .m7-hist-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .m7-hist-cur{flex:none;font:600 10.5px/1 inherit;color:var(--brand-ink);padding:0 4px}
+
+/* ---------- Module 7 canvas · real blocks inside the slot ----------
+   The builder renders blocks at real website scale; here they sit inside a
+   device frame. Their own section padding is kept, the slot only spaces them. */
+.m7l-block{padding:0;overflow:hidden;border-radius:0;border:0;background:transparent}
+.m7l-block .wb-sec,.m7l-block>.wb-section{margin:0}
+.m7l-block-tag{position:absolute;top:6px;right:8px;z-index:2;font-size:9.5px;font-weight:650;color:#8A4B00;background:#FFF4DB;border:1px solid #F3DCA8;border-radius:20px;padding:1px 8px}
+.m7l-block.is-denied{outline:2px dashed var(--amber-line);outline-offset:-2px}
+
+
+/* ---------- prebuilt kit · rendered preview (above the block list) ---------- */
+.m7-pre-render{max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+.m7-pre-scale{display:flex;flex-direction:column}
+.m7-pre-shot{border-bottom:1px dashed var(--line);overflow:hidden}
+.m7-pre-shot:last-child{border-bottom:0}

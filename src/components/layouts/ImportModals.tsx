@@ -11,7 +11,8 @@
    Both show exactly what will land (block by block) and what will
    not, before anything is written.
    ============================================================ */
-import { useMemo, useRef, useState } from "react";
+import { Node as BlockView, type RenderCtx } from "@/components/builder/Blocks";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Field, Modal, Pill, Tip } from "@/components/ui";
 import { useApp } from "@/lib/store";
@@ -67,6 +68,35 @@ function Notes({ notes }: { notes: ImportReport["notes"] }) {
 }
 
 const BLOCK_TYPES = Object.keys(REGISTRY) as BlockType[];
+
+/* The kit is drawn at its 1440 px desktop design width and scaled to the pane, so the
+   pane shows the page as a visitor would see it, not a clipped corner of it. */
+function KitPreview({ blocks }: { blocks: BlockNode[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(360);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    ro.observe(el);
+    setW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+  const k = Math.min(1, Math.max(0.1, (w - 2) / 1440));
+  if (blocks.length === 0) {
+    return <p className="m7-muted" style={{ padding: 12 }}>This kit produced no blocks, so there is nothing to render.</p>;
+  }
+  return (
+    <div ref={ref} className="m7-pre-render" aria-label="Rendered preview of the kit">
+      <div className="m7-pre-scale wb-doc wb-dev-desktop" style={{ width: 1440, zoom: String(k) } as CSSProperties}>
+        {blocks.map((b) => <div key={b.id} className="m7-pre-shot"><BlockView node={b} ctx={READ_ONLY_RENDER} /></div>)}
+      </div>
+    </div>
+  );
+}
+
+/* the rendered preview is read-only: retyping happens in the list below it */
+const READ_ONLY_RENDER: RenderCtx = { selId: null, selEl: null, onSelect: () => {}, onSelectEl: () => {} };
 
 function BlockList({ blocks, onChange, changed }: {
   blocks: BlockNode[];
@@ -229,6 +259,7 @@ export function PrebuiltModal({ siteId, onClose, onDone }: {
                   </button>
                 )}
               </div>
+              <KitPreview blocks={shown} />
               <BlockList blocks={shown} onChange={remap} changed={editedRows} />
               <div className="m7-pre-report">
                 <Mapped report={content.report} />

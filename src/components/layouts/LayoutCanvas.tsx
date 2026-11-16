@@ -1,14 +1,16 @@
 /* ============================================================
    Module 7 · Layout canvas
    ------------------------------------------------------------
-   A schematic of the resolved layout, drawn from the real data:
-   the announcement variant's text, the header variant's nav/CTA,
-   the slot's seed blocks and the footer's column count. Empty and
+   The resolved layout, drawn from the real data: the announcement
+   variant's text, the header variant's nav and CTA, the slot's seed
+   blocks rendered by the builder's own block renderer (real copy,
+   real buttons and cards), and the footer's columns. Empty and
    missing states are drawn, never faked.
    ============================================================ */
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/Icon";
 import type { BlockNode } from "@/lib/builder";
+import { Node as BlockView, type RenderCtx } from "@/components/builder/Blocks";
 import type { LayoutFrame, SlotPolicy } from "@/lib/layout-db";
 
 export const LAYOUT_DEVICE_W = { desktop: 1440, tablet: 768, mobile: 375 } as const;
@@ -20,66 +22,8 @@ const lines = (n: number, w = [92, 78, 84, 62]) => (
   </div>
 );
 
-function Sketch({ type, device }: { type: string; device: LayoutDevice }) {
-  const narrow = device === "mobile";
-  switch (type) {
-    case "hero":
-      return (
-        <div className={`m7l-hero ${narrow ? "is-narrow" : ""}`}>
-          <div className="m7l-hero-copy">
-            <span className="m7l-eyebrow" />
-            <span className="m7l-h1" />
-            <span className="m7l-h1 is-short" />
-            <span className="m7l-h1 is-shortest" />
-            <span className="m7l-cta" />
-          </div>
-          <div className="m7l-img is-hero" />
-        </div>
-      );
-    case "heading":
-      return <div className="m7l-heading"><span /><span className="is-short" /></div>;
-    case "text":
-      return <div className="m7l-text">{lines(4)}</div>;
-    case "image":
-      return <div className="m7l-img is-wide" />;
-    case "video":
-      return <div className="m7l-img is-wide is-video"><Icon name="play" size={16} /></div>;
-    case "form":
-      return (
-        <div className="m7l-form">
-          <span className="m7l-form-t" />
-          {[0, 1, 2].map((i) => <span key={i} className="m7l-input" />)}
-          <span className="m7l-form-btn" />
-        </div>
-      );
-    case "featureGrid":
-      return <div className={`m7l-cards ${narrow ? "is-narrow" : ""}`}>{[0, 1, 2].map((i) => <div key={i} className="m7l-card"><i /><span /><span className="is-short" /></div>)}</div>;
-    case "table":
-      return <div className="m7l-table">{[0, 1, 2, 3].map((i) => <span key={i} />)}</div>;
-    case "testimonials":
-      return <div className={`m7l-quotes ${narrow ? "is-narrow" : ""}`}>{[0, 1, 2].slice(0, narrow ? 1 : 3).map((i) => <div key={i}><span /><em /></div>)}</div>;
-    case "faq":
-      return <div className="m7l-faq">{[0, 1, 2].map((i) => <span key={i} />)}</div>;
-    case "list":
-      return <div className="m7l-list">{[0, 1, 2].map((i) => <span key={i} />)}</div>;
-    case "alert":
-      return <div className="m7l-alert" />;
-    case "ctaSection":
-      return <div className="m7l-band"><span /><i /></div>;
-    case "columns":
-      return <div className={`m7l-cols ${narrow ? "is-narrow" : ""}`}>{[0, 1, 2].map((i) => <div key={i}>{lines(3)}</div>)}</div>;
-    case "quote":
-      return <div className="m7l-pullquote">{lines(2)}</div>;
-    case "divider":
-      return <div className="m7l-divider" />;
-    case "button":
-      return <div className="m7l-btn-row"><span className="m7l-cta" /></div>;
-    case "pricing":
-      return <div className={`m7l-cards ${narrow ? "is-narrow" : ""}`}>{[0, 1, 2].map((i) => <div key={i} className="m7l-card is-price"><i /><span /><b /></div>)}</div>;
-    default:
-      return <div className="m7l-generic">{lines(2)}</div>;
-  }
-}
+/* Read-only: the canvas shows the page, it does not select or edit blocks. */
+const READ_ONLY: RenderCtx = { selId: null, selEl: null, onSelect: () => {}, onSelectEl: () => {} };
 
 export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy }: {
   frame: LayoutFrame;
@@ -102,17 +46,19 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
   }, []);
 
   const base = LAYOUT_DEVICE_W[device];
-  /* the fit scale never exceeds 1:1 — a 375 px phone must not be blown up */
+  /* zoom 0 = Fit to the stage (never above 1:1); any other value is a true percentage of
+     the device's real width, and the stage scrolls. Fit made 1440 px text unreadable in a
+     546 px column, which is why 100 % is now actual size. */
   const fit = Math.min(1, (stageW - 4) / base);
-  const k = (zoom / 100) * fit;
-  const height = device === "desktop" ? 1080 : device === "tablet" ? 1180 : 1060;
+  const k = zoom === 0 ? fit : zoom / 100;
+  const minHeight = device === "desktop" ? 1080 : device === "tablet" ? 1180 : 1060;
   const narrow = device === "mobile";
   const blocked = seed.filter((b) => policy.deny.includes(b.type));
 
   return (
     <div className="m7l-stage" ref={stageRef}>
-      <div className="m7l-scale" style={{ height: Math.round(height * k) }}>
-        <div className="m7l-frame" style={{ width: base, height, transform: `translateX(-50%) scale(${k})` }} data-device={device}>
+      <div className="m7l-scale">
+        <div className="m7l-frame" style={{ width: base, minHeight, zoom: String(k) } as CSSProperties} data-device={device}>
           <div className="m7l-browser">
             <span /><span /><span />
             <em>euromiles.in</em>
@@ -148,11 +94,11 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
                   <span>Pages using this layout start blank and compose here in the Visual Builder.</span>
                 </div>
               ) : (
-                <div className="m7l-blocks">
+                <div className={`m7l-blocks wb-doc wb-dev-${device}`}>
                   {seed.map((b) => (
-                    <div key={b.id} className={`m7l-block is-${b.type} ${blocked.includes(b) ? "is-denied" : ""}`}>
-                      <span className="m7l-block-tag">{b.type}</span>
-                      <Sketch type={b.type} device={device} />
+                    <div key={b.id} className={`m7l-block is-${b.type} ${blocked.includes(b) ? "is-denied" : ""}`} data-block={b.type}>
+                      {blocked.includes(b) && <span className="m7l-block-tag">{b.type} · not allowed in this slot</span>}
+                      <BlockView node={b} ctx={READ_ONLY} />
                     </div>
                   ))}
                 </div>

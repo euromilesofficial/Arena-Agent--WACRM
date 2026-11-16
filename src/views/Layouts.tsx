@@ -105,7 +105,7 @@ export function Layouts() {
   const [sort, setSort] = useState<Sort>("recent");
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [device, setDevice] = useState<LayoutDevice>("desktop");
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(100); // 0 = Fit to the stage; otherwise true size %
 
   const [draft, setDraft] = useState<LayoutDraft | null>(null);
   const [tplDraft, setTplDraft] = useState<PageTemplateDoc | null>(null);
@@ -556,7 +556,7 @@ export function Layouts() {
                 ))}
               </div>
               <select className="m7-zoom" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
-                {[60, 75, 90, 100].map((z) => <option key={z} value={z}>{z}%</option>)}
+                {[0, 60, 75, 100].map((z) => <option key={z} value={z}>{z === 0 ? "Fit" : `${z}%`}</option>)}
               </select>
             </div>
           </div>

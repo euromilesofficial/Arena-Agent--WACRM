@@ -157,6 +157,37 @@ async def main():
         await pg.wait_for_timeout(1500)
         ck("E5 Open layout reaches Module 7", "#/layouts" in pg.url, pg.url)
 
+        # ---------------- G · the canvas shows real content, not sketches ----------------
+        await cold(pg, "#/layouts")
+        await pg.get_by_role("tab", name="Page Templates").click()
+        await pg.wait_for_timeout(800)
+        await pg.select_option(".m7-zoom", "0")
+        await pg.wait_for_timeout(300)
+        ck("G1 the slot draws the builder's real blocks, not grey sketches",
+           await n(pg, ".m7l-blocks .m7l-block .wb-el") >= 3, str(await n(pg, ".m7l-blocks .m7l-block .wb-el")))
+        ck("G2 the sketch placeholders are gone", await n(pg, ".m7l-blocks .m7l-lines") == 0)
+        hd = await txt(pg, ".m7l-blocks .wb-h1, .m7l-blocks .wb-h2")
+        ck("G3 the template's own heading is readable copy", len(hd.strip()) > 3, hd[:80])
+        await pg.select_option(".m7-zoom", "100")
+        await pg.wait_for_timeout(300)
+        box = await pg.evaluate("() => { const f=document.querySelector('.m7l-frame'); return f ? Math.round(f.getBoundingClientRect().width) : 0 }")
+        ck("G4 100% is the device's true width (1440 px desktop), not a fit", box >= 1400, str(box))
+        await pg.select_option(".m7-zoom", "0")
+        await pg.wait_for_timeout(300)
+        fit = await pg.evaluate("() => { const f=document.querySelector('.m7l-frame'); return f ? Math.round(f.getBoundingClientRect().width) : 0 }")
+        ck("G5 Fit scales the frame into the stage", 0 < fit < 700, str(fit))
+
+        # the Prebuilt browser draws each kit as a page, not as a list
+        await pg.get_by_role("button", name="Prebuilt").first.click()
+        await pg.wait_for_timeout(1200)
+        await pg.locator(".m7-pre-row").first.click()
+        await pg.wait_for_timeout(500)
+        ck("G6 the kit is drawn as a page at its design width",
+           await n(pg, ".m7-pre-render .m7-pre-scale .wb-el") >= 3)
+        ck("G7 the drawn kit has visible copy", len((await txt(pg, ".m7-pre-render")).strip()) > 20)
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(300)
+
         # ---------------- F · hygiene ----------------
         ck("F1 no console or page errors", not errs, "; ".join(errs[:3]))
         await b.close()
