@@ -1,4 +1,4 @@
-# State coverage — Modules 1, 2, 3 & 4
+# State coverage — Modules 1, 2, 3, 4 & 7
 
 Every state below is code-backed in `WACRM-CMS.html` (React 19 + TS build; all reads go through `src/lib/data.ts`, which adds latency and failure paths, so nothing is a static mock in the view layer).
 
@@ -12,6 +12,8 @@ Every state below is code-backed in `WACRM-CMS.html` (React 19 + TS build; all r
 | `qa_states_m3.py` | Module 3 — loading, empty, 503, conflict, viewer, empty trash, stale inspector, bulk partial failure, undo | **40/40** |
 | `qa_builder.py` | Module 4 — Visual Builder: 3 panels, header, status strip, library (19/23/5), stage, inspector, drag, AI, autosave, publish, revisions, 3 widths | **97/97** |
 | `qa_states_m4.py` | Module 4 — skeleton, empty page, draft failure, viewer, CAS conflict, save failure, AI error/abort, empty catalogue, deleted page, publish guards, reduced motion, keyboard, dialog dismissal | **47/47** |
+| `qa_layouts.py` | Module 7 — geometry, derived KPIs, library, canvas at three widths, inspector saves, policy, seed editing, bulk reassign, templates, guarded deletion, preview/SEO/preflight, keyboard | **99/99** |
+| `qa_states_m7.py` | Module 7 — skeleton, slow transport, empty, error + retry, Viewer, CAS conflict, unsaved-leave guard, protected deletions, M3 and M4 interlinks, cold deep links | **38/38** |
 
 **Triggering states by hand:** open `WACRM-CMS.html`, then use the `Prototype states` menu (beaker icon, top-right) for Default / Empty (no data in range) / Error / Publish conflict / Permission denied (Viewer). Everything else happens by clicking.
 
@@ -199,3 +201,35 @@ One screen, three panels, no fourth rail. Everything below is code-backed in `WA
 - **Drag between windows / cross-page copy** — drag is within one document.
 
 Each gap has a contract row in `BACKEND-PLAN.md` §7.19.
+
+---
+
+## Module 7 — Layouts & Templates
+
+| # | State | What you see | How to reach it | Backend contract |
+| --- | --- | --- | --- | --- |
+| 1 | Loading | five skeleton rows in the library and a skeleton stage; the header, KPIs and slot bar render immediately | first paint, or `Prototype states → Loading skeletons` | `GET /v1/layouts?site=` |
+| 2 | Slow transport | skeletons persist ~4× longer; nothing on screen pretends to be data | `Prototype states → Loading skeletons` | same, with injected latency |
+| 3 | Empty | only the website default survives, the templates tab shows `No templates` with a create action, counts drop to 1 / 0 | `Prototype states → Empty (no data in range)` | `200` with one layout, no templates |
+| 4 | Service down | the library shows `Could not load` with the reason and `Retry`; the stage shows the error card; retry recovers | `Prototype states → Error / service down` | `503` on `/v1/layouts` |
+| 5 | View-only | create / rename / variant select / save disabled; menus still open so capabilities are discoverable | `Prototype states → Permission denied (Viewer)` | `403` on any write |
+| 6 | CAS conflict | `This layout moved while you were editing` with your copy vs theirs and three resolutions (keep editing, overwrite, load theirs) | edit a layout while `Prototype states → Publish conflict` | `409 LAYOUT_REVISION_STALE` |
+| 7 | Unsaved leave | `Save your changes first?` when switching layouts, with Stay / Discard and leave | edit a region variant, then pick another layout | — |
+| 8 | Refused deletion | the dialog opens but the destructive button is disabled with the reason in full: *is the website default*, *N pages still use it*, *built-in templates are protected* | row menu → Archive on the default or any bound layout | `422 LAYOUT_IN_USE` |
+| 9 | Restore | an archived layout returns with a new revision and its binding history intact | show archived → row menu → Restore layout | `POST /v1/layouts/{id}:restore` |
+| 10 | Hidden region without a reason | the region stays hidden but the row shows `reason required` and preflight lists it as a warning | switch a region off and leave the reason empty | `422 HIDE_REASON_REQUIRED` |
+| 11 | Policy over ceiling | saving is refused with the ceiling named; the seed list shows the warning inline before you try | add seed blocks past `maxBlocks` | `422 SLOT_POLICY_LIMIT` |
+| 12 | Preflight | blocking vs warning findings, each with its detail and (where one exists) its fix; `Open the affected pages` | header → Preflight | `GET /v1/layouts/preflight?site=` |
+| 13 | Empty search | `No layout matches that search` with a clear action; counts unchanged | type nonsense in the library search | client-side |
+| 14 | Empty slot | the canvas draws a labelled empty slot (`Empty content slot`), never a fake block | remove every seed block | — |
+| 15 | Bulk cap | more than 40 selected pages disables the action and the dialog explains the cap before the request | select all on a 48-page site, then reassign | `422 BULK_LIMIT` |
+| 16 | Deep link | `#/layouts?site=&tab=&itab=&sel=` restores tab, inspector and selection on a cold load | paste a link | — |
+| 17 | Layout | no page scrollbar at 1440×900; three columns never overlap; the inspector footer stays visible while the pane scrolls | resize | — |
+
+### Fixed while building
+
+- **The canvas showed the saved layout, not the working copy** — `frameFor` resolved from the store, so a variant swap only appeared after Save. It now builds the frame from the draft object (`frameOf`).
+- **A slot policy could contain a block type that does not exist** (`stats` had slipped into a seed allow-list); allow-lists are now filtered against `REGISTRY`, so a typo can hide nothing.
+- **Re-loading on a demo-state change kept stale numbers** — the payload is dropped when the slow state is forced, so the skeleton is honest.
+- **Switching library tab kept the previous inspector tab**, which rendered a layout pane for a template; the switch now resets to Overview.
+- **`Preview Layout` was disabled on the templates tab** although a template has a shell to preview.

@@ -8,7 +8,7 @@ Every screen ships with its **CTAs wired, its dropdowns working, and its operati
 Modules built   6   ·  M1 Overview · M2 Sites & Domains · M3 Pages & Routes
                        M4 Visual Builder (+ AI) · M5 Block Library
                        M6 Theme Studio · M6.1 type scale, specimen, revisions, fonts
-Suites          11  ·  807 assertions, all green
+Suites          13  ·  944 assertions, all green
 Artifact        4.75 MB  ·  WACRM-CMS.html  ·  no network, no dependencies at runtime
 Package         3.82 MB  ·  wacrm-app.zip   ·  opens by double-click
 Backend         not built — every call is a documented contract in BACKEND-PLAN.md
@@ -61,7 +61,7 @@ The product is modelled on the same surface area as Shopify's Online Store, Elem
 Three things separate this from a mockup:
 
 1. **State is real.** Saves use compare-and-swap with a `409` conflict path, the builder autosaves with undo/redo, themes write drafts only, and every screen has reachable loading / empty / error / viewer / conflict states.
-2. **It is measured.** 807 Playwright assertions drive the built artifact — not the source, not a dev server — and the count is regenerated into `HANDOVER.md` on every build.
+2. **It is measured.** 944 Playwright assertions drive the built artifact — not the source, not a dev server — and the count is regenerated into `HANDOVER.md` on every build.
 3. **It is documented as a contract.** `BACKEND-PLAN.md` specifies the schema, endpoints, RBAC and job states behind every button, because the backend is deliberately out of scope.
 
 ---
@@ -174,7 +174,7 @@ If you want to *rebuild* offline you also need the dev toolchain available in th
 | `npm run dev` | Vite dev server on `:5173` for editing. See [known issue](#npm-run-dev-fails-with-a-react-hooks-error). |
 | `npm run preview` | serve the last build from `dist/` (requires a build first) |
 | `npm run serve` | `python3 serve.py` → `:4173`, serves the single file |
-| `npm run qa` | run all 11 suites → `qa/last-run.json` → regenerate the handover |
+| `npm run qa` | run all 13 suites → `qa/last-run.json` → regenerate the handover |
 | `npm run qa:check` | exit 1 if `HANDOVER.md` is stale (CI gate) |
 | `npm run handover` | regenerate `HANDOVER.md` alone |
 | `npm run package` | regenerate `../wacrm-app.zip` alone |
@@ -259,15 +259,23 @@ Closes the four Tier-A gaps found by a competitive benchmark against Shopify, El
 
 Document schema is **version 2**; a version-1 file still imports, with the four derived roles and the default scale named in the review.
 
-### M7 · Layouts & Templates — reviewed, awaiting build
+### M7 · Layouts & Templates — built · `#/layouts`
 
-The specification for the next module has been reviewed against nine production CMSs before
-any code: **`MODULE-7-SPEC.md`** (the submitted contract, persisted verbatim),
-**`MODULE-7-BENCHMARK.md`** (how Shopify, WordPress, Webflow, Elementor, AEM, Sitecore SXA,
-HubSpot, Sanity and Squarespace actually model layouts) and **`MODULE-7-GAP-REVIEW.md`**
-(22 findings, decisions on the spec's own 16 open questions, the data model, the interlink
-contract and the build plan). The headline: shared chrome must become its own object, the
-content slot needs a policy, and the slot needs seed content.
+Review first (**`MODULE-7-SPEC.md`**, **`MODULE-7-BENCHMARK.md`**, **`MODULE-7-GAP-REVIEW.md`
+— 22 findings, 16 decisions), then the build. Full build record, including the honest
+deltas: **`MODULE-7-BUILD.md`**.
+
+| Area | What ships |
+|---|---|
+| **Master layout** | Announcement · Global Header · **one required Main Content Slot** · Global Footer. Chrome is *referenced*, never copied: a `SharedRegion` owns the variants, a layout stores `{regionId, variantId, visible}` and a reason whenever a region is hidden |
+| **Slot policy** | An allow-list of block types plus a block ceiling, enforced in the Visual Builder's library (`data-policy`), in the canvas (denied blocks flagged) and at save time |
+| **Seed blocks** | Add / reorder / remove; cloned into every page created on the layout |
+| **Page templates** | 12 starters across 8 intents. **Copy-on-create** — blocks are cloned once, never live-inherited; "Create page" writes a real draft page and hands its composition to Module 4 |
+| **Derived counts** | Master layouts, templates, pages assigned, draft changes, page-group cards and both usage tables are read from `DBX().cmsPages` — no hand-typed number |
+| **Bulk reassign** | ≤ 40 pages, impact preview, one audit event, writes `CmsPage.layout` so Pages and the builder follow immediately |
+| **Guarded deletion** | Archive-only for layouts; the default and any layout in use are refused *with the reason and the count*; restore is one click |
+| **Preflight** | Unknown/archived bindings, missing default, hidden footer, SEO-not-ready, hidden region without a reason — every finding names its fix |
+| **States** | Loading skeletons, empty, error + retry, Viewer (read-only, disabled affordances), CAS save conflict, unsaved-leave guard, slow transport |
 
 ### M6.2 · Ten presets, real font downloads, the complete bundle — `#/theme`
 
@@ -295,7 +303,7 @@ The sidebar is the product's shape. Built screens navigate; the rest render a de
 | | Visual Builder | ✅ M4 |
 | | Block Library | ✅ M5 |
 | | Theme Studio | ✅ M6 / M6.1 |
-| | Layouts & Templates | ⬜ M7 (headers, footers, reusable blocks, templates) |
+| | Layouts & Templates | ✅ M7 (master layouts, slot policy, templates, usage) |
 | | Menus & Navigation | ⬜ M8 |
 | | Media Library | ⬜ M9 |
 | | Forms & Leads | ⬜ M10 |
@@ -478,7 +486,7 @@ The token document is `schemaVersion: 2`:
 
 ## 12. Testing
 
-11 Playwright suites, **807 assertions**, run against **the built artifact** — never the dev server, never the source.
+13 Playwright suites, **944 assertions**, run against **the built artifact** — never the dev server, never the source.
 
 ```bash
 source scripts/qa-env.sh     # once per shell: extracts Chromium's libs into /tmp
@@ -497,6 +505,8 @@ npm run qa                   # → qa/last-run.json + regenerated HANDOVER.md
 | `qa_library.py` | 90 | M5 catalogue, placement index, saved templates, form/consent rules |
 | `qa_theme.py` | 241 | M6 + M6.1 + M6.2: roles, contrast maths recomputed in Python, type scale arithmetic, specimen, revisions, v1 import, ten presets, font **download**, complete bundle export, M6 → M4 canvas theming |
 | `qa_flows.py` | 38 | cross-module journeys (Pages → Builder → publish, theme → preset → release) |
+| `qa_layouts.py` | 99 | M7 geometry, derived KPIs, library, canvas at three widths, saves, slot policy, seed editing, bulk reassign, templates, guarded deletion, preview / preflight |
+| `qa_states_m7.py` | 38 | M7 skeleton / slow / empty / error / viewer / CAS conflict / unsaved-leave, protected deletions, M3 + M4 interlinks |
 | `qa_react.py` | smoke | renders the file and fails on any React warning or console error |
 
 **What the suites are for.** They are not coverage theatre: each one asserts computed values (contrast ratios recomputed independently in Python, type sizes recomputed from base × ratio, diff rows, `document.fonts.check` for real face registration), so a regression in the *maths* fails, not just a missing selector.
@@ -628,9 +638,11 @@ Rules baked into those contracts, and into the UI:
 
 ## 18. Roadmap
 
+M7 is built (`#/layouts`, 99 + 38 checks) — see `MODULE-7-BUILD.md` for what shipped and
+the honest deltas. The remaining modules are below.
+
 | Module | Scope | Depends on |
 |---|---|---|
-| **M7** | **Layouts & Templates** — headers, footers, reusable blocks with overrides, starter page compositions | M4, M5 |
 | **M9** | **Media Library** | — |
 | **M10** | **Forms & Leads** — CRM-imported forms, consent policy | M5 |
 | **M11** | **Publishing & Releases** — the only place anything goes live | everything |
@@ -646,7 +658,7 @@ Rules baked into those contracts, and into the UI:
 
 **Symptom:** the Vite dev server starts, then the page throws `Rendered fewer hooks than expected` (and logs `Do not call Hooks inside useEffect(...), useMemo(...)`), leaving a partial DOM.
 
-**Status:** known, **dev-mode only**. It is a hook-order violation that React's development build enforces and the production build tolerates. The shipped artifact and all 807 assertions are unaffected — they run against the built file.
+**Status:** known, **dev-mode only**. It is a hook-order violation that React's development build enforces and the production build tolerates. The shipped artifact and all 944 assertions are unaffected — they run against the built file.
 
 **Workaround:** use the build. `npm run build && open WACRM-CMS.html`, or `python3 serve.py` for an `http://` origin. If you are editing source and need a live origin, `npm run build && npm run preview` serves the production bundle from `dist/`.
 
@@ -704,4 +716,4 @@ These are not aspirations; they are the constraints the build was held to, and t
 
 ---
 
-*Built with React 19 + TypeScript (strict) + Vite 7. Last measured: artifact 4,766,369 B · zip 3,847,284 B · 155 tracked files · 11 suites / 807 assertions green.*
+*Built with React 19 + TypeScript (strict) + Vite 7. Built artifact and zip sizes are regenerated by `npm run package`; last measured state: 13 suites / 944 assertions green.*

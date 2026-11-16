@@ -12,7 +12,7 @@
     ]
   },
   "rules": [
-    "One module at a time: the screen, every CTA/dropdown action, and every operation state — nothing ships half-wired.",
+    "One module at a time: the screen, every CTA/dropdown action, and every operation state \u2014 nothing ships half-wired.",
     "Every state must be reachable and code-backed: loading, empty, error, viewer/read-only, conflict, permission denied.",
     "The artifact must open by double-click: single HTML file, no build, no server, no node_modules, no network.",
     "Match the approved mock: typography, spacing, alignment, full-screen fit, no empty gaps.",
@@ -20,11 +20,11 @@
     "Dropdown panels must never span the screen. Non-goals: raw HTML/CSS/JS, repeaters, page-level SEO, marketplace, staging, co-editing.",
     "Commit and tag every milestone; keep rollback tags; never persist the GitHub token; rebuild the zip on every change.",
     "Every build ships a zip: `npm run build` ends with `scripts/package.mjs`, which rewrites /home/user/wacrm-app.zip and verifies the WACRM-CMS.html inside it matches the fresh build.",
-    "Pushing to GitHub needs a credential that this sandbox does not have — run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.",
+    "Pushing to GitHub needs a credential that this sandbox does not have \u2014 run /home/user/push-to-github.sh with GITHUB_TOKEN, or hand over wacrm-app.bundle. See PUSH-TO-GIT.md.",
     "The reference mocks live in Git at `uploads/` and nowhere else: 16 WebP files (2.9 MB, re-encoded from 27.1 MB of PNG at q86), committed and marked `skip-worktree`, so no working copy exists on disk. Read one with `git -C repo show HEAD:uploads/<file> > /tmp/<file>`.",
-    "END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes — run `/home/user/checkpoint.sh \"what changed\"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.",
-    "GitHub credential: /home/user/.gh-token (0600, outside the repo). Expiry date in /home/user/.gh-token-expiry — currently 2026-11-17; checkpoint.sh warns when under 12h remain and prints the regenerate link. Never committed: a pre-commit gate refuses token patterns. If it lapses, the push fails with 401 and nothing is lost — commits stay local until the next checkpoint.",
-    "Catalogue counts are computed from the registry (20 types · 23 sections · 14 saved). If a number appears twice in the source, one of them is a defect, not a default.",
+    "END-OF-TASK ROUTINE (user's standing instruction): every time a file is created, anything is modified, or a task completes \u2014 run `/home/user/checkpoint.sh \"what changed\"`. It rebuilds the app + HANDOVER + zip, mirrors the tree into repo/, commits, pushes main and all tags, and verifies the remote head. Nothing is left uncommitted.",
+    "GitHub credential: /home/user/.gh-token (0600, outside the repo). Expiry date in /home/user/.gh-token-expiry \u2014 currently 2026-11-17; checkpoint.sh warns when under 12h remain and prints the regenerate link. Never committed: a pre-commit gate refuses token patterns. If it lapses, the push fails with 401 and nothing is lost \u2014 commits stay local until the next checkpoint.",
+    "Catalogue counts are computed from the registry (20 types \u00b7 23 sections \u00b7 14 saved). If a number appears twice in the source, one of them is a defect, not a default.",
     "Only Insert into Page may mutate a page from Module 5, and it must pass `expectRevision` so a stale modal gets a 409."
   ],
   "modules": [
@@ -33,7 +33,7 @@
       "name": "Overview",
       "route": "#/overview",
       "status": "done",
-      "evidence": "qa_states_m1.py 39/39 · qa_flows.py 38/0",
+      "evidence": "qa_states_m1.py 39/39 \u00b7 qa_flows.py 38/0",
       "notes": "Dashboard grid, 6 KPI drawers, funnel, acquisition, site health, publishing rail, release wizard, rollback."
     },
     {
@@ -41,7 +41,7 @@
       "name": "Sites & Domains",
       "route": "#/sites",
       "status": "done",
-      "evidence": "qa_module2.py 48/48 · state matrix in STATE-COVERAGE.md",
+      "evidence": "qa_module2.py 48/48 \u00b7 state matrix in STATE-COVERAGE.md",
       "notes": "Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks."
     },
     {
@@ -49,7 +49,7 @@
       "name": "Pages & Routes",
       "route": "#/pages?site=&tab=&q=&page=&sel=",
       "status": "done",
-      "evidence": "qa_pages.py 106/106 · qa_states_m3.py 40/40",
+      "evidence": "qa_pages.py 106/106 \u00b7 qa_states_m3.py 40/40",
       "notes": "Registry + tree + inspector, 8 modals, slug/route guards, deep links, trash with restore window."
     },
     {
@@ -57,7 +57,7 @@
       "name": "Visual Builder",
       "route": "#/builder?site=&page=&sel=&lib=&insp=",
       "status": "done",
-      "evidence": "qa_builder.py 97/97 · qa_states_m4.py 47/47",
+      "evidence": "qa_builder.py 97/97 \u00b7 qa_states_m4.py 47/47",
       "notes": "3-panel editor, 19 blocks / 23 sections / 5 templates, drag with refusal reasons, token-bounded style, autosave 2 s + CAS, revisions with block diff + restore, AI copy stream, publish handoff into M1."
     },
     {
@@ -65,8 +65,8 @@
       "name": "Block Library",
       "route": "#/library",
       "status": "done",
-      "evidence": "qa_library.py 90/90 · qa_builder.py 98/98",
-      "notes": "Four views (All · Native 20 · Sections 23 · Saved 14), computed KPI/in-use counts, filter rail, grouped grid + list, inspector (Overview/Properties/Compatibility · Overview/Structure/Usage), Insert into Page with six outcomes, Create from page section, duplicate, guarded delete."
+      "evidence": "qa_library.py 90/90 \u00b7 qa_builder.py 98/98",
+      "notes": "Four views (All \u00b7 Native 20 \u00b7 Sections 23 \u00b7 Saved 14), computed KPI/in-use counts, filter rail, grouped grid + list, inspector (Overview/Properties/Compatibility \u00b7 Overview/Structure/Usage), Insert into Page with six outcomes, Create from page section, duplicate, guarded delete."
     },
     {
       "id": "M6",
@@ -74,7 +74,7 @@
       "route": "#/theme",
       "status": "done",
       "evidence": "qa_theme.py 127/127",
-      "notes": "Three tabs (Brand Tokens · Typography · Presets), nine colour roles + derived on-primary, computed WCAG pairs, discrete geometry, six embedded self-hosted font families (242 KB woff2 in the artifact), live read-only preview through the M4 renderer at 1440/768/375, preset library with import/export, CAS draft save, conflict + unsaved guards, publish hand-off into M4's release flow."
+      "notes": "Three tabs (Brand Tokens \u00b7 Typography \u00b7 Presets), nine colour roles + derived on-primary, computed WCAG pairs, discrete geometry, six embedded self-hosted font families (242 KB woff2 in the artifact), live read-only preview through the M4 renderer at 1440/768/375, preset library with import/export, CAS draft save, conflict + unsaved guards, publish hand-off into M4's release flow."
     },
     {
       "id": "M6.1",
@@ -143,12 +143,12 @@
     },
     {
       "id": "D16",
-      "decision": "Nine persisted colour roles plus one derived, read-only on-primary label colour chosen for 4.5:1 — the token the spec assumed but never defined.",
+      "decision": "Nine persisted colour roles plus one derived, read-only on-primary label colour chosen for 4.5:1 \u2014 the token the spec assumed but never defined.",
       "status": "locked"
     },
     {
       "id": "D17",
-      "decision": "Spacing = base (4|8) × density (compact/comfortable/spacious); radius and container width come from closed enums, so every export can be re-imported exactly.",
+      "decision": "Spacing = base (4|8) \u00d7 density (compact/comfortable/spacious); radius and container width come from closed enums, so every export can be re-imported exactly.",
       "status": "locked"
     },
     {
@@ -163,7 +163,7 @@
     },
     {
       "id": "D20",
-      "decision": "Brand fonts (Google Sans, Product Sans, Material Symbols…) are excluded from the catalogue entirely — by the metadata flag and an explicit denylist — because they are not licensed for redistribution.",
+      "decision": "Brand fonts (Google Sans, Product Sans, Material Symbols\u2026) are excluded from the catalogue entirely \u2014 by the metadata flag and an explicit denylist \u2014 because they are not licensed for redistribution.",
       "status": "locked"
     },
     {
@@ -178,12 +178,12 @@
     },
     {
       "id": "D23",
-      "decision": "`link` is its own role, measured from itself. M6 measured link pairs against primary while no link token existed — the editor and the audit disagreed.",
+      "decision": "`link` is its own role, measured from itself. M6 measured link pairs against primary while no link token existed \u2014 the editor and the audit disagreed.",
       "status": "locked"
     },
     {
       "id": "D24",
-      "decision": "Type sizes are derived (base × ratio^n), never stored; fluid clamp() applies to h1–h3 only so body copy never shrinks with the viewport.",
+      "decision": "Type sizes are derived (base \u00d7 ratio^n), never stored; fluid clamp() applies to h1\u2013h3 only so body copy never shrinks with the viewport.",
       "status": "locked"
     },
     {
@@ -198,12 +198,12 @@
     },
     {
       "id": "D27",
-      "decision": "The specimen renders 1:1 at the studio width rather than scaled inside the 1440 px device frame — a specimen scaled to 42% is unreadable and therefore useless.",
+      "decision": "The specimen renders 1:1 at the studio width rather than scaled inside the 1440 px device frame \u2014 a specimen scaled to 42% is unreadable and therefore useless.",
       "status": "locked"
     },
     {
       "id": "D28",
-      "decision": "One repository, no mirror clone: /home/user/wacrm-app is the Git repository, so no artifact is stored twice. A symlink-based shared-copy variant was tried and abandoned — workspace snapshots drop symlinks and leave the tree inconsistent.",
+      "decision": "One repository, no mirror clone: /home/user/wacrm-app is the Git repository, so no artifact is stored twice. A symlink-based shared-copy variant was tried and abandoned \u2014 workspace snapshots drop symlinks and leave the tree inconsistent.",
       "status": "locked"
     }
   ],
@@ -211,8 +211,8 @@
     "headline": "Workspace cut from 140.6 MB to ~46 MB: the embedded font set is the top 50 (was 247), the mirror clone is gone and history is repacked. The artifact is 4.8 MB (was 15.5), the zip 3.6 MB (was 31), and every one of the 1,746 indexed families is now one Get click from a fetch command. 11/11 suites green, qa_theme.py 198/198.",
     "blockedOn": [
       "Module 7 (Layouts & Templates) waits on its specification; the theme contract already reserves the layout/navigation import fields and keeps them switched off.",
-      "Module 11 (Publishing & Releases) is the future owner of the publish surface — until then the theme draft rides Module 4's release dialog.",
-      "The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost)."
+      "Module 11 (Publishing & Releases) is the future owner of the publish surface \u2014 until then the theme draft rides Module 4's release dialog.",
+      "The GitHub token expires 17 Nov 2026 \u2014 rotate before then or pushes 401 (commits stay local, nothing is lost)."
     ],
     "tasks": [
       "Module 7 (Layouts & Templates) is the next build; the theme's layout/navigation import fields stay switched off until it lands.",
@@ -220,7 +220,7 @@
       "Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.",
       "Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.",
       "Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.",
-      "Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md — implementing it is what unblocks 'Requires ingestion'."
+      "Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md \u2014 implementing it is what unblocks 'Requires ingestion'."
     ]
   },
   "environment": {
@@ -242,7 +242,7 @@
       },
       {
         "file": "qa_theme.py",
-        "name": "Module 6 — Theme Studio",
+        "name": "Module 6 \u2014 Theme Studio",
         "assertions": 127,
         "covers": "M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states"
       },
@@ -282,26 +282,40 @@
       },
       {
         "file": "qa_library.py",
-        "name": "Module 5 — Block Library",
+        "name": "Module 5 \u2014 Block Library",
         "assertions": 90,
         "covers": "M5 four views, filters, native catalogue, inspector tabs + diagram, insert path"
+      },
+      {
+        "file": "qa_layouts.py",
+        "name": "Module 5 \u2014 Block Library",
+        "assertions": 90,
+        "covers": "M5 four views, filters, native catalogue, inspector tabs + diagram, insert path",
+        "module": "Module 7 \u00b7 Layouts & Templates"
+      },
+      {
+        "file": "qa_states_m7.py",
+        "name": "Module 5 \u2014 Block Library",
+        "assertions": 90,
+        "covers": "M5 four views, filters, native catalogue, inspector tabs + diagram, insert path",
+        "module": "Module 7 \u00b7 Layouts & Templates"
       }
     ]
   },
   "contracts": [
     {
       "doc": "BACKEND-PLAN.md",
-      "section": "§7.1–§7.18",
-      "covers": "every screen surface of M1–M3 mapped to an endpoint"
+      "section": "\u00a77.1\u2013\u00a77.18",
+      "covers": "every screen surface of M1\u2013M3 mapped to an endpoint"
     },
     {
       "doc": "BACKEND-PLAN.md",
-      "section": "§7.19",
+      "section": "\u00a77.19",
       "covers": "builder draft CAS, revisions, library, AI stream, publish handoff"
     },
     {
       "doc": "BACKEND-PLAN.md",
-      "section": "§8",
+      "section": "\u00a78",
       "covers": "publishing pipeline, compare-and-swap, rollback"
     },
     {
@@ -311,12 +325,12 @@
     },
     {
       "doc": "MODULE-5-REVIEW.md",
-      "section": "§2, §4, §8",
+      "section": "\u00a72, \u00a74, \u00a78",
       "covers": "forms verdict, block benchmark, proposed palette and endpoints"
     },
     {
       "doc": "MODULE-4-REVIEW.md",
-      "section": "§F, §J",
+      "section": "\u00a7F, \u00a7J",
       "covers": "the binding builder contract and what shipped"
     },
     {
@@ -326,17 +340,17 @@
     }
   ],
   "traps": [
-    "Chrome/Chromium will not launch without the apt batch in environment.bootstrap — that is the container, not the app.",
+    "Chrome/Chromium will not launch without the apt batch in environment.bootstrap \u2014 that is the container, not the app.",
     "A hash-only goto does not reload; deep-link assertions must goto() then reload().",
     "The store rewrites #/<screen> from its own filters after child effects; a screen owning query params must re-assert them on a short timer (builder uses 220 ms).",
-    "The builder's global key handler re-registers dialog listeners mid-dispatch — it must stand down while an overlay owns Escape.",
+    "The builder's global key handler re-registers dialog listeners mid-dispatch \u2014 it must stand down while an overlay owns Escape.",
     "QA counts that depend on a library tab are only valid after switching to that tab (#wb-tab-blocks).",
     "Screenshots are WebP only; the workspace is capped at 128 MB and pruned dependency folders do not persist.",
     "The zip must be built with: zip -rq wacrm-app.zip wacrm-app -x 'wacrm-app/node_modules/*' 'wacrm-app/dist/*' 'wacrm-app/.git/*'.",
     "git commit fails with 'Author identity unknown' until a repo-local user.name/user.email is set.",
     "The sandbox drops .git/config between turns, so the origin URL has to be re-added before a push.",
-    "The clean CRM copy (commit c07cbb6) has no CMS module and no GrapesJS — do not look for cms routes or a second editor; the React builder here is the only CMS.",
-    "Workspace snapshots and copies drop the execute bit on .githooks/pre-commit — after any restore run chmod +x .githooks/pre-commit and git update-index --chmod=+x .githooks/pre-commit, or git silently ignores the hook.",
+    "The clean CRM copy (commit c07cbb6) has no CMS module and no GrapesJS \u2014 do not look for cms routes or a second editor; the React builder here is the only CMS.",
+    "Workspace snapshots and copies drop the execute bit on .githooks/pre-commit \u2014 after any restore run chmod +x .githooks/pre-commit and git update-index --chmod=+x .githooks/pre-commit, or git silently ignores the hook.",
     {
       "trap": "Two AI surfaces open at once",
       "detail": "The in-canvas popover is driven by `ai` state and the composer by `aiPanel`; pass `ai: aiPanel ? null : ai` to Canvas or both render over the same selection."
@@ -365,22 +379,22 @@
       "trap": "Never store the PAT",
       "detail": "push-to-github.sh passes the token inline to a single `git push` and never writes it to .git/config, a remote URL or a file; PUSH-TO-GIT.md documents the bundle route for anyone who would rather not share one."
     },
-    "Never run `git sparse-checkout init` in repo/ — with this git build (2.47) it writes `/*` + `!/*/` and removes every directory (src, qa, uploads…) from the working tree, then `set` fails with 'specify directories rather than patterns'. Recover with `git sparse-checkout disable`. Nothing is lost (the objects are in .git), but the tree has to be re-materialised.",
-    "uploads/ is a single copy, inside repo/ — the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.",
-    "uploads/ is skip-worktree — do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done.",
-    "History rewrites must be range-limited: `git filter-branch --index-filter … -- d2dd7db..main` keeps the branch base (and therefore the fast-forward to origin) intact. A bare `--all` rewrites the root as well, and the push stops being a fast-forward — recover by re-cloning the pre-rewrite bundle, never by forcing.",
-    "Push state as of the token handover: origin/main was d2dd7db (Module 3 spec only). Everything from Module 3's build onward — 30 commits — was local until the first successful push; if a session ever finds origin behind again, run checkpoint.sh rather than assuming the work is safe.",
-    "Module 4's builder palette already owns the `lb-*` CSS namespace. Module 5 shipped as `m5-*` after a half-rendered grid exposed the collision — never reuse `lb-` for a new screen.",
+    "Never run `git sparse-checkout init` in repo/ \u2014 with this git build (2.47) it writes `/*` + `!/*/` and removes every directory (src, qa, uploads\u2026) from the working tree, then `set` fails with 'specify directories rather than patterns'. Recover with `git sparse-checkout disable`. Nothing is lost (the objects are in .git), but the tree has to be re-materialised.",
+    "uploads/ is a single copy, inside repo/ \u2014 the 26 MB of mocks are committed at repo/uploads with MANIFEST.sha256. There is deliberately no second copy at /home/user/uploads; read them out of git instead of restoring a duplicate.",
+    "uploads/ is skip-worktree \u2014 do not be alarmed that the folder is missing: `git ls-files uploads` still lists 19 paths and `git show HEAD:uploads/...` works. To materialise them, `git update-index --no-skip-worktree $(git ls-files uploads)` then `git checkout -- uploads`; re-hide when done.",
+    "History rewrites must be range-limited: `git filter-branch --index-filter \u2026 -- d2dd7db..main` keeps the branch base (and therefore the fast-forward to origin) intact. A bare `--all` rewrites the root as well, and the push stops being a fast-forward \u2014 recover by re-cloning the pre-rewrite bundle, never by forcing.",
+    "Push state as of the token handover: origin/main was d2dd7db (Module 3 spec only). Everything from Module 3's build onward \u2014 30 commits \u2014 was local until the first successful push; if a session ever finds origin behind again, run checkpoint.sh rather than assuming the work is safe.",
+    "Module 4's builder palette already owns the `lb-*` CSS namespace. Module 5 shipped as `m5-*` after a half-rendered grid exposed the collision \u2014 never reuse `lb-` for a new screen.",
     "A card grid whose items are flex columns needs `align-items:start`; with the default `stretch`, Chrome resolves the cyclic height and collapses every card to one text line (thumb computed to 1px).",
     "The section category `Forms` is separate from the block group `Form` (singular). Both are real and are asserted separately in qa_builder.py (C3/C3b) and qa_library.py (C5).",
-    "Playwright needs `LD_LIBRARY_PATH=/tmp/libs/root/usr/lib/x86_64-linux-gnu` after scripts/qa-env.sh — /tmp is wiped between sessions and the libs must be re-fetched with `apt-get download` (no root available)."
+    "Playwright needs `LD_LIBRARY_PATH=/tmp/libs/root/usr/lib/x86_64-linux-gnu` after scripts/qa-env.sh \u2014 /tmp is wiped between sessions and the libs must be re-fetched with `apt-get download` (no root available)."
   ],
   "continuation": {
     "firstTenMinutes": [
-      "Read HANDOVER.md (this file), then MODULE-4-REVIEW.md §J and STATE-COVERAGE.md.",
-      "Open WACRM-CMS.html and walk #/overview → #/sites → #/pages → #/builder.",
+      "Read HANDOVER.md (this file), then MODULE-4-REVIEW.md \u00a7J and STATE-COVERAGE.md.",
+      "Open WACRM-CMS.html and walk #/overview \u2192 #/sites \u2192 #/pages \u2192 #/builder.",
       "Run npm run qa and confirm the tallies match the table below.",
-      "Read handover.config.json — that is where intent, decisions and next steps live."
+      "Read handover.config.json \u2014 that is where intent, decisions and next steps live."
     ],
     "definitionOfDone": [
       "The screen works for every CTA and dropdown, in every state listed in STATE-COVERAGE.md.",

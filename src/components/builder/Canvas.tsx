@@ -10,6 +10,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { Icon } from "@/components/Icon";
 import { Node as BlockNodeView, type RenderCtx } from "./Blocks";
 import { labelOf, type BlockNode } from "@/lib/builder";
+import type { LayoutFrame } from "@/lib/layout-db";
 
 export type Device = "desktop" | "tablet" | "mobile";
 export const DEVICE_W: Record<Device, number> = { desktop: 1440, tablet: 768, mobile: 375 };
@@ -32,26 +33,39 @@ export interface CanvasCtl {
   onAcceptAi: () => void;
   onToolbar: (action: "drag" | "settings" | "duplicate" | "delete", id: string, e?: React.PointerEvent | React.MouseEvent) => void;
   onEditMaster: () => void;
+  /** the page's resolved master layout — M7 owns this, the canvas renders it */
+  frame?: LayoutFrame | null;
   /** the site's theme tokens, applied to the document root (M6 → M4 interlink) */
   theme?: { vars: Record<string, string>; label: string } | null;
 }
 
 interface Rect { top: number; left: number; width: number; height: number }
 
-const Master = ({ onEdit }: { onEdit: () => void }) => (
-  <div className="wb-master" data-master="1" aria-label="Master layout">
-    <div className="wb-master-in">
-      <div className="wb-master-brand">EuroMiles<span>.in</span></div>
-      <nav className="wb-master-nav">
-        {["Home", "Study Abroad", "Scholarships", "About Us", "Contact"].map((l) => <span key={l}>{l}</span>)}
-      </nav>
-      <span className="wb-master-cta">Enquire Now</span>
+/* The header drawn here is the *resolved* layout from Module 7 — the same
+   variant, brand, links and CTA that ship on the site. If a page's layout
+   hides its header, the canvas says so instead of inventing one. */
+const Master = ({ onEdit, frame }: { onEdit: () => void; frame?: LayoutFrame | null }) => {
+  const brand = frame?.header?.brand ?? "EuroMiles.in";
+  const nav = frame?.header?.nav ?? ["Home", "Study Abroad", "Scholarships", "About Us", "Contact"];
+  const cta = frame?.header?.cta ?? "Enquire Now";
+  return (
+    <div className="wb-master" data-master="1" aria-label="Master layout">
+      {frame?.announcement?.visible && frame.announcement.text && (
+        <div className="wb-master-announce" data-announce="1">{frame.announcement.text}</div>
+      )}
+      <div className="wb-master-in">
+        <div className="wb-master-brand">{brand.replace(/\.in$/, "")}<span>.in</span></div>
+        <nav className="wb-master-nav">
+          {nav.slice(0, 5).map((l) => <span key={l}>{l}</span>)}
+        </nav>
+        <span className="wb-master-cta">{cta}</span>
+      </div>
+      <button className="wb-master-chip" onClick={onEdit} type="button">
+        <Icon name="lock" size={10} /> {frame?.layoutName ?? "Master layout"} · edit in Layouts &amp; Templates
+      </button>
     </div>
-    <button className="wb-master-chip" onClick={onEdit} type="button">
-      <Icon name="lock" size={10} /> Master layout · edit in Layouts &amp; Templates
-    </button>
-  </div>
-);
+  );
+};
 
 export function Canvas({ doc, ctl }: { doc: BlockNode[]; ctl: CanvasCtl }) {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -122,7 +136,7 @@ export function Canvas({ doc, ctl }: { doc: BlockNode[]; ctl: CanvasCtl }) {
           if (e.target === e.currentTarget) ctl.onSelect(null);
         }}
       >
-        <Master onEdit={ctl.onEditMaster} />
+        <Master onEdit={ctl.onEditMaster} frame={ctl.frame} />
 
         {doc.map((n, i) => (
           <div

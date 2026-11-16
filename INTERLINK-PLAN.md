@@ -178,3 +178,24 @@ POST   /api/sites/:siteId/pages/:pageId/publish        → immutable snapshot + 
 - **No multi-step forms yet** — see D6.
 - **No CMS-side PII in analytics** — see D1.
 - **No CRM form-builder import** — the CRM has no form-builder entity (`src/shared/forms` is UI standards), so "import the CRM's form" has nothing to import. When the CRM grows one, it becomes a `source: "crm"` row in `cms_forms` with a read-through binding — the same shape HubSpot uses (a form module holds a form **ID**, not a copy).
+
+---
+
+## 7. Module 7 wiring — what is actually built
+
+Module 7 (Layouts & Templates) is the first module whose primary job *is* interconnection: it
+owns the shell every other screen renders inside, and it binds pages without owning them.
+
+| Contract | Direction | Built as | Where |
+|---|---|---|---|
+| A page's shell is one resolvable string | M3 ⇄ M7 | `resolveLayoutId(CmsPage.layout)` — `Site default` inherits, any other value is an explicit pin | `src/lib/layout-db.ts` |
+| Bulk rebind is a real registry write | M7 → M3 | `LayoutsAPI.reassign` updates `layout`, `revision`, `hasChanged`, `updatedAt` and writes one audit revision | `src/lib/layout-db.ts`, `/layouts` → Usage |
+| The builder draws the real shell | M7 → M4 | `frameFor(siteId, page.layout)` feeds `Canvas`, which renders the announcement, brand, nav and CTA of the pinned variant and says so on its chip | `src/views/Builder.tsx`, `src/components/builder/Canvas.tsx` |
+| Slot policy is a gate, not a label | M7 → M4/M5 | the library filters to the layout's allow-list and shows `Layout allows N/20 blocks`; denied seed blocks are flagged on the canvas | `src/components/builder/Library.tsx` |
+| Layouts travel with a theme bundle | M7 → M6 | `exportBundle().layout.starterLayouts` carries every live layout (regions, policy, seed count) and all 12 templates | `src/lib/theme-db.ts` |
+| Creating a page from a template hands over a real draft | M7 → M4 | `createPageFromTemplate` writes the page, then seeds the builder draft with the template's blocks | `src/lib/layout-db.ts` |
+| The CMS still owns no customer record | M7 → CRM | layouts and templates carry no PII and fire no lead event; form blocks reach the CRM through D1/D6 above | — |
+
+Deliberately **not** wired: importing a layout from a bundle (a layout can reference regions
+that do not exist in the target workspace), and editing chrome block-by-block from Module 7
+(that is Module 4's editor; the drawer edits variant metadata only).

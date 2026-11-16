@@ -11,6 +11,7 @@ import { Btn, Field, Modal, Pill } from "../ui";
 import { useApp } from "@/lib/store";
 import { API } from "@/lib/data";
 import { slugify, validateSlug, type CmsPage, type PageType, type TreeNode } from "@/lib/cms-pages";
+import { LayoutsAPI, type LayoutDraft } from "@/lib/layout-db";
 
 const TYPE_LABEL: Record<PageType, string> = { standard: "Standard page", landing: "Landing page" };
 
@@ -33,6 +34,15 @@ export function CreatePageModal({ siteId, siteName, pages, defaultParent, onClos
   const [type, setType] = useState<PageType>("standard");
   const [template, setTemplate] = useState("Page – Standard");
   const [layout, setLayout] = useState("Site default");
+  /* M7 interlink: the picker offers the real, live layouts of this site —
+     archived ones and the default (already offered above) are excluded. */
+  const LAYOUT_CHOICES = useMemo(() => {
+    try {
+      return (LayoutsAPI.sync(siteId).layouts as LayoutDraft[])
+        .filter((l) => !l.archived && !l.isDefault)
+        .map((l) => ({ label: l.name, note: l.desc }));
+    } catch { return []; }
+  }, [siteId]);
   const [checking, setChecking] = useState(false);
   const [slugMsg, setSlugMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -146,9 +156,9 @@ export function CreatePageModal({ siteId, siteName, pages, defaultParent, onClos
       {step === 2 && (
         <div className="d3-choice">
           {[
-            ["Use Default Site Layout", "Global header and footer apply automatically.", "Default"],
-            ["Choose Existing Master Layout", "Pick a layout from Layouts & Templates.", "Wide"],
-            ["Blank Landing Layout", "No global chrome — full-bleed sections.", "Blank landing"]
+            ["Use Default Site Layout", "Follows whichever layout is the website default.", "Site default"],
+            ["Blank Landing Layout", "No announcement, minimal header — paid traffic.", "Blank landing"],
+            ...LAYOUT_CHOICES.map((l: { label: string; note: string }) => [l.label, l.note, l.label] as [string, string, string])
           ].map(([t, d, v]) => (
             <button key={t} className={`d3-choice-row ${layout === v ? "is-on" : ""}`} onClick={() => setLayout(v)}>
               <span className="d3-choice-ico"><Icon name="layers" size={13} /></span>
@@ -186,6 +196,15 @@ export function EditDetailsModal({ page, pages, onClose, onSaved }: {
   const [slug, setSlug] = useState(page.slug);
   const [parentId, setParentId] = useState<string | null>(page.parentId);
   const [layout, setLayout] = useState(page.layout);
+  const LAYOUTS = useMemo(() => {
+    try {
+      const live = (LayoutsAPI.sync(page.siteId).layouts as LayoutDraft[]).filter((l) => !l.archived);
+      const opts = live.map((l) => (l.isDefault ? "Site default" : l.name));
+      /* a page can be bound to a layout that has since been archived — keep it
+         visible and selectable so opening this dialog never silently rebinds it */
+      return opts.includes(page.layout) ? opts : [page.layout, ...opts];
+    } catch { return ["Site default", "Blank landing"]; }
+  }, [page.siteId, page.layout]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState<string | null>(null);
@@ -233,7 +252,7 @@ export function EditDetailsModal({ page, pages, onClose, onSaved }: {
         </Field>
         <Field label="Master layout">
           <select className="input" value={layout} onChange={(e) => setLayout(e.target.value)}>
-            {["Site default", "Wide", "Blank landing"].map((l) => <option key={l}>{l}</option>)}
+            {LAYOUTS.map((l) => <option key={l}>{l}</option>)}
           </select>
         </Field>
         {routeChanged && (
