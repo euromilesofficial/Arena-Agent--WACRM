@@ -20,7 +20,7 @@ export type LayoutDevice = keyof typeof LAYOUT_DEVICE_W;
 /* Read-only: the canvas shows the page. Editing is opt-in through onEditText (inline, in the view). */
 const READ_ONLY: RenderCtx = { selId: null, selEl: null, onSelect: () => {}, onSelectEl: () => {} };
 
-export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy, selectedId = null, onSelectBlock, onEditText, selEl = null, onSelectEl, ai, aiAction = null, onAskAi, onAiClose, onAcceptAi }: {
+export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy, selectedId = null, onSelectBlock, onEditText, selEl = null, onSelectEl, ai, aiAction = null, onAskAi, onAiClose, onAcceptAi, onEditFooter }: {
   frame: LayoutFrame;
   seed: BlockNode[];
   device: LayoutDevice;
@@ -42,6 +42,8 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
   onAskAi?: (action: string) => void;
   onAiClose?: () => void;
   onAcceptAi?: () => void;
+  /** opens the shared Global Footer editor (footer is not edited inline) */
+  onEditFooter?: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageW, setStageW] = useState(900);
@@ -145,14 +147,22 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
             </div>
 
             {frame.footer ? (
-              <div className="m7l-footer">
+              /* the footer is shared by every layout that uses its variant, so it is edited in the
+                 Global Footer drawer (which lists those layouts), never inline on one canvas */
+              <div className={`m7l-footer ${onEditFooter ? "is-editable" : ""}`}
+                role={onEditFooter ? "button" : undefined}
+                tabIndex={onEditFooter ? 0 : undefined}
+                aria-label={onEditFooter ? "Edit Global Footer" : undefined}
+                title={onEditFooter ? "Edit the shared Global Footer" : undefined}
+                onClick={onEditFooter}
+                onKeyDown={onEditFooter ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEditFooter(); } } : undefined}>
                 <div className={`m7l-footer-cols wb-doc wb-dev-${device} ${narrow ? "is-narrow" : ""}`}>
                   <BlockView
-                    node={{ id: `footer_${frame.footer.variant}`, type: "footer", props: { columns: frame.footer.columns.length, note: frame.footer.note }, style: {} }}
+                    node={{ id: `footer_${frame.footer.variant}`, type: "footer", props: { columns: frame.footer.columns.length, note: frame.footer.note, groups: frame.footer.groups }, style: {} }}
                     ctx={READ_ONLY}
                   />
                 </div>
-                <div className="m7l-footer-note">{frame.footer.variant}</div>
+                <div className="m7l-footer-note">{frame.footer.variant}{onEditFooter ? " · shared — click to edit" : ""}</div>
               </div>
             ) : (
               <div className="m7l-footer is-off"><Icon name="eye" size={11} /> Footer hidden for this layout</div>

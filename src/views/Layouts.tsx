@@ -638,6 +638,7 @@ export function Layouts() {
                 onAskAi={askAi}
                 onAiClose={closeAi}
                 onAcceptAi={acceptAi}
+                onEditFooter={readOnly ? undefined : () => { const r = activeRegion("footer"); if (r) setRegionFor(r); }}
               />
             ) : tab === "templates" && tplDraft && templateFrame ? (
               <LayoutCanvas
@@ -658,6 +659,7 @@ export function Layouts() {
                 onAskAi={askAi}
                 onAiClose={closeAi}
                 onAcceptAi={acceptAi}
+                onEditFooter={readOnly ? undefined : () => { const r = activeRegion("footer"); if (r) setRegionFor(r); }}
               />
             ) : (
               <EmptyState icon="layers" title="Nothing selected" desc="Pick a layout on the left to see its shell." />

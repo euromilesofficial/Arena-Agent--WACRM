@@ -5,6 +5,7 @@
    would see comes from typed props; there is no HTML or CSS input.
    ============================================================ */
 import type { BlockNode } from "@/lib/builder";
+import { footerCols, footerGroups } from "@/lib/footer";
 import { imageFor } from "@/lib/builder-db";
 import { Icon } from "@/components/Icon";
 import { readPath, topKey } from "@/lib/inline-edit";
@@ -504,16 +505,11 @@ function CtaSection({ node, ctx }: Bits) {
 }
 
 function FooterBlock({ node }: Bits) {
-  /* Props come from the Global Footer variant (columns, note). With no props the footer
-     is the original four-part footer, so the builder's own footer does not change. */
-  const p = node.props as { columns?: number; note?: string; social?: boolean };
-  const cols = Math.max(1, Math.min(4, Number(p.columns ?? 2)));
-  const groups: [string, string[]][] = [
-    ["Company", ["About us", "Careers", "Press"]],
-    ["Study", ["Destinations", "Scholarships", "Intakes"]],
-    ["Support", ["Contact", "Eligibility", "Help centre"]],
-    ["Legal", ["Privacy", "Terms", "DPDP notice"]]
-  ];
+  /* Props come from the Global Footer variant (columns, note, groups). With no props the footer
+     is the original footer, so the builder's own footer does not change. */
+  const p = node.props as { columns?: number; note?: string; social?: boolean; groups?: unknown };
+  const cols = footerCols(p);
+  const groups = footerGroups(p);
   const copy = `© 2026 EuroMiles Consultancy Pvt. Ltd.${p.note ? ` · ${p.note}` : ""}`;
   return (
     <section className="wb-blk wb-footer wb-bg-dark" data-block-id={node.id}>
@@ -524,7 +520,7 @@ function FooterBlock({ node }: Bits) {
               <div className="wb-foot-brand">EuroMiles<span>.in</span></div>
               <p className="wb-foot-note">Study abroad guidance since 2011.</p>
             </div>
-            {groups.slice(0, cols - 1).map(([h, links]) => (
+            {groups.slice(0, cols - 1).map(({ title: h, links }) => (
               <div key={h}>
                 <div className="wb-foot-h">{h}</div>
                 {links.map((l) => <div className="wb-foot-l" key={l}>{l}</div>)}

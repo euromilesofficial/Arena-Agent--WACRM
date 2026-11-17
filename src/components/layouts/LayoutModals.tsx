@@ -12,6 +12,7 @@ import { Btn, Field, Modal, Pill, Switch, Tip } from "@/components/ui";
 import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
 import { REGISTRY, type BlockType } from "@/lib/builder";
+import { footerCols, footerGroups } from "@/lib/footer";
 import {
   LayoutsAPI, labelFor, resolveLayoutId, usageRows,
   type LayoutDraft, type LayoutFrame, type PageTemplateDoc, type SharedRegion, type UsageRow
@@ -277,8 +278,11 @@ export function PreviewModal({ siteId, layout, frame, onClose }: {
 
 /* ---------------- shared region drawer ---------------- */
 
-export function RegionDrawer({ region, onClose, onDone }: { region: SharedRegion; onClose: () => void; onDone: () => void }) {
+export function RegionDrawer({ region: opened, onClose, onDone }: { region: SharedRegion; onClose: () => void; onDone: () => void }) {
   const app = useApp();
+  /* read the region from the store when the drawer opens. The page can still be reloading after a
+     save; values taken from that older snapshot would be written back over the newer ones. */
+  const [region] = useState<SharedRegion>(() => LayoutsAPI.sync("site_main").regions.find((r) => r.id === opened.id) ?? opened);
   const [vid, setVid] = useState(region.variants[0]?.id ?? "");
   const variant = region.variants.find((v) => v.id === vid) ?? region.variants[0];
   const props = (variant?.blocks[0]?.props ?? {}) as any;
@@ -287,6 +291,11 @@ export function RegionDrawer({ region, onClose, onDone }: { region: SharedRegion
   const [brand, setBrand] = useState(String(props.brand ?? "EuroMiles.in"));
   const [nav, setNav] = useState((props.nav as string[] | undefined)?.join(", ") ?? "Home");
   const [cta, setCta] = useState(String(props.cta ?? "Enquire Now"));
+  /* footer: column count, note, and the link columns after the brand */
+  const [fCols, setFCols] = useState(String(footerCols(props)));
+  const [fNote, setFNote] = useState(String(props.note ?? ""));
+  const [fTitles, setFTitles] = useState<string[]>(() => footerGroups(props).map((g) => g.title));
+  const [fLinks, setFLinks] = useState<string[]>(() => footerGroups(props).map((g) => g.links.join(", ")));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const layoutsUsing = useMemo(() => {
@@ -301,15 +310,20 @@ export function RegionDrawer({ region, onClose, onDone }: { region: SharedRegion
     const p = (v?.blocks[0]?.props ?? {}) as any;
     setText(String(p.text ?? "")); setBrand(String(p.brand ?? "EuroMiles.in"));
     setNav((p.nav as string[] | undefined)?.join(", ") ?? "Home"); setCta(String(p.cta ?? "Enquire Now"));
+    const fg = footerGroups(p);
+    setFCols(String(footerCols(p))); setFNote(String(p.note ?? ""));
+    setFTitles(fg.map((g) => g.title)); setFLinks(fg.map((g) => g.links.join(", ")));
   };
 
   const save = async () => {
     if (!variant) return;
+    if (region.kind === "footer" && fTitles.some((t) => !t.trim())) { setErr("Every link column needs a title."); return; }
     setBusy(true); setErr("");
     try {
       const blocks = variant.blocks.map((b, i) => i !== 0 ? b : {
         ...b,
-        props: { ...(b.props as any), ...(region.kind === "announcement" ? { text } : region.kind === "header" ? { brand, nav: nav.split(",").map((s) => s.trim()).filter(Boolean), cta } : {}) }
+        props: { ...(b.props as any), ...(region.kind === "announcement" ? { text } : region.kind === "header" ? { brand, nav: nav.split(",").map((s) => s.trim()).filter(Boolean), cta }
+          : region.kind === "footer" ? { columns: Number(fCols), note: fNote.trim(), groups: fTitles.map((title, i) => ({ title: title.trim(), links: (fLinks[i] ?? "").split(",").map((s) => s.trim()).filter(Boolean) })) } : {}) }
       });
       await LayoutsAPI.saveRegionVariant(region.id, { ...variant, name, blocks });
       app.toast({
@@ -335,6 +349,28 @@ export function RegionDrawer({ region, onClose, onDone }: { region: SharedRegion
         <Field label="Bar text" hint="Plain text. Links and dismiss behaviour are configured in the Menus module.">
           <input value={text} onChange={(e) => setText(e.target.value)} maxLength={140} placeholder="Fall 2026 intake is open — apply by 15 Jan." />
         </Field>
+      )}
+      {region.kind === "footer" && (
+        <>
+          <Field label="Columns" hint="Column 1 is always the brand. The link columns below follow it.">
+            <select value={fCols} onChange={(e) => setFCols(e.target.value)} aria-label="Footer columns">
+              {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </Field>
+          <Field label="Note" hint="Shown under the brand line. Plain text.">
+            <input value={fNote} onChange={(e) => setFNote(e.target.value)} maxLength={120} placeholder="Compact legal row" />
+          </Field>
+          {fTitles.map((t, i) => (
+            <div key={i} className="m7-pair" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, opacity: i + 2 <= Number(fCols) ? 1 : 0.55 }}>
+              <Field label={`Column ${i + 2} title`} hint={i + 2 <= Number(fCols) ? "Shown" : "Hidden at this column count"}>
+                <input value={t} onChange={(e) => setFTitles((a) => a.map((x, j) => (j === i ? e.target.value : x)))} maxLength={30} aria-label={`Column ${i + 2} title`} />
+              </Field>
+              <Field label={`Column ${i + 2} links`} hint="Comma separated.">
+                <input value={fLinks[i] ?? ""} onChange={(e) => setFLinks((a) => a.map((x, j) => (j === i ? e.target.value : x)))} aria-label={`Column ${i + 2} links`} />
+              </Field>
+            </div>
+          ))}
+        </>
       )}
       {region.kind === "header" && (
         <>

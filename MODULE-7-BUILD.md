@@ -308,8 +308,11 @@ notes, and CTA text.
 
 **What stays in the inspector, and why.** Non-text controls: images and media, toggles, selects,
 counts, form selection, the table's column count, and the footer. The footer's links are part of
-the footer's design, and its note belongs to the shared footer in the region drawer. Editing either
-inline would change text across every page, so it stays where it applies to all pages.
+the footer's design. Editing either inline would change text across every page, so the footer is
+edited in the Global Footer drawer instead: click the footer on any canvas to open it. The drawer
+edits the note, the column count (1–4), and each link column's title and links. Saving writes one
+shared variant, and the drawer lists the layouts it changes before you save. (Earlier, the footer
+had no editable fields anywhere, and its column labels were hard-coded; both are fixed.)
 
 **One grammar.** A text edit is addressed by a path (`src/lib/inline-edit.ts`): `heading`,
 `items.2.title`, `head.0`, `body#3` for a line, `tiers.0.features@2` for one item of a comma list.

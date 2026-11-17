@@ -4389,6 +4389,8 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m7l-btn-row{display:flex;justify-content:center}
 .m7l-generic{display:flex;justify-content:center}
 .m7l-footer{border-top:1px solid #EEF0F4;background:#FAFBFC;padding:10px 16px;display:flex;flex-direction:column;gap:7px}
+.m7l-footer.is-editable{cursor:pointer;outline:1px dashed transparent;outline-offset:-4px}
+.m7l-footer.is-editable:hover,.m7l-footer.is-editable:focus-visible{outline-color:#3B82F6}
 /* the footer is the real Global Footer block now, so the wrapper is a plain block that spans the frame */
 .m7l-footer-cols{display:block;width:100%;min-width:0;flex:0 0 auto;margin:0;padding:0}
 .m7l-footer-cols .wb-footer{width:100%}

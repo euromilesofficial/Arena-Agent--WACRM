@@ -16,6 +16,7 @@
    ============================================================ */
 import { DBX } from "./data";
 import { PAGE_TEMPLATES, REGISTRY, type BlockNode, type BlockType } from "./builder";
+import { footerCols, footerGroups, type FooterGroup } from "@/lib/footer";
 
 /* ---------------- shared regions (global chrome) ---------------- */
 
@@ -176,7 +177,7 @@ export interface LayoutFrame {
   layoutName: string;
   announcement: { text: string; visible: boolean } | null;
   header: { name: string; brand: string; nav: string[]; cta: string; variant: string } | null;
-  footer: { name: string; variant: string; columns: string[]; note: string } | null;
+  footer: { name: string; variant: string; columns: string[]; note: string; groups: FooterGroup[] } | null;
   slotPolicy: SlotPolicy;
   issues: PreflightIssue[];
 }
@@ -538,8 +539,9 @@ export function frameOf(l: LayoutDraft): LayoutFrame {
     footer: f && l.footer.visible ? {
       name: f.name,
       variant: f.name,
-      columns: ["Destinations", "Programmes", "Company", "Legal"].slice(0, Number(footerProps.columns ?? 4)),
-      note: String(footerProps.note ?? "")
+      columns: ["Brand", ...footerGroups(footerProps).map((g) => g.title)].slice(0, footerCols(footerProps)),
+      note: String(footerProps.note ?? ""),
+      groups: footerGroups(footerProps)
     } : null,
     slotPolicy: l.slot.policy,
     issues

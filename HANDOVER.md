@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-17 19:13:03 UTC · **generated against commit** `2ecc0c8` · **working tree** 3 uncommitted file(s)
+**Generated** 2026-11-17 19:30:36 UTC · **generated against commit** `11f8e09` · **working tree** 14 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -46,10 +46,10 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 5,052,663 B (4934 kB) · gzip 2973 kB |
-| md5 | `20b20c626df69fe8007931ad70ce7949` |
-| sha256 (first 16) | `b860d7f2f6d3be49` |
-| Built | 2026-11-17 19:12:58 |
+| Size | 5,055,218 B (4937 kB) · gzip 2974 kB |
+| md5 | `5b16d6bb8af18872ac4ad7f7c0c3e4d8` |
+| sha256 (first 16) | `90563bd992d1099e` |
+| Built | 2026-11-17 19:30:35 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -99,29 +99,29 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **73 source files, 29,398 lines** of TS/TSX/CSS (45,647 lines across all tracked text files).
+Source inventory: **74 source files, 29,476 lines** of TS/TSX/CSS (45,845 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 19 | 7,584 | data seams, registries, formatting, no JSX |
-| `src/components/` | 41 | 10,571 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 8 | 6,354 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 4,815 | one tokenised stylesheet (design system) |
+| `src/lib/` | 20 | 7,616 | data seams, registries, formatting, no JSX |
+| `src/components/` | 41 | 10,613 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/views/` | 8 | 6,356 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 4,817 | one tokenised stylesheet (design system) |
 | `qa/` | 1 | — | 1 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 4,815 |
+| `src/styles/app.css` | 4,817 |
 | `BACKEND-PLAN.md` | 1,617 |
 | `src/lib/theme-db.ts` | 1,493 |
 | `src/views/ThemeStudio.tsx` | 1,417 |
-| `src/views/Layouts.tsx` | 1,221 |
+| `src/views/Layouts.tsx` | 1,223 |
 | `src/views/Library.tsx` | 1,099 |
 | `src/views/Builder.tsx` | 1,053 |
 | `qa_theme.py` | 1,052 |
-| `src/lib/layout-db.ts` | 1,006 |
+| `src/lib/layout-db.ts` | 1,008 |
 | `MODULE-7-SPEC.md` | 979 |
 | `src/lib/data.ts` | 974 |
 | `MODULE-6-THEME-STUDIO-SPEC.md` | 880 |
@@ -245,13 +245,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `2ecc0c8` — Module 7: AI copy bubble on Layouts and Templates inline editing.
-- Working tree: 3 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `11f8e09` — Module 7: AI copy bubble on Layouts and Templates inline editing.
+- Working tree: 14 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `11f8e09` | 2026-11-17 | Module 7: AI copy bubble on Layouts and Templates inline editing |
 | `2ecc0c8` | 2026-11-17 | Module 7: AI copy bubble on Layouts and Templates inline editing |
 | `9b19f38` | 2026-11-17 | Inline editing in the Visual Builder: every text element a visitor reads is editable on the canvas (headings, descriptions, buttons and hero links, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing, captions, alerts, quotes, forms, CTA). One edit is one undo step; Ctrl+Z in a field is the field's own. One path grammar (src/lib/inline-edit.ts) shared by builder, layouts and templates. New suite qa_builder_inline.py (30 checks). 18/18 suites green. BUILD 10 documents it. |
 | `72473d9` | 2026-11-17 | Inline editing on the canvas: text, hero labels and link targets are edited where they are seen, in master layouts and page templates; inspector shares the same draft; new suite qa_m7_inline.py (15 checks); 17/17 suites green; BUILD 8.1 and AUDIT updated |
@@ -263,7 +264,6 @@ First tasks:
 | `e8b8a94` | 2026-11-16 | Module 7 preview: the canvas renders real blocks (not grey sketches), 100% is true width with scroll, Fit remains; the Prebuilt browser draws each kit as a page at its design width. 15 suites · 1049 assertions green. |
 | `f507caa` | 2026-11-16 | checkpoint.sh: the current script (budget guard, no automatic history rewrite, main-only push, lease-safe) now lives in Git; the stale copy that mirrored into a deleted clone is gone |
 | `0e5fc05` | 2026-11-16 | space: count only what the snapshot keeps (match the snapshotter's exclusion list) |
-| `5b615c4` | 2026-11-16 | handover regenerated after the storage pass |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
