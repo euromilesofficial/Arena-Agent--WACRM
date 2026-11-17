@@ -19,7 +19,7 @@ export type LayoutDevice = keyof typeof LAYOUT_DEVICE_W;
 /* Read-only: the canvas shows the page, it does not select or edit blocks. */
 const READ_ONLY: RenderCtx = { selId: null, selEl: null, onSelect: () => {}, onSelectEl: () => {} };
 
-export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy }: {
+export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy, selectedId = null, onSelectBlock }: {
   frame: LayoutFrame;
   seed: BlockNode[];
   device: LayoutDevice;
@@ -27,6 +27,9 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
   slotLabel: string;
   slotNote?: string;
   policy: SlotPolicy;
+  /** when given, blocks are selectable and the selected one is outlined */
+  selectedId?: string | null;
+  onSelectBlock?: (id: string) => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageW, setStageW] = useState(900);
@@ -90,7 +93,18 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
               ) : (
                 <div className={`m7l-blocks wb-doc wb-dev-${device}`}>
                   {seed.map((b) => (
-                    <div key={b.id} className={`m7l-block is-${b.type} ${blocked.includes(b) ? "is-denied" : ""}`} data-block={b.type}>
+                    <div
+                      key={b.id}
+                      className={`m7l-block is-${b.type} ${blocked.includes(b) ? "is-denied" : ""} ${selectedId === b.id ? "is-selected" : ""} ${onSelectBlock ? "is-selectable" : ""}`}
+                      data-block={b.type}
+                      /* capture phase: the block renderer stops propagation on its own text
+                         elements, so a bubbling handler would never see those clicks */
+                      onClickCapture={onSelectBlock ? () => onSelectBlock(b.id) : undefined}
+                      role={onSelectBlock ? "button" : undefined}
+                      tabIndex={onSelectBlock ? 0 : undefined}
+                      onKeyDown={onSelectBlock ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelectBlock(b.id); } } : undefined}
+                      aria-label={onSelectBlock ? `Edit ${b.type} block` : undefined}
+                    >
                       {blocked.includes(b) && <span className="m7l-block-tag">{b.type} · not allowed in this slot</span>}
                       <BlockView node={b} ctx={READ_ONLY} />
                     </div>

@@ -20,6 +20,7 @@ import {
 } from "@/components/layouts/LayoutModals";
 import { ImportModal, PrebuiltModal, exportTemplate } from "@/components/layouts/ImportModals";
 import { HistoryModal } from "@/components/layouts/HistoryModal";
+import { BlockFields } from "@/components/layouts/BlockFields";
 import { KIT_COUNT, PREBUILT_SOURCE } from "@/lib/prebuilt-db";
 import {
   LayoutsAPI, frameOf, mode as LayoutsMode, usageRows,
@@ -109,6 +110,8 @@ export function Layouts() {
 
   const [draft, setDraft] = useState<LayoutDraft | null>(null);
   const [tplDraft, setTplDraft] = useState<PageTemplateDoc | null>(null);
+  /* the starter block being edited in the Structure inspector (template editing) */
+  const [selBlock, setSelBlock] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [conflict, setConflict] = useState<string | null>(null);
   const [pending, setPending] = useState<(() => void) | null>(null);
@@ -584,6 +587,8 @@ export function Layouts() {
                 slotLabel={`${tplDraft.name} — starter blocks`}
                 slotNote="copy-on-create"
                 policy={templateFrame ? templateFrame.slotPolicy : { allow: [], deny: [], maxBlocks: 200 }}
+                selectedId={selBlock}
+                onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
               />
             ) : (
               <EmptyState icon="layers" title="Nothing selected" desc="Pick a layout on the left to see its shell." />
@@ -886,11 +891,29 @@ export function Layouts() {
             </div>
           ) : itab === "structure" && tab === "templates" && tplDraft ? (
             <div className="m7-pane">
+              {(() => {
+                const sel = tplDraft.blocks.find((b) => b.id === selBlock);
+                if (!sel) return null;
+                return (
+                  <div className="m7-sec m7-bf-sec">
+                    <div className="m7-sec-h"><h4>Edit {sel.type}</h4><button className="m7-icon-btn" aria-label="Close block editor" onClick={() => setSelBlock(null)}><Icon name="x" size={11} /></button></div>
+                    <BlockFields
+                      node={sel}
+                      readOnly={readOnly}
+                      onChange={(key, value) => patchTpl((t) => {
+                        const b = t.blocks.find((x) => x.id === sel.id);
+                        if (b) b.props = { ...b.props, [key]: value };
+                      })}
+                    />
+                    <p className="m7-muted">Changes stay in this draft until you press Save.</p>
+                  </div>
+                );
+              })()}
               <div className="m7-sec">
                 <div className="m7-sec-h"><h4>Starting blocks</h4><span>{tplDraft.blocks.length}</span></div>
                 <div className="m7-seedlist">
                   {tplDraft.blocks.map((b, i) => (
-                    <div key={b.id} className="m7-seed">
+                    <div key={b.id} className={`m7-seed ${selBlock === b.id ? "is-selected" : ""}`} onClick={() => setSelBlock(b.id)}>
                       <span className="m7-seed-i">{i + 1}</span>
                       <span className="m7-seed-type">{b.type}</span>
                       <span className="m7-seed-meta">{(b.props as any)?.title ?? (b.props as any)?.text ?? "—"}</span>

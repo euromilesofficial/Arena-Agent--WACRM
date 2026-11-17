@@ -4773,3 +4773,20 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m7-pre-scale{display:flex;flex-direction:column}
 .m7-pre-shot{border-bottom:1px dashed var(--line);overflow:hidden}
 .m7-pre-shot:last-child{border-bottom:0}
+
+/* ---------- Module 7 · click-to-edit template blocks ---------- */
+.m7l-block.is-selectable{cursor:pointer;transition:box-shadow 130ms}
+.m7l-block.is-selectable:hover{box-shadow:0 0 0 2px var(--brand-line)}
+.m7l-block.is-selectable:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.m7l-block.is-selected{box-shadow:0 0 0 2px var(--brand)}
+.m7-seed.is-selected{border-color:var(--brand-line);background:var(--brand-soft)}
+.m7-bf-sec{display:flex;flex-direction:column;gap:8px}
+.m7-bf{display:flex;flex-direction:column;gap:8px}
+.m7-bf-row{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:center;font-size:12px;color:var(--ink-2)}
+.m7-bf-row>span{color:var(--muted)}
+.m7-bf-row input[type=text],.m7-bf-row input[type=number],.m7-bf-row select{height:28px;border:1px solid var(--line-strong);border-radius:7px;padding:0 8px;font-size:12px;background:#fff;min-width:0}
+.m7-bf-row textarea{border:1px solid var(--line-strong);border-radius:7px;padding:6px 8px;font-size:12px;resize:vertical;min-width:0;font-family:inherit}
+.m7-bf-area{align-items:start}
+.m7-bf-toggle{grid-template-columns:1fr auto}
+.m7-bf-deferred{font-size:11px;color:var(--muted);margin:2px 0 0;line-height:1.45}
+

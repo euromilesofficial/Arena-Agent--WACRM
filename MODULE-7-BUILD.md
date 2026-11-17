@@ -217,3 +217,30 @@ In-app deep links also got a fix found by these tests: `#/layouts?tab=&itab=&sel
 a **hash change** (from Module 3) never reached the module-scope boot parse, so the selection
 was dropped. The screen now listens for `hashchange` and applies whatever parameters are
 present, idempotently, because the store rewrites the hash itself.
+
+## 8. Editing a template where it is seen
+
+**Problem.** The Page Templates preview was read-only. A template's copy could only be changed
+after leaving the screen, so the screen was a viewer rather than an editor.
+
+**Decision.** Edit in place, in the same screen, and keep structure separate:
+
+- Click any starter block on the canvas. Its own fields open in the Structure inspector, taken
+  from the block registry, so the editor and the renderer never disagree.
+- Changes stay in the template draft until **Save**, which writes a revision. The canvas updates
+  as you type.
+- Reorder and remove stay in the Structure list. Items, links, media and style tokens are edited
+  in the Visual Builder, and the inspector says so rather than hiding them.
+
+**Why this model.** Two established systems converge on it. WordPress's Site Editor lets you
+click a block inside a template part and edit its content directly, while the structural
+wrapper stays locked behind an explicit "Edit original" step
+(<https://wordpress.com/support/template-part-block/>). Shopify's theme editor opens a section's
+settings when you click it, and its preview inspector lets you select an element in the preview
+to change it (<https://help.shopify.com/en/manual/online-store/themes/customizing-themes/theme-editor/features-overview>).
+Both separate content editing from structural editing; neither makes the user leave to change a
+headline.
+
+**Proof.** `qa_m7_links.py` H1–H5: blocks are selectable, selecting opens the editor, a field
+edit updates the canvas, Save survives a reopen, and the demo copy is restored afterwards.
+
