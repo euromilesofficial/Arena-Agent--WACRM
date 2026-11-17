@@ -317,6 +317,12 @@
         "name": "Module 7 — XML/CSV export & master-layout editing",
         "assertions": 24,
         "covers": "XML and CSV export parsed and cross-checked against each other; master-layout seed selection, live text edit, link field, items add/remove, Save enabled"
+      },
+      {
+        "file": "qa_m7_inline.py",
+        "name": "Module 7 — inline editing on the canvas",
+        "assertions": 15,
+        "covers": "click-to-edit text on master layouts and page templates, Enter/Escape/empty rules, hero link kind, inspector shares the draft, Save enabled and persisted within the session"
       }
     ]
   },

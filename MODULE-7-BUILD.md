@@ -249,6 +249,30 @@ edit updates the canvas, Save survives a reopen, and the demo copy is restored a
 `qa_m7_export_edit.py` Y1–Y10: the same inspector works on master-layout seed blocks, covering
 text, link and item edits, and Save is enabled by an edit.
 
+## 8.1 Inline editing on the canvas (the view is the editor)
+
+**Problem.** The first version edited blocks only in the right-hand inspector. The user's
+end user should edit where the content is seen.
+
+**Decision.** Text is edited on the canvas itself, in both master layouts and page templates:
+
+- Text elements (headings, eyebrows, descriptions, labels, titles) are editable in place. Click,
+  type, then click away or press Enter to commit. Escape reverts. Paste is plain text.
+- Hero button labels and link targets are editable too. A link edited as `/page` stays a page
+  link, anything else becomes a URL, and an empty value is refused.
+- Only text whose on-screen content equals the stored prop is editable. A derived label is never
+  mapped to a field it does not come from.
+- The inspector shows the same draft, so an inline edit appears there at once and Save writes one
+  revision.
+- Shared chrome (announcement, header, footer) is not edited inline. It is shared across layouts,
+  so an edit from one layout would change others. It stays in the region drawer.
+- Items, media and toggles stay in the inspector, because they need controls that do not fit on
+  a canvas.
+
+**Proof.** `qa_m7_inline.py` I1–I11 and T1–T3: click-to-edit, spaces kept, Enter commits, Escape
+reverts, empty refused, link kind kept, inspector sees the same value, Save enabled, and the edit
+survives leaving and returning to the screen.
+
 ## 9. Export: JSON, XML and CSV
 
 **Decision.** Export from the template row menu in three formats, one template per file.

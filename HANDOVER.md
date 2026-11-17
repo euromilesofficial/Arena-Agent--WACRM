@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-17 05:14:32 UTC · **generated against commit** `f281862`
+**Generated** 2026-11-17 13:41:11 UTC · **generated against commit** `5797b90` · **working tree** 14 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -46,10 +46,10 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 5,045,651 B (4927 kB) · gzip 2971 kB |
-| md5 | `df7817d3df176f6d3ff58a6166d66e7a` |
-| sha256 (first 16) | `838b9872d6363784` |
-| Built | 2026-11-17 05:14:31 |
+| Size | 5,047,438 B (4929 kB) · gzip 2971 kB |
+| md5 | `9c74fd155a4ea8bd41756335761d71e3` |
+| sha256 (first 16) | `aa81d397ca16ff5b` |
+| Built | 2026-11-17 13:41:10 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -62,26 +62,27 @@ npm run dev        # http://localhost:5173 while developing
 
 ## 4. Verification (last recorded run)
 
-Recorded 2026-11-17 05:13:42 UTC · node v20.20.2. Re-run with `npm run qa`.
+Recorded 2026-11-17 13:39:58 UTC · node v20.20.2. Re-run with `npm run qa`.
 
 | Suite | Passed | Failed | Time | Covers |
 | --- | --- | --- | --- | --- |
-| `qa_ai.py` | 60 | 0 | 37.1 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
-| `qa_theme.py` | 241 | 0 | 118.0 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
-| `qa_builder.py` | 98 | 0 | 43.3 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
-| `qa_states_m4.py` | 47 | 0 | 44.1 s | M4 state matrix |
-| `qa_pages.py` | 106 | 0 | 121.8 s | M3 registry, tree, inspector, modals, deep links |
+| `qa_ai.py` | 60 | 0 | 37.3 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
+| `qa_theme.py` | 241 | 0 | 116.3 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
+| `qa_builder.py` | 98 | 0 | 43.2 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
+| `qa_states_m4.py` | 47 | 0 | 43.5 s | M4 state matrix |
+| `qa_pages.py` | 106 | 0 | 121.5 s | M3 registry, tree, inspector, modals, deep links |
 | `qa_states_m3.py` | 40 | 0 | 56.8 s | M3 state matrix |
-| `qa_module2.py` | 48 | 0 | 35.2 s | M2 layout, geometry, data consistency |
+| `qa_module2.py` | 48 | 0 | 35.3 s | M2 layout, geometry, data consistency |
 | `qa_states_m1.py` | 39 | 0 | 45.5 s | M1 state matrix |
-| `qa_flows.py` | 38 | 0 | 54.9 s | cross-module interaction script |
+| `qa_flows.py` | 38 | 0 | 54.3 s | cross-module interaction script |
 | `qa_react.py` | — | 0 | 4.3 s | full-page render, console clean, no overflow |
-| `qa_library.py` | 90 | 0 | 54.1 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
-| `qa_layouts.py` | 99 | 0 | 34.6 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
-| `qa_states_m7.py` | 38 | 0 | 44.0 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
-| `qa_import.py` | 65 | 0 | 32.6 s | prebuilt browser (14 kits, search, category, provenance), HTML import report, script non-execution, dropped chrome, brand hints, bad file refusal, JSON bundle + page-builder project, unknown block naming, mapping editor + retype undo, export round trip, builder Save-as-template |
-| `qa_m7_links.py` | 45 | 0 | 35.1 s | revision drawer, M3 resolved-shell read-out + deep link, M5 block usage, M8 nav source, canvas shows real blocks, 100% vs Fit, Prebuilt kit drawn as a page, click-to-edit template blocks with save |
-| `qa_m7_export_edit.py` | 24 | 0 | 10.2 s | XML and CSV export parsed and cross-checked against each other; master-layout seed selection, live text edit, link field, items add/remove, Save enabled |
+| `qa_library.py` | 90 | 0 | 53.8 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
+| `qa_layouts.py` | 99 | 0 | 34.5 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
+| `qa_states_m7.py` | 38 | 0 | 44.3 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
+| `qa_import.py` | 65 | 0 | 32.9 s | prebuilt browser (14 kits, search, category, provenance), HTML import report, script non-execution, dropped chrome, brand hints, bad file refusal, JSON bundle + page-builder project, unknown block naming, mapping editor + retype undo, export round trip, builder Save-as-template |
+| `qa_m7_links.py` | 45 | 0 | 35.5 s | revision drawer, M3 resolved-shell read-out + deep link, M5 block usage, M8 nav source, canvas shows real blocks, 100% vs Fit, Prebuilt kit drawn as a page, click-to-edit template blocks with save |
+| `qa_m7_export_edit.py` | 24 | 0 | 10.1 s | XML and CSV export parsed and cross-checked against each other; master-layout seed selection, live text edit, link field, items add/remove, Save enabled |
+| `qa_m7_inline.py` | 15 | 0 | 12.3 s | click-to-edit text on master layouts and page templates, Enter/Escape/empty rules, hero link kind, inspector shares the draft, Save enabled and persisted within the session |
 
 > All recorded suites are green.
 
@@ -97,25 +98,25 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **71 source files, 29,110 lines** of TS/TSX/CSS (44,834 lines across all tracked text files).
+Source inventory: **71 source files, 29,180 lines** of TS/TSX/CSS (45,073 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
 | `src/lib/` | 18 | 7,495 | data seams, registries, formatting, no JSX |
-| `src/components/` | 40 | 10,458 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 8 | 6,279 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 4,804 | one tokenised stylesheet (design system) |
+| `src/components/` | 40 | 10,503 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/views/` | 8 | 6,296 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 4,812 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 4,804 |
+| `src/styles/app.css` | 4,812 |
 | `BACKEND-PLAN.md` | 1,617 |
 | `src/lib/theme-db.ts` | 1,493 |
 | `src/views/ThemeStudio.tsx` | 1,417 |
-| `src/views/Layouts.tsx` | 1,154 |
+| `src/views/Layouts.tsx` | 1,171 |
 | `src/views/Library.tsx` | 1,099 |
 | `qa_theme.py` | 1,052 |
 | `src/views/Builder.tsx` | 1,045 |
@@ -243,13 +244,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `f281862` — Module 7 complete: XML and CSV template export beside JSON (one row per prop; XML cross-checked against CSV); master-layout seed blocks edited in place with the same inspector; new suite qa_m7_export_edit.py (24 checks); 16/16 suites green; audit and build docs updated to the real state.
-- Working tree: clean.
-- Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
+- Repo: that git directory is `.`; branch `main`; HEAD `5797b90` — noop.
+- Working tree: 14 uncommitted file(s).
+- Remote: `origin	https://github.com/euromilesofficial/Arena-Agent--WACRM.git (fetch)`
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `5797b90` | 2026-11-17 | noop |
 | `f281862` | 2026-11-17 | Module 7 complete: XML and CSV template export beside JSON (one row per prop; XML cross-checked against CSV); master-layout seed blocks edited in place with the same inspector; new suite qa_m7_export_edit.py (24 checks); 16/16 suites green; audit and build docs updated to the real state |
 | `7b42926` | 2026-11-17 | Module 7 master layouts and templates: every block content kind editable in place (text, select, toggle, link, media, items); master-layout seed blocks selectable; preview shows real content; 15 suites green |
 | `6bace16` | 2026-11-17 | Module 7 templates: edit where you see them. Click a starter block on the canvas to edit its fields in the inspector; the canvas updates live; Save writes a revision. Structure stays in the list; items, links and media are edited in the Visual Builder. Decision and sources in MODULE-7-BUILD §8. 15 suites · 1054 assertions green. |
@@ -261,7 +263,6 @@ First tasks:
 | `ea0cb5f` | 2026-11-16 | STORAGE: measured budget after the history prune, archive reference, and the rules that keep the snapshot under the ceiling |
 | `b20d165` | 2026-11-16 | space: budget report (scripts/space.mjs), guarded history prune with remote archive (scripts/prune-history.mjs), QA captures cleared after runs, 2 MB less per checkpoint |
 | `75d4113` | 2026-11-16 | M7 completion pass: revision-history drawer with real structure restore, per-block mapping editor (import + prebuilt, with undo), and the three open interlinks closed (M3 resolved-shell read-out + deep link, M5 block usage counts, M8 nav source); hashchange deep links; 15 suites · 1042 assertions green |
-| `de734ba` | 2026-11-16 | M7 import: 14 MIT prebuilt starters in-repo + in the artefact, HTML/JSON import with sanitised extraction and provenance, JSON export round trip, builder Save-as-template now writes the M7 registry; 14 suites · 999 assertions green |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

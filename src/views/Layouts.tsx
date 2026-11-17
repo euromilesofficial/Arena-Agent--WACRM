@@ -71,6 +71,15 @@ const ago = (iso: string) => {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
+/** An inline edit arrives as text. A link field stays a link: "/page" becomes a page link, anything else a URL. */
+const inlineValue = (cur: unknown, key: string, text: string): unknown => {
+  const isLink = (cur !== null && typeof cur === "object") || /href$/i.test(key);
+  if (!isLink) return text;
+  const t = text.trim();
+  if (!t) return cur;
+  return t.startsWith("/") ? { kind: "page", path: t } : { kind: "url", url: t };
+};
+
 /** Parsed once, synchronously, before React mounts — the store rewrites the
     hash on boot, so reading it later is a race. */
 function bootLink(): { tab?: Tab; itab?: ITab; sel?: string } {
@@ -579,6 +588,10 @@ export function Layouts() {
                 policy={draft.slot.policy}
                 selectedId={selBlock}
                 onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
+                onEditText={readOnly ? undefined : (id, el, v) => patch((d) => {
+                  const b = d.slot.seed.find((x) => x.id === id);
+                  if (b) b.props = { ...b.props, [el]: inlineValue(b.props[el], el, v) };
+                })}
               />
             ) : tab === "templates" && tplDraft && templateFrame ? (
               <LayoutCanvas
@@ -591,6 +604,10 @@ export function Layouts() {
                 policy={templateFrame ? templateFrame.slotPolicy : { allow: [], deny: [], maxBlocks: 200 }}
                 selectedId={selBlock}
                 onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
+                onEditText={readOnly ? undefined : (id, el, v) => patchTpl((t) => {
+                  const b = t.blocks.find((x) => x.id === id);
+                  if (b) b.props = { ...b.props, [el]: inlineValue(b.props[el], el, v) };
+                })}
               />
             ) : (
               <EmptyState icon="layers" title="Nothing selected" desc="Pick a layout on the left to see its shell." />

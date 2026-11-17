@@ -4801,3 +4801,11 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m7-bf-add:disabled{opacity:.5;cursor:not-allowed}
 .m7-seed.is-selected{border-color:var(--brand-line);background:var(--brand-soft)}
 
+
+/* Module 7 · inline editing on the canvas. Text is edited where it is seen. */
+.m7l-blocks .wb-el-edit { cursor: text; border-radius: 3px; min-width: 1ch; outline: none; transition: box-shadow .12s; }
+.m7l-blocks .wb-el-edit:hover { box-shadow: 0 0 0 1px rgba(109,74,255,.45); }
+.m7l-blocks .wb-el-edit:focus { box-shadow: 0 0 0 2px #6d4aff; background: rgba(109,74,255,.05); }
+/* hero link targets are hidden in the public build; on the canvas they are shown so they can be edited */
+.m7l-blocks .wb-hero-actions .wb-el-link { display: inline-block; font-size: 11px; opacity: .8; margin-left: 6px; }
+.m7l-blocks .wb-hero-actions .wb-el-link .wb-el-edit { font-size: inherit; }

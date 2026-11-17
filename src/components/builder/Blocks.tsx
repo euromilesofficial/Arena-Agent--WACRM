@@ -14,6 +14,8 @@ export interface RenderCtx {
   onSelect: (id: string) => void;
   onSelectEl: (id: string, el: string) => void;
   onOpenLink?: (node: BlockNode) => void;
+  /** When given, text elements become editable in place. Commits on blur or Enter. */
+  onEditText?: (id: string, el: string, value: string) => void;
 }
 
 const FLAG: Record<string, string> = {
@@ -26,10 +28,44 @@ const bgClass = (v: string) => (v === "soft" ? "wb-bg-soft" : v === "brand" ? "w
 
 type Bits = { node: BlockNode; ctx: RenderCtx };
 
+/* An element is editable only when the text on screen IS the stored prop. That keeps the
+   mapping honest: a derived label (for example an item's text, or a computed flag) stays read-only. */
+function EditableEl({ id, el, text, as, className, ctx }: {
+  id: string; el: string; text: string; as: string; className: string; ctx: RenderCtx;
+}) {
+  const T = as as any;
+  const commit = (node: HTMLElement) => {
+    const v = (node.textContent ?? "").replace(/\s+/g, " ").trim();
+    if (v && v !== text) ctx.onEditText?.(id, el, v);
+    else node.textContent = text; // empty or unchanged: show the stored value again
+  };
+  return (
+    <T data-el={el} className={`wb-el wb-el-edit ${className}`} contentEditable suppressContentEditableWarning
+      spellCheck={false} title="Click to edit"
+      onClick={(e: React.MouseEvent) => { e.stopPropagation(); ctx.onSelectEl(id, el); }}
+      onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+        // stop the wrapper's Enter/Space handler, or typing a space would select the block instead
+        e.stopPropagation();
+        if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+        if (e.key === "Escape") { e.currentTarget.textContent = text; e.currentTarget.blur(); }
+      }}
+      onPaste={(e: React.ClipboardEvent<HTMLElement>) => {
+        e.preventDefault();
+        document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+      }}
+      onBlur={(e: React.FocusEvent<HTMLElement>) => commit(e.currentTarget)}>
+      {text}
+    </T>
+  );
+}
+
 function El({ node, el, children, ctx, as = "span", className = "" }: {
   node: BlockNode; el: string; children: React.ReactNode; ctx: RenderCtx;
   as?: "span" | "div" | "p" | "h1" | "h2" | "h3"; className?: string;
 }) {
+  if (ctx.onEditText && typeof children === "string" && node.props[el] === children) {
+    return <EditableEl id={node.id} el={el} text={children} as={as} className={className} ctx={ctx} />;
+  }
   const T = as as any;
   return (
     <T data-el={el} className={`wb-el ${className}`}
@@ -115,10 +151,16 @@ function Hero({ node, ctx }: Bits) {
 
 function HeroButtons({ node, ctx }: Bits) {
   const p = node.props;
-  const anchor = (key: string, defEl: string) => (
-    <span className="wb-el" data-el={defEl} onClick={(e) => { e.stopPropagation(); ctx.onSelectEl(node.id, defEl); }}
-      role="presentation">{linkText(p[key])}</span>
-  );
+  const anchor = (key: string, defEl: string) => {
+    // a link is edited as the text it shows (a /page path or a URL); the commit turns it back into a link
+    if (ctx.onEditText) {
+      return <EditableEl id={node.id} el={key} text={linkText(p[key])} as="span" className="" ctx={ctx} />;
+    }
+    return (
+      <span className="wb-el" data-el={defEl} onClick={(e) => { e.stopPropagation(); ctx.onSelectEl(node.id, defEl); }}
+        role="presentation">{linkText(p[key])}</span>
+    );
+  };
   return (
     <div className="wb-hero-actions">
       {p.primaryLabel && (

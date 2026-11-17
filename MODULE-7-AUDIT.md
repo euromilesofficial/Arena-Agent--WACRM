@@ -82,6 +82,7 @@ Ordered by how much a real user would notice.
    site's assets) and item lists (add, remove, move) are all editable there. The same inspector
    edits master-layout seed blocks (`qa_m7_export_edit.py` Y1–Y10). What stays in the Visual
    Builder and Theme Studio: style tokens, and adding a block that was not in the starter.
+   Text is edited inline on the canvas itself (MODULE-7-BUILD §8.1, `qa_m7_inline.py`).
 7. **`Draft Changes` is a count, not a diff.** The revision drawer now lists and restores
    every recorded revision, but it summarises a step by its block-count delta — it does not
    diff two revisions field by field.

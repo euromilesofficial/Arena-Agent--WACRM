@@ -16,10 +16,10 @@ import type { LayoutFrame, SlotPolicy } from "@/lib/layout-db";
 export const LAYOUT_DEVICE_W = { desktop: 1440, tablet: 768, mobile: 375 } as const;
 export type LayoutDevice = keyof typeof LAYOUT_DEVICE_W;
 
-/* Read-only: the canvas shows the page, it does not select or edit blocks. */
+/* Read-only: the canvas shows the page. Editing is opt-in through onEditText (inline, in the view). */
 const READ_ONLY: RenderCtx = { selId: null, selEl: null, onSelect: () => {}, onSelectEl: () => {} };
 
-export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy, selectedId = null, onSelectBlock }: {
+export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy, selectedId = null, onSelectBlock, onEditText }: {
   frame: LayoutFrame;
   seed: BlockNode[];
   device: LayoutDevice;
@@ -30,6 +30,8 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
   /** when given, blocks are selectable and the selected one is outlined */
   selectedId?: string | null;
   onSelectBlock?: (id: string) => void;
+  /** when given, text in the seed blocks is edited in place on the canvas */
+  onEditText?: (blockId: string, el: string, value: string) => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageW, setStageW] = useState(900);
@@ -51,6 +53,7 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
   const minHeight = device === "desktop" ? 1080 : device === "tablet" ? 1180 : 1060;
   const narrow = device === "mobile";
   const blocked = seed.filter((b) => policy.deny.includes(b.type));
+  const seedCtx: RenderCtx = onEditText ? { ...READ_ONLY, onEditText } : READ_ONLY;
 
   return (
     <div className="m7l-stage" ref={stageRef}>
@@ -106,7 +109,7 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
                       aria-label={onSelectBlock ? `Edit ${b.type} block` : undefined}
                     >
                       {blocked.includes(b) && <span className="m7l-block-tag">{b.type} · not allowed in this slot</span>}
-                      <BlockView node={b} ctx={READ_ONLY} />
+                      <BlockView node={b} ctx={seedCtx} />
                     </div>
                   ))}
                 </div>
