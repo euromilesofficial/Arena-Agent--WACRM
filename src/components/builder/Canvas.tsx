@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Node as BlockNodeView, type RenderCtx } from "./Blocks";
+import { AiBubble } from "./AiBubble";
 import { labelOf, type BlockNode } from "@/lib/builder";
 import type { LayoutFrame } from "@/lib/layout-db";
 
@@ -188,42 +189,8 @@ export function Canvas({ doc, ctl }: { doc: BlockNode[]; ctl: CanvasCtl }) {
       )}
 
       {ctl.ai && elBox && (
-        <div className="wb-ai" style={{ top: elBox.top + 6, left: Math.max(8, Math.min(elBox.left + elBox.width + 12, stageW - 214)) }} role="dialog" aria-label="AI copy">
-          {ctl.ai.stage === "idle" ? (
-            <>
-              <div className="wb-ai-head"><span className="wb-ai-spark"><Icon name="sparkles" size={12} /></span> AI Copy<span className="grow" />
-                <button className="icon-btn" aria-label="Close AI panel" onClick={ctl.onAiClose}><Icon name="x" size={12} /></button>
-              </div>
-              <div className="wb-ai-actions">
-                {[["improve", "Improve"], ["punchier", "Make Punchier"], ["shorten", "Shorten"]].map(([id, label]) => (
-                  <button key={id} className="wb-ai-act" onClick={() => ctl.onAskAi(id)}>
-                    <Icon name="sparkles" size={11} /> {label}
-                  </button>
-                ))}
-              </div>
-              <div className="wb-ai-foot">Rewrites your words only — no new claims.</div>
-            </>
-          ) : (
-            <>
-              <div className="wb-ai-head">
-                <span className="wb-ai-spark"><Icon name="sparkles" size={12} /></span>
-                {ctl.ai.stage === "streaming" ? "Writing…" : ctl.ai.stage === "error" ? "Could not rewrite" : "Suggested copy"}
-                <span className="grow" />
-                <button className="icon-btn" aria-label="Close AI panel" onClick={ctl.onAiClose}><Icon name="x" size={12} /></button>
-              </div>
-              <div className={`wb-ai-text ${ctl.ai.stage === "streaming" ? "is-streaming" : ""}`} data-ai-stream={ctl.ai.stage}>
-                {ctl.ai.message ? <span className="wb-ai-err">{ctl.ai.message}</span> : ctl.ai.text}
-                {ctl.ai.stage === "streaming" && <i className="wb-caret" />}
-              </div>
-              <div className="wb-ai-foot">Nothing changes until you accept.</div>
-              <div className="wb-ai-btns">
-                <button className="wb-ai-b" disabled={ctl.ai.stage !== "ready"} onClick={ctl.onAcceptAi}>Accept</button>
-                <button className="wb-ai-b ghost" disabled={ctl.ai.stage === "streaming"} onClick={() => ctl.onAskAi(ctl.aiAction ?? "improve")}>Regenerate</button>
-                <button className="wb-ai-b ghost" onClick={ctl.onAiClose}>Discard</button>
-              </div>
-            </>
-          )}
-        </div>
+        <AiBubble ai={ctl.ai} aiAction={ctl.aiAction} box={elBox} stageW={stageW}
+          onAskAi={ctl.onAskAi} onAiClose={ctl.onAiClose} onAcceptAi={ctl.onAcceptAi} />
       )}
     </div>
   );

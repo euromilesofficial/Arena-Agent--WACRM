@@ -4307,7 +4307,7 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m7-stage>.empty-state{margin:auto}
 
 /* ---------- the canvas ---------- */
-.m7l-stage{width:100%;overflow:auto;padding:14px 0 18px;scrollbar-width:thin}
+.m7l-stage{width:100%;overflow:auto;padding:14px 0 18px;scrollbar-width:thin;position:relative}
 .m7l-scale{width:fit-content;min-width:100%;margin:0 auto}
 .m7l-frame{position:relative;background:#fff;border-radius:10px;box-shadow:0 18px 44px -18px rgba(16,24,40,.28),0 0 0 1px rgba(16,24,40,.07);overflow:hidden;display:flex;flex-direction:column}
 .m7l-frame[data-device="mobile"]{border-radius:18px}

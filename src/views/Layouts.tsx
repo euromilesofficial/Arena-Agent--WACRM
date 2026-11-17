@@ -8,6 +8,8 @@
    which writes real `CmsPage.layout` values so Module 3 sees it.
    ============================================================ */
 import { applyEdit } from "@/lib/inline-edit";
+import { streamCopy, type StreamHandle } from "@/lib/builder-db";
+import type { AiState } from "@/components/builder/AiBubble";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, EmptyState, ErrorState, MenuItem, MenuLabel, Pill, Popover, Skel, Tip } from "@/components/ui";
@@ -113,6 +115,11 @@ export function Layouts() {
   const [tplDraft, setTplDraft] = useState<PageTemplateDoc | null>(null);
   /* the starter block being edited in the Structure inspector (template editing) */
   const [selBlock, setSelBlock] = useState<string | null>(null);
+  /* text element inside the selected block + the AI copy bubble (ported from the builder) */
+  const [selEl, setSelEl] = useState<string | null>(null);
+  const [ai, setAi] = useState<AiState>(null);
+  const [aiAction, setAiAction] = useState<string | null>(null);
+  const aiHandle = useRef<StreamHandle | null>(null);
   const [saving, setSaving] = useState(false);
   const [conflict, setConflict] = useState<string | null>(null);
   const [pending, setPending] = useState<(() => void) | null>(null);
@@ -324,6 +331,49 @@ export function Layouts() {
       return next;
     });
   };
+
+  /* one inline-edit writer for both canvases: writes the text into the same draft Save persists */
+  const writeText = (id: string, el: string, v: string) => {
+    if (tab === "layouts") patch((d) => { const b = d.slot.seed.find((x) => x.id === id); if (b) b.props = applyEdit(b.props, el, v); });
+    else patchTpl((t) => { const b = t.blocks.find((x) => x.id === id); if (b) b.props = applyEdit(b.props, el, v); });
+  };
+
+  const closeAi = () => { aiHandle.current?.cancel(); setAi(null); setSelEl(null); };
+  const pickBlock = (id: string) => { aiHandle.current?.cancel(); setAi(null); setSelEl(null); setSelBlock(id); setItab("structure"); };
+  const pickEl = (id: string, el: string) => { aiHandle.current?.cancel(); setSelBlock(id); setItab("structure"); setSelEl(el); setAi({ stage: "idle", text: "" }); };
+
+  const askAi = (action: string) => {
+    const node = (tab === "layouts" ? draft?.slot.seed : tplDraft?.blocks)?.find((b) => b.id === selBlock);
+    if (!node || !selEl) return;
+    const v = node.props?.[selEl];
+    const src = typeof v === "string" ? v : "";
+    if (!src.trim()) { setAi({ stage: "error", text: "", message: "There is no text to rewrite here." }); return; }
+    aiHandle.current?.cancel();
+    setAiAction(action);
+    setAi({ stage: "streaming", text: "" });
+    aiHandle.current = streamCopy(src, action as any,
+      (t) => setAi({ stage: "streaming", text: t }),
+      (final) => setAi({ stage: "ready", text: final }),
+      (msg) => setAi({ stage: "error", text: "", message: msg }));
+  };
+
+  const acceptAi = () => {
+    if (!selBlock || !selEl || !ai || ai.stage !== "ready") return;
+    const id = selBlock, el = selEl, text = ai.text;
+    writeText(id, el, text);
+    setAi(null);
+    setSelEl(null);
+    app.toast({ type: "success", title: "Copy accepted", sub: "Edited in the draft. Save to keep it." });
+  };
+
+  /* Escape closes the bubble first, like the builder */
+  useEffect(() => {
+    if (!ai && !selEl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeAi(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+    /* eslint-disable-next-line */
+  }, [ai, selEl]);
 
   const setDefault = async () => {
     if (!current) return;
@@ -579,11 +629,15 @@ export function Layouts() {
                 slotLabel="Main Content Slot"
                 policy={draft.slot.policy}
                 selectedId={selBlock}
-                onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
-                onEditText={readOnly ? undefined : (id, el, v) => patch((d) => {
-                  const b = d.slot.seed.find((x) => x.id === id);
-                  if (b) b.props = applyEdit(b.props, el, v);
-                })}
+                onSelectBlock={pickBlock}
+                onEditText={readOnly ? undefined : writeText}
+                selEl={selEl}
+                onSelectEl={readOnly ? undefined : pickEl}
+                ai={readOnly ? null : ai}
+                aiAction={aiAction}
+                onAskAi={askAi}
+                onAiClose={closeAi}
+                onAcceptAi={acceptAi}
               />
             ) : tab === "templates" && tplDraft && templateFrame ? (
               <LayoutCanvas
@@ -595,11 +649,15 @@ export function Layouts() {
                 slotNote="copy-on-create"
                 policy={templateFrame ? templateFrame.slotPolicy : { allow: [], deny: [], maxBlocks: 200 }}
                 selectedId={selBlock}
-                onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
-                onEditText={readOnly ? undefined : (id, el, v) => patchTpl((t) => {
-                  const b = t.blocks.find((x) => x.id === id);
-                  if (b) b.props = applyEdit(b.props, el, v);
-                })}
+                onSelectBlock={pickBlock}
+                onEditText={readOnly ? undefined : writeText}
+                selEl={selEl}
+                onSelectEl={readOnly ? undefined : pickEl}
+                ai={readOnly ? null : ai}
+                aiAction={aiAction}
+                onAskAi={askAi}
+                onAiClose={closeAi}
+                onAcceptAi={acceptAi}
               />
             ) : (
               <EmptyState icon="layers" title="Nothing selected" desc="Pick a layout on the left to see its shell." />

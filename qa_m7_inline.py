@@ -88,6 +88,8 @@ async def main():
         ck("I7 an empty edit is refused and the heading keeps its text", "two words here" in (await frame_text(pg)).replace("  ", " "))
 
         # I8: a hero link edits as text and stays a link
+        # the AI Copy bubble opened by the heading sits beside it; dismiss it (Escape) before the next element
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(200)
         link = pg.locator(".m7l-blocks .wb-el-edit[data-el='primaryHref']").first
         ck("I8 the hero link target is editable on the canvas", await link.count() == 1)
         if await link.count():

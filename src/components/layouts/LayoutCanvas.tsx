@@ -8,6 +8,7 @@
    missing states are drawn, never faked.
    ============================================================ */
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { AiBubble, type AiBox, type AiState } from "@/components/builder/AiBubble";
 import { Icon } from "@/components/Icon";
 import type { BlockNode } from "@/lib/builder";
 import { Node as BlockView, type RenderCtx } from "@/components/builder/Blocks";
@@ -19,7 +20,7 @@ export type LayoutDevice = keyof typeof LAYOUT_DEVICE_W;
 /* Read-only: the canvas shows the page. Editing is opt-in through onEditText (inline, in the view). */
 const READ_ONLY: RenderCtx = { selId: null, selEl: null, onSelect: () => {}, onSelectEl: () => {} };
 
-export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy, selectedId = null, onSelectBlock, onEditText }: {
+export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = "required", policy, selectedId = null, onSelectBlock, onEditText, selEl = null, onSelectEl, ai, aiAction = null, onAskAi, onAiClose, onAcceptAi }: {
   frame: LayoutFrame;
   seed: BlockNode[];
   device: LayoutDevice;
@@ -32,6 +33,15 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
   onSelectBlock?: (id: string) => void;
   /** when given, text in the seed blocks is edited in place on the canvas */
   onEditText?: (blockId: string, el: string, value: string) => void;
+  /** the selected text element inside the selected block (its top-level prop key) */
+  selEl?: string | null;
+  onSelectEl?: (blockId: string, el: string) => void;
+  /** AI copy bubble state; rendered next to the selected text element when set */
+  ai?: AiState;
+  aiAction?: string | null;
+  onAskAi?: (action: string) => void;
+  onAiClose?: () => void;
+  onAcceptAi?: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageW, setStageW] = useState(900);
@@ -53,10 +63,28 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
   const minHeight = device === "desktop" ? 1080 : device === "tablet" ? 1180 : 1060;
   const narrow = device === "mobile";
   const blocked = seed.filter((b) => policy.deny.includes(b.type));
-  const seedCtx: RenderCtx = onEditText ? { ...READ_ONLY, onEditText } : READ_ONLY;
+  const seedCtx: RenderCtx = onEditText
+    ? { ...READ_ONLY, onEditText, selId: selectedId, selEl, onSelectEl: (id, el) => onSelectEl?.(id, el) }
+    : READ_ONLY;
+
+  /* measure the selected text element so the AI bubble sits beside it (same method as the builder) */
+  const [elBox, setElBox] = useState<AiBox | null>(null);
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !selectedId || !selEl || !ai) { setElBox(null); return; }
+    const el = stage.querySelector(`[data-block-id="${selectedId}"] [data-el="${selEl}"]`) as HTMLElement | null;
+    if (!el) { setElBox(null); return; }
+    const base = stage.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    setElBox({ top: r.top - base.top + stage.scrollTop, left: r.left - base.left + stage.scrollLeft, width: r.width, height: r.height });
+  }, [selectedId, selEl, ai, seed, device, zoom, stageW]);
 
   return (
     <div className="m7l-stage" ref={stageRef}>
+      {ai && elBox && onAskAi && onAiClose && onAcceptAi && (
+        <AiBubble ai={ai} aiAction={aiAction} box={elBox} stageW={stageW} placement="below"
+          onAskAi={onAskAi} onAiClose={onAiClose} onAcceptAi={onAcceptAi} />
+      )}
       <div className="m7l-scale">
         <div className="m7l-frame" style={{ width: base, minHeight, zoom: String(k) } as CSSProperties} data-device={device}>
           <div className="m7l-browser">
