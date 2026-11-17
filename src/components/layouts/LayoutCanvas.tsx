@@ -16,12 +16,6 @@ import type { LayoutFrame, SlotPolicy } from "@/lib/layout-db";
 export const LAYOUT_DEVICE_W = { desktop: 1440, tablet: 768, mobile: 375 } as const;
 export type LayoutDevice = keyof typeof LAYOUT_DEVICE_W;
 
-const lines = (n: number, w = [92, 78, 84, 62]) => (
-  <div className="m7l-lines" aria-hidden>
-    {Array.from({ length: n }).map((_, i) => <span key={i} style={{ width: `${w[i % w.length]}%` }} />)}
-  </div>
-);
-
 /* Read-only: the canvas shows the page, it does not select or edit blocks. */
 const READ_ONLY: RenderCtx = { selId: null, selEl: null, onSelect: () => {}, onSelectEl: () => {} };
 
@@ -107,10 +101,13 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
 
             {frame.footer ? (
               <div className="m7l-footer">
-                <div className={`m7l-footer-cols ${narrow ? "is-narrow" : ""}`}>
-                  {frame.footer.columns.map((c) => <div key={c}>{lines(3)}</div>)}
+                <div className={`m7l-footer-cols wb-doc wb-dev-${device} ${narrow ? "is-narrow" : ""}`}>
+                  <BlockView
+                    node={{ id: `footer_${frame.footer.variant}`, type: "footer", props: { columns: frame.footer.columns.length, note: frame.footer.note }, style: {} }}
+                    ctx={READ_ONLY}
+                  />
                 </div>
-                <div className="m7l-footer-note">{frame.footer.note || "Global Footer"} · {frame.footer.variant}</div>
+                <div className="m7l-footer-note">{frame.footer.variant}</div>
               </div>
             ) : (
               <div className="m7l-footer is-off"><Icon name="eye" size={11} /> Footer hidden for this layout</div>

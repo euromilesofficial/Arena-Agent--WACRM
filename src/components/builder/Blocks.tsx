@@ -459,22 +459,36 @@ function CtaSection({ node, ctx }: Bits) {
 }
 
 function FooterBlock({ node }: Bits) {
+  /* Props come from the Global Footer variant (columns, note). With no props the footer
+     is the original four-part footer, so the builder's own footer does not change. */
+  const p = node.props as { columns?: number; note?: string; social?: boolean };
+  const cols = Math.max(1, Math.min(4, Number(p.columns ?? 2)));
+  const groups: [string, string[]][] = [
+    ["Company", ["About us", "Careers", "Press"]],
+    ["Study", ["Destinations", "Scholarships", "Intakes"]],
+    ["Support", ["Contact", "Eligibility", "Help centre"]],
+    ["Legal", ["Privacy", "Terms", "DPDP notice"]]
+  ];
+  const copy = `© 2026 EuroMiles Consultancy Pvt. Ltd.${p.note ? ` · ${p.note}` : ""}`;
   return (
     <section className="wb-blk wb-footer wb-bg-dark" data-block-id={node.id}>
       <div className="wb-wrap">
-        <div className="wb-foot-grid">
-          <div>
-            <div className="wb-foot-brand">EuroMiles<span>.in</span></div>
-            <p className="wb-foot-note">Study abroad guidance since 2011.</p>
-          </div>
-          {[["Company", ["About us", "Careers", "Press"]], ["Study", ["Destinations", "Scholarships", "Intakes"]]].map(([h, links]) => (
-            <div key={String(h)}>
-              <div className="wb-foot-h">{String(h)}</div>
-              {(links as string[]).map((l) => <div className="wb-foot-l" key={l}>{l}</div>)}
+        {cols > 1 && (
+          <div className="wb-foot-grid" style={{ gridTemplateColumns: `1.4fr ${Array.from({ length: cols - 1 }).map(() => "1fr").join(" ")}` }}>
+            <div>
+              <div className="wb-foot-brand">EuroMiles<span>.in</span></div>
+              <p className="wb-foot-note">Study abroad guidance since 2011.</p>
             </div>
-          ))}
-        </div>
-        <div className="wb-foot-copy">© 2026 EuroMiles Consultancy Pvt. Ltd.</div>
+            {groups.slice(0, cols - 1).map(([h, links]) => (
+              <div key={h}>
+                <div className="wb-foot-h">{h}</div>
+                {links.map((l) => <div className="wb-foot-l" key={l}>{l}</div>)}
+              </div>
+            ))}
+          </div>
+        )}
+        {cols === 1 && <div className="wb-foot-brand" style={{ paddingBottom: 10 }}>EuroMiles<span>.in</span></div>}
+        <div className="wb-foot-copy">{copy}</div>
       </div>
     </section>
   );

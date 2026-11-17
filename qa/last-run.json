@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16 13:54:05 UTC",
+  "generatedAt": "2026-11-17 02:41:06 UTC",
   "node": "v20.20.2",
   "artifact": "WACRM-CMS.html",
   "suites": [
@@ -7,91 +7,92 @@
       "file": "qa_ai.py",
       "passed": 60,
       "failed": 0,
-      "seconds": 38.7
+      "seconds": 36.28
     },
     {
       "file": "qa_theme.py",
       "passed": 241,
       "failed": 0,
-      "seconds": 122.31
+      "seconds": 114.525
     },
     {
       "file": "qa_builder.py",
       "passed": 98,
       "failed": 0,
-      "seconds": 44.198
+      "seconds": 42.637
     },
     {
       "file": "qa_states_m4.py",
       "passed": 47,
       "failed": 0,
-      "seconds": 44.8
+      "seconds": 43.264
     },
     {
       "file": "qa_pages.py",
       "passed": 106,
       "failed": 0,
-      "seconds": 122.583
+      "seconds": 124.199
     },
     {
       "file": "qa_states_m3.py",
       "passed": 40,
       "failed": 0,
-      "seconds": 57.462
+      "seconds": 56.593
     },
     {
       "file": "qa_module2.py",
       "passed": 48,
       "failed": 0,
-      "seconds": 36.266
+      "seconds": 34.803
     },
     {
       "file": "qa_states_m1.py",
       "passed": 39,
       "failed": 0,
-      "seconds": 46.019
+      "seconds": 45.361
     },
     {
       "file": "qa_flows.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 61.069
+      "seconds": 52.426
     },
     {
       "file": "qa_react.py",
       "passed": null,
       "failed": 0,
-      "seconds": 4.408
+      "seconds": 4.162
     },
     {
       "file": "qa_library.py",
       "passed": 90,
       "failed": 0,
-      "seconds": 55.741
+      "seconds": 53.147
     },
     {
       "file": "qa_layouts.py",
-      "passed": 99,
-      "failed": 0,
-      "seconds": 35.485
+      "passed": 98,
+      "failed": 1,
+      "seconds": 33.839,
+      "error": "OK   K4 ⌘K opens the workspace command palette\nOK   K5 no console or page errors\n\nqa_layouts · 98/99 assertions passed\nFAILURES:\n · H7 the new page opens in the builder :: file:///home/user/wacrm-app/WACRM-CMS.html#/builder?site=site_main"
     },
     {
       "file": "qa_states_m7.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 45.132
+      "seconds": 44.073
     },
     {
       "file": "qa_import.py",
       "passed": 65,
       "failed": 0,
-      "seconds": 34.82
+      "seconds": 31.92
     },
     {
       "file": "qa_m7_links.py",
       "passed": 40,
       "failed": 0,
-      "seconds": 27.039
+      "seconds": 25.899
     }
   ]
 }
