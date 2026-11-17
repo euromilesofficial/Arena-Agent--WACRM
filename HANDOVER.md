@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-17 05:14:05 UTC · **generated against commit** `7b42926` · **working tree** 13 uncommitted file(s)
+**Generated** 2026-11-17 05:14:32 UTC · **generated against commit** `f281862`
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -49,7 +49,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 5,045,651 B (4927 kB) · gzip 2971 kB |
 | md5 | `df7817d3df176f6d3ff58a6166d66e7a` |
 | sha256 (first 16) | `838b9872d6363784` |
-| Built | 2026-11-17 05:14:05 |
+| Built | 2026-11-17 05:14:31 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -243,13 +243,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `7b42926` — Module 7 master layouts and templates: every block content kind editable in place (text, select, toggle, link, media, items); master-layout seed blocks selectable; preview shows real content; 15 suites green.
-- Working tree: 13 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `f281862` — Module 7 complete: XML and CSV template export beside JSON (one row per prop; XML cross-checked against CSV); master-layout seed blocks edited in place with the same inspector; new suite qa_m7_export_edit.py (24 checks); 16/16 suites green; audit and build docs updated to the real state.
+- Working tree: clean.
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `f281862` | 2026-11-17 | Module 7 complete: XML and CSV template export beside JSON (one row per prop; XML cross-checked against CSV); master-layout seed blocks edited in place with the same inspector; new suite qa_m7_export_edit.py (24 checks); 16/16 suites green; audit and build docs updated to the real state |
 | `7b42926` | 2026-11-17 | Module 7 master layouts and templates: every block content kind editable in place (text, select, toggle, link, media, items); master-layout seed blocks selectable; preview shows real content; 15 suites green |
 | `6bace16` | 2026-11-17 | Module 7 templates: edit where you see them. Click a starter block on the canvas to edit its fields in the inspector; the canvas updates live; Save writes a revision. Structure stays in the list; items, links and media are edited in the Visual Builder. Decision and sources in MODULE-7-BUILD §8. 15 suites · 1054 assertions green. |
 | `cf5e7dd` | 2026-11-17 | Module 7 preview: Global Footer renders the variant's real columns and note (builder footer unchanged when no props); footer spans the frame; side panels narrowed for a wider preview. 15 suites · 1049 assertions green (qa_layouts flaked once, 99/99 on rerun). |
@@ -261,7 +262,6 @@ First tasks:
 | `b20d165` | 2026-11-16 | space: budget report (scripts/space.mjs), guarded history prune with remote archive (scripts/prune-history.mjs), QA captures cleared after runs, 2 MB less per checkpoint |
 | `75d4113` | 2026-11-16 | M7 completion pass: revision-history drawer with real structure restore, per-block mapping editor (import + prebuilt, with undo), and the three open interlinks closed (M3 resolved-shell read-out + deep link, M5 block usage counts, M8 nav source); hashchange deep links; 15 suites · 1042 assertions green |
 | `de734ba` | 2026-11-16 | M7 import: 14 MIT prebuilt starters in-repo + in the artefact, HTML/JSON import with sanitised extraction and provenance, JSON export round trip, builder Save-as-template now writes the M7 registry; 14 suites · 999 assertions green |
-| `2422169` | 2026-11-16 | M7 polish: readiness pill, working-copy canvas frame, synchronous deep-link boot, seed-block menu; 13/13 suites · 944 assertions green |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
