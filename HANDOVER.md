@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-17 19:08:08 UTC · **generated against commit** `9b19f38` · **working tree** 9 uncommitted file(s)
+**Generated** 2026-11-17 19:13:03 UTC · **generated against commit** `2ecc0c8` · **working tree** 3 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -49,7 +49,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 5,052,663 B (4934 kB) · gzip 2973 kB |
 | md5 | `20b20c626df69fe8007931ad70ce7949` |
 | sha256 (first 16) | `b860d7f2f6d3be49` |
-| Built | 2026-11-17 19:07:33 |
+| Built | 2026-11-17 19:12:58 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -245,13 +245,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `9b19f38` — Inline editing in the Visual Builder: every text element a visitor reads is editable on the canvas (headings, descriptions, buttons and hero links, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing, captions, alerts, quotes, forms, CTA). One edit is one undo step; Ctrl+Z in a field is the field's own. One path grammar (src/lib/inline-edit.ts) shared by builder, layouts and templates. New suite qa_builder_inline.py (30 checks). 18/18 suites green. BUILD 10 documents it..
-- Working tree: 9 uncommitted file(s).
-- Remote: `origin	https://github.com/euromilesofficial/Arena-Agent--WACRM (fetch)`
+- Repo: that git directory is `.`; branch `main`; HEAD `2ecc0c8` — Module 7: AI copy bubble on Layouts and Templates inline editing.
+- Working tree: 3 uncommitted file(s).
+- Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `2ecc0c8` | 2026-11-17 | Module 7: AI copy bubble on Layouts and Templates inline editing |
 | `9b19f38` | 2026-11-17 | Inline editing in the Visual Builder: every text element a visitor reads is editable on the canvas (headings, descriptions, buttons and hero links, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing, captions, alerts, quotes, forms, CTA). One edit is one undo step; Ctrl+Z in a field is the field's own. One path grammar (src/lib/inline-edit.ts) shared by builder, layouts and templates. New suite qa_builder_inline.py (30 checks). 18/18 suites green. BUILD 10 documents it. |
 | `72473d9` | 2026-11-17 | Inline editing on the canvas: text, hero labels and link targets are edited where they are seen, in master layouts and page templates; inspector shares the same draft; new suite qa_m7_inline.py (15 checks); 17/17 suites green; BUILD 8.1 and AUDIT updated |
 | `5797b90` | 2026-11-17 | noop |
@@ -263,7 +264,6 @@ First tasks:
 | `f507caa` | 2026-11-16 | checkpoint.sh: the current script (budget guard, no automatic history rewrite, main-only push, lease-safe) now lives in Git; the stale copy that mirrored into a deleted clone is gone |
 | `0e5fc05` | 2026-11-16 | space: count only what the snapshot keeps (match the snapshotter's exclusion list) |
 | `5b615c4` | 2026-11-16 | handover regenerated after the storage pass |
-| `ea0cb5f` | 2026-11-16 | STORAGE: measured budget after the history prune, archive reference, and the rules that keep the snapshot under the ceiling |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
