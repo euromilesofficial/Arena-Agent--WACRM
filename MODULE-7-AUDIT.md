@@ -76,8 +76,12 @@ Ordered by how much a real user would notice.
 5. **Chrome is summarised, not edited block-by-block.** The shared-region drawer edits the
    variant's name, announcement text, brand, nav list and CTA. Deep block editing of chrome
    lives in M4 and is not wired back yet.
-6. **Templates are composed in the builder.** The Structure tab reorders and removes starter
-   blocks; adding new blocks links to the builder rather than embedding a second editor.
+6. ~~Templates are composed in the builder.~~ **Built in part.** Every starter block is edited in
+   place: click a block on the canvas, or pick it in the Structure list, and its fields appear in
+   one inspector. Text, select, segmented, toggle, number, link (page or URL), media (from the
+   site's assets) and item lists (add, remove, move) are all editable there. The same inspector
+   edits master-layout seed blocks (`qa_m7_export_edit.py` Y1–Y10). What stays in the Visual
+   Builder and Theme Studio: style tokens, and adding a block that was not in the starter.
 7. **`Draft Changes` is a count, not a diff.** The revision drawer now lists and restores
    every recorded revision, but it summarises a step by its block-count delta — it does not
    diff two revisions field by field.
@@ -94,6 +98,10 @@ Ordered by how much a real user would notice.
     to it, M5 counts layout and template usage per block, and M8's placeholder reads the header
     variant instead of inventing a menu (`qa_m7_links.py` C1–E5). M8's actual editor is still
     the next module — the placeholder shows the real source, it does not pretend to edit it.
+14. ~~Export offers JSON only.~~ **Built**: each template exports as JSON (round-trips through
+    Import), XML (`wacrm-templates`, props carry their kind) or CSV (one row per prop, RFC 4180
+    quoting, CRLF). XML and CSV are cross-checked against each other (`qa_m7_export_edit.py`
+    X1–X13). Export is one template at a time; a whole-workspace export is not offered.
 13. **One state row is covered by construction, not by a test.** Spec §13's *broken shared
     reference* cannot be reached because variants can be edited but never deleted — so there is
     no dangling-reference state to test. If variant deletion is ever added, that state becomes

@@ -475,3 +475,73 @@ export function downloadJson(filename: string, body: string): void {
   a.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
+
+/* ---------------- export: XML and CSV (same content, other shapes) ---------------- */
+
+export type ExportDoc = { name: string; intent?: string; layoutName?: string; blocks: BlockNode[] };
+
+function xmlEscape(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+/** Strings are written as text; other prop values as JSON text, tagged with kind so import can restore them. */
+function propKind(v: unknown): string {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "array";
+  return typeof v === "object" ? "object" : typeof v;
+}
+
+export function exportTemplatesXml(docs: ExportDoc[], meta: Record<string, unknown> = {}): string {
+  const attrs = Object.entries({ kind: EXPORT_KIND, schemaVersion: 1, exportedAt: new Date().toISOString(), ...meta })
+    .map(([k, v]) => `${k}="${xmlEscape(String(v))}"`).join(" ");
+  const body = docs.map((d) => {
+    const blocks = d.blocks.map((b) => {
+      const props = Object.entries(b.props ?? {}).map(([k, v]) => {
+        const kind = propKind(v);
+        const text = kind === "string" ? (v as string) : JSON.stringify(v);
+        return `      <prop name="${xmlEscape(k)}" kind="${kind}">${xmlEscape(text)}</prop>`;
+      }).join("\n");
+      const variant = b.variant ? ` variant="${xmlEscape(String(b.variant))}"` : "";
+      return `    <block type="${xmlEscape(b.type)}"${variant}>${props ? `\n${props}\n    ` : ""}</block>`;
+    }).join("\n");
+    const layout = d.layoutName ? ` layout="${xmlEscape(d.layoutName)}"` : "";
+    return `  <template name="${xmlEscape(d.name)}" intent="${xmlEscape(d.intent ?? "Custom")}"${layout}>\n${blocks}\n  </template>`;
+  }).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<wacrm-templates ${attrs}>\n${body}\n</wacrm-templates>\n`;
+}
+
+const CSV_HEADER = ["template", "intent", "layout", "position", "block_type", "variant", "prop", "prop_kind", "value"];
+
+function csvCell(v: string): string {
+  return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+/** One row per prop, so a spreadsheet can filter by block or field. Blocks with no props get one row with an empty prop. */
+export function exportTemplatesCsv(docs: ExportDoc[]): string {
+  const rows: string[][] = [CSV_HEADER];
+  for (const d of docs) {
+    d.blocks.forEach((b, i) => {
+      const entries = Object.entries(b.props ?? {});
+      const base = [d.name, d.intent ?? "Custom", d.layoutName ?? "", String(i + 1), b.type, b.variant ?? ""];
+      if (!entries.length) rows.push([...base, "", "", ""]);
+      for (const [k, v] of entries) {
+        const kind = propKind(v);
+        rows.push([...base, k, kind, kind === "string" ? (v as string) : JSON.stringify(v)]);
+      }
+    });
+  }
+  // CRLF line endings are the RFC 4180 default and what spreadsheet apps expect.
+  return "\uFEFF" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+}
+
+export function downloadText(filename: string, body: string, mime: string): void {
+  const blob = new Blob([body], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+}

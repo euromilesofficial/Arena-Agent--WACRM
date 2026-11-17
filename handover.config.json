@@ -311,6 +311,12 @@
         "name": "Module 7 — revision history & interlinks",
         "assertions": 45,
         "covers": "revision drawer, M3 resolved-shell read-out + deep link, M5 block usage, M8 nav source, canvas shows real blocks, 100% vs Fit, Prebuilt kit drawn as a page, click-to-edit template blocks with save"
+      },
+      {
+        "file": "qa_m7_export_edit.py",
+        "name": "Module 7 — XML/CSV export & master-layout editing",
+        "assertions": 24,
+        "covers": "XML and CSV export parsed and cross-checked against each other; master-layout seed selection, live text edit, link field, items add/remove, Save enabled"
       }
     ]
   },

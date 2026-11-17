@@ -229,8 +229,11 @@ after leaving the screen, so the screen was a viewer rather than an editor.
   from the block registry, so the editor and the renderer never disagree.
 - Changes stay in the template draft until **Save**, which writes a revision. The canvas updates
   as you type.
-- Reorder and remove stay in the Structure list. Items, links, media and style tokens are edited
-  in the Visual Builder, and the inspector says so rather than hiding them.
+- Reorder and remove stay in the Structure list. Every content kind is edited in place: text,
+  textarea, select, segmented, toggle, number, link (a page or a URL), media (from the site's
+  assets) and item lists (add, remove, move). One component, `BlockFields.tsx`, renders all of
+  them, for both template starters and master-layout seed blocks. Style tokens stay in the
+  Visual Builder and Theme Studio, because they are workspace-level settings, not block content.
 
 **Why this model.** Two established systems converge on it. WordPress's Site Editor lets you
 click a block inside a template part and edit its content directly, while the structural
@@ -243,4 +246,25 @@ headline.
 
 **Proof.** `qa_m7_links.py` H1–H5: blocks are selectable, selecting opens the editor, a field
 edit updates the canvas, Save survives a reopen, and the demo copy is restored afterwards.
+`qa_m7_export_edit.py` Y1–Y10: the same inspector works on master-layout seed blocks, covering
+text, link and item edits, and Save is enabled by an edit.
+
+## 9. Export: JSON, XML and CSV
+
+**Decision.** Export from the template row menu in three formats, one template per file.
+
+- **JSON** is the round-trip format. It imports back through the same path as any bundle.
+- **XML** (`wacrm-templates`) is for reading and for other tools. Each prop carries a `kind`
+  attribute (string, number, boolean, null, object, array), so a reader can tell a text value
+  from structured data without guessing.
+- **CSV** has one row per prop, with columns template, intent, layout, position, block type,
+  variant, prop, prop kind and value. Non-text values are JSON text in the value column. It is
+  written as RFC 4180 with CRLF line endings and a BOM, so spreadsheets open it correctly.
+
+**Why one template at a time.** A whole-workspace export is a backup concern, not a template
+concern, and it belongs with the data-export work in Settings. It is not built here.
+
+**Proof.** `qa_m7_export_edit.py` X1–X13: the three formats are offered, the XML is well-formed,
+the CSV has the expected header, width and line endings, quoting is correct, and XML and CSV
+agree on every prop value.
 

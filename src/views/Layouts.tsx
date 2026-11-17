@@ -997,7 +997,9 @@ export function Layouts() {
                 <MenuItem icon="eye" onClick={() => { choose(t.id, "templates"); setPreviewOpen(false); }}>Preview starter</MenuItem>
                 <MenuItem icon="plus" disabled={readOnly} onClick={() => { setMenuFor(null); setCreatePageFor(t); }}>Create page from this</MenuItem>
                 <MenuItem icon="copy" disabled={readOnly} onClick={() => { setMenuFor(null); setCreateKind("templates"); }}>Duplicate…</MenuItem>
-                <MenuItem icon="download" onClick={() => { setMenuFor(null); exportTemplate(t, layouts.find((l) => l.id === t.layoutId)?.name ?? "Website default"); app.toast({ type: "success", title: `${t.name} exported as JSON`, sub: "Round-trips: import that file anywhere, including here." }); }}>Export as JSON</MenuItem>
+                <MenuItem icon="download" onClick={() => { setMenuFor(null); exportTemplate(t, layouts.find((l) => l.id === t.layoutId)?.name ?? "Website default", "json"); app.toast({ type: "success", title: `${t.name} exported as JSON`, sub: "Round-trips: import it anywhere." }); }}>Export as JSON</MenuItem>
+                <MenuItem icon="download" onClick={() => { setMenuFor(null); exportTemplate(t, layouts.find((l) => l.id === t.layoutId)?.name ?? "Website default", "xml"); app.toast({ type: "success", title: `${t.name} exported as XML`, sub: "One template with its blocks and props." }); }}>Export as XML</MenuItem>
+                <MenuItem icon="download" onClick={() => { setMenuFor(null); exportTemplate(t, layouts.find((l) => l.id === t.layoutId)?.name ?? "Website default", "csv"); app.toast({ type: "success", title: `${t.name} exported as CSV`, sub: "One row per block field." }); }}>Export as CSV</MenuItem>
                 <MenuItem icon="upload" disabled={readOnly} onClick={() => { setMenuFor(null); setImportOpen(true); }}>Import a file…</MenuItem>
                 <MenuItem icon="trash" danger disabled={!canDelete || t.builtIn} onClick={() => { setMenuFor(null); setArchiveFor({ kind: "template", id: t.id, name: t.name, builtIn: t.builtIn, isDefault: false, pages: 0 }); }}>Delete template</MenuItem>
               </>

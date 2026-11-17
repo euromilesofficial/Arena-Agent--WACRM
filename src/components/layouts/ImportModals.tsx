@@ -19,7 +19,7 @@ import { useApp } from "@/lib/store";
 import { REGISTRY, type BlockNode, type BlockType } from "@/lib/builder";
 import { LayoutsAPI, type LayoutDraft, type PageTemplateDoc, type TemplateOrigin } from "@/lib/layout-db";
 import {
-  exportTemplatesJson, downloadJson, importHtml, importJson, IMPORT_LIMITS,
+  exportTemplatesJson, exportTemplatesXml, exportTemplatesCsv, downloadJson, downloadText, importHtml, importJson, IMPORT_LIMITS,
   type ImportReport, type JsonTemplate
 } from "@/lib/html-import";
 import { KIT_CATEGORIES, KIT_COUNT, PREBUILT_SOURCE, kitContent, listKits } from "@/lib/prebuilt-db";
@@ -473,12 +473,16 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
 
 /* ---------------- export ---------------- */
 
-export function exportTemplate(doc: PageTemplateDoc, layoutName: string) {
-  const body = exportTemplatesJson(
-    [{ name: doc.name, intent: doc.intent, layoutName, blocks: doc.blocks }],
-    { site: doc.siteId, template: doc.id, revision: doc.rev }
-  );
-  downloadJson(`${doc.name}.json`, body);
+export type ExportFormat = "json" | "xml" | "csv";
+
+/** One template, one format. JSON round-trips through Import; XML and CSV are for reading and tooling. */
+export function exportTemplate(doc: PageTemplateDoc, layoutName: string, format: ExportFormat = "json") {
+  const docs = [{ name: doc.name, intent: doc.intent, layoutName, blocks: doc.blocks }];
+  const meta = { site: doc.siteId, template: doc.id, revision: doc.rev };
+  const base = doc.name;
+  if (format === "xml") return downloadText(`${base}.xml`, exportTemplatesXml(docs, meta), "application/xml");
+  if (format === "csv") return downloadText(`${base}.csv`, exportTemplatesCsv(docs), "text/csv");
+  downloadJson(`${base}.json`, exportTemplatesJson(docs, meta));
 }
 
 export function ExportHint() {
