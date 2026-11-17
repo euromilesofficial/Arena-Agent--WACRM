@@ -28,6 +28,8 @@ export interface CanvasCtl {
   aiAction: string | null;
   onSelect: (id: string | null) => void;
   onSelectEl: (id: string, el: string) => void;
+  /** inline text edit: the block, the path to the text (lib/inline-edit), the new text */
+  onEditText: (id: string, path: string, value: string) => void;
   onAskAi: (action: string) => void;
   onAiClose: () => void;
   onAcceptAi: () => void;
@@ -115,7 +117,8 @@ export function Canvas({ doc, ctl }: { doc: BlockNode[]; ctl: CanvasCtl }) {
   const ctx: RenderCtx = {
     selId: ctl.selId, selEl: ctl.selEl,
     onSelect: (id) => ctl.onSelect(id),
-    onSelectEl: (id, el) => ctl.onSelectEl(id, el)
+    onSelectEl: (id, el) => ctl.onSelectEl(id, el),
+    onEditText: (id, path, value) => ctl.onEditText(id, path, value)
   };
 
   const selNode = ctl.selId ? findIn(doc, ctl.selId) : null;

@@ -5,6 +5,7 @@
    transform of the document; persistence is a 2 s debounced save
    with revision CAS. Publish hands off to the release pipeline.
    ============================================================ */
+import { applyEdit } from "@/lib/inline-edit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Tip } from "@/components/ui";
@@ -400,6 +401,9 @@ export function Builder() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
+      /* inside a text field, Ctrl+Z is the field's own undo, not the page's */
+      const typing = (e.target as HTMLElement | null)?.isContentEditable || /INPUT|TEXTAREA|SELECT/.test((e.target as HTMLElement | null)?.tagName ?? "");
+      if (meta && e.key.toLowerCase() === "z" && typing) return;
       if (meta && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
       else if (meta && e.key.toLowerCase() === "s") { e.preventDefault(); void saveNow(); }
       else if (e.key === "Escape") {
@@ -763,6 +767,10 @@ export function Builder() {
                 aiAction,
                 onSelect: (id) => { setSelId(id); if (!id) setSelEl(null); setAi(null); },
                 onSelectEl: (id, el) => { setSelId(id); setSelEl(el); setAi({ stage: "idle", text: "" }); },
+                onEditText: (id, path, value) => {
+                  /* typing in a block is one undo step per burst; the key merges a burst into one entry */
+                  commit(replaceNode(docRef.current, id, (n) => ({ ...n, props: applyEdit(n.props, path, value) })), `text:${id}:${path}`);
+                },
                 onAskAi: askAi,
                 onAiClose: () => { aiHandle.current?.cancel(); setAi(null); setSelEl(null); },
                 onAcceptAi: acceptAi,

@@ -7,6 +7,7 @@
    with a compare-and-swap revision — including bulk reassignment,
    which writes real `CmsPage.layout` values so Module 3 sees it.
    ============================================================ */
+import { applyEdit } from "@/lib/inline-edit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, EmptyState, ErrorState, MenuItem, MenuLabel, Pill, Popover, Skel, Tip } from "@/components/ui";
@@ -70,15 +71,6 @@ const ago = (iso: string) => {
 };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-
-/** An inline edit arrives as text. A link field stays a link: "/page" becomes a page link, anything else a URL. */
-const inlineValue = (cur: unknown, key: string, text: string): unknown => {
-  const isLink = (cur !== null && typeof cur === "object") || /href$/i.test(key);
-  if (!isLink) return text;
-  const t = text.trim();
-  if (!t) return cur;
-  return t.startsWith("/") ? { kind: "page", path: t } : { kind: "url", url: t };
-};
 
 /** Parsed once, synchronously, before React mounts — the store rewrites the
     hash on boot, so reading it later is a race. */
@@ -590,7 +582,7 @@ export function Layouts() {
                 onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
                 onEditText={readOnly ? undefined : (id, el, v) => patch((d) => {
                   const b = d.slot.seed.find((x) => x.id === id);
-                  if (b) b.props = { ...b.props, [el]: inlineValue(b.props[el], el, v) };
+                  if (b) b.props = applyEdit(b.props, el, v);
                 })}
               />
             ) : tab === "templates" && tplDraft && templateFrame ? (
@@ -606,7 +598,7 @@ export function Layouts() {
                 onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
                 onEditText={readOnly ? undefined : (id, el, v) => patchTpl((t) => {
                   const b = t.blocks.find((x) => x.id === id);
-                  if (b) b.props = { ...b.props, [el]: inlineValue(b.props[el], el, v) };
+                  if (b) b.props = applyEdit(b.props, el, v);
                 })}
               />
             ) : (

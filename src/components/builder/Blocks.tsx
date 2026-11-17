@@ -7,6 +7,7 @@
 import type { BlockNode } from "@/lib/builder";
 import { imageFor } from "@/lib/builder-db";
 import { Icon } from "@/components/Icon";
+import { readPath, topKey } from "@/lib/inline-edit";
 
 export interface RenderCtx {
   selId: string | null;
@@ -14,8 +15,8 @@ export interface RenderCtx {
   onSelect: (id: string) => void;
   onSelectEl: (id: string, el: string) => void;
   onOpenLink?: (node: BlockNode) => void;
-  /** When given, text elements become editable in place. Commits on blur or Enter. */
-  onEditText?: (id: string, el: string, value: string) => void;
+  /** When given, text elements become editable in place. `path` is read by lib/inline-edit. */
+  onEditText?: (id: string, path: string, value: string) => void;
 }
 
 const FLAG: Record<string, string> = {
@@ -28,21 +29,21 @@ const bgClass = (v: string) => (v === "soft" ? "wb-bg-soft" : v === "brand" ? "w
 
 type Bits = { node: BlockNode; ctx: RenderCtx };
 
-/* An element is editable only when the text on screen IS the stored prop. That keeps the
-   mapping honest: a derived label (for example an item's text, or a computed flag) stays read-only. */
-function EditableEl({ id, el, text, as, className, ctx }: {
-  id: string; el: string; text: string; as: string; className: string; ctx: RenderCtx;
+/* An element is editable only when the text on screen IS the stored text at its path. That keeps
+   the mapping honest: a derived label is never mapped to a field it does not come from. */
+function EditableEl({ id, el, path, text, as, className, ctx }: {
+  id: string; el: string; path: string; text: string; as: string; className: string; ctx: RenderCtx;
 }) {
   const T = as as any;
   const commit = (node: HTMLElement) => {
     const v = (node.textContent ?? "").replace(/\s+/g, " ").trim();
-    if (v && v !== text) ctx.onEditText?.(id, el, v);
+    if (v && v !== text) ctx.onEditText?.(id, path, v);
     else node.textContent = text; // empty or unchanged: show the stored value again
   };
   return (
     <T data-el={el} className={`wb-el wb-el-edit ${className}`} contentEditable suppressContentEditableWarning
       spellCheck={false} title="Click to edit"
-      onClick={(e: React.MouseEvent) => { e.stopPropagation(); ctx.onSelectEl(id, el); }}
+      onClick={(e: React.MouseEvent) => { e.stopPropagation(); ctx.onSelect(id); ctx.onSelectEl(id, topKey(path)); }}
       onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
         // stop the wrapper's Enter/Space handler, or typing a space would select the block instead
         e.stopPropagation();
@@ -59,17 +60,19 @@ function EditableEl({ id, el, text, as, className, ctx }: {
   );
 }
 
-function El({ node, el, children, ctx, as = "span", className = "" }: {
+/** A piece of text. `path` names where it is stored (see lib/inline-edit); it defaults to `el`. */
+function El({ node, el, children, ctx, as = "span", className = "", path }: {
   node: BlockNode; el: string; children: React.ReactNode; ctx: RenderCtx;
-  as?: "span" | "div" | "p" | "h1" | "h2" | "h3"; className?: string;
+  as?: string; className?: string; path?: string;
 }) {
-  if (ctx.onEditText && typeof children === "string" && node.props[el] === children) {
-    return <EditableEl id={node.id} el={el} text={children} as={as} className={className} ctx={ctx} />;
+  const at = path ?? el;
+  if (ctx.onEditText && typeof children === "string" && readPath(node.props, at) === children) {
+    return <EditableEl id={node.id} el={el} path={at} text={children} as={as} className={className} ctx={ctx} />;
   }
   const T = as as any;
   return (
     <T data-el={el} className={`wb-el ${className}`}
-      onClick={(e: React.MouseEvent) => { e.stopPropagation(); ctx.onSelect(node.id); ctx.onSelectEl(node.id, el); }}>
+      onClick={(e: React.MouseEvent) => { e.stopPropagation(); ctx.onSelect(node.id); ctx.onSelectEl(node.id, topKey(at)); }}>
       {children}
     </T>
   );
@@ -154,7 +157,7 @@ function HeroButtons({ node, ctx }: Bits) {
   const anchor = (key: string, defEl: string) => {
     // a link is edited as the text it shows (a /page path or a URL); the commit turns it back into a link
     if (ctx.onEditText) {
-      return <EditableEl id={node.id} el={key} text={linkText(p[key])} as="span" className="" ctx={ctx} />;
+      return <EditableEl id={node.id} el={key} path={key} text={linkText(p[key])} as="span" className="" ctx={ctx} />;
     }
     return (
       <span className="wb-el" data-el={defEl} onClick={(e) => { e.stopPropagation(); ctx.onSelectEl(node.id, defEl); }}
@@ -162,7 +165,7 @@ function HeroButtons({ node, ctx }: Bits) {
     );
   };
   return (
-    <div className="wb-hero-actions">
+    <div className={`wb-hero-actions ${ctx.selId === node.id ? "is-sel" : ""}`}>
       {p.primaryLabel && (
         <span className="wb-btn wb-btn-primary" role="button" tabIndex={-1}>
           <El node={node} el="primaryLabel" ctx={ctx}>{p.primaryLabel}</El>
@@ -206,14 +209,14 @@ function FeatureGrid({ node, ctx }: Bits) {
               </div>
             )}
             <div className="wb-fg-text">
-              {v === "stats" && <div className="wb-fg-stat">{it.title}</div>}
+              {v === "stats" && <El node={node} el="title" path={`items.${i}.title`} as="div" className="wb-fg-stat" ctx={ctx}>{it.title}</El>}
               {v === "steps" && <div className="wb-step-no">Step {i + 1}</div>}
               {v === "media" && (
-                <div className="wb-fg-meta"><span className="wb-fg-flag">{FLAG[String(it.title)] ?? "•"}</span><span className="wb-fg-country">{it.title}</span><Icon name="arrowRight" size={13} /></div>
+                <div className="wb-fg-meta"><span className="wb-fg-flag">{FLAG[String(it.title)] ?? "•"}</span><El node={node} el="title" path={`items.${i}.title`} as="span" className="wb-fg-country" ctx={ctx}>{it.title}</El><Icon name="arrowRight" size={13} /></div>
               )}
-              {v === "stats" && <div className="wb-fg-title">{it.text}</div>}
-              {v !== "stats" && v !== "media" && <div className="wb-fg-title">{it.title}</div>}
-              {v !== "stats" && it.text && <p className="wb-fg-desc">{it.text}</p>}
+              {v === "stats" && <El node={node} el="text" path={`items.${i}.text`} as="div" className="wb-fg-title" ctx={ctx}>{it.text}</El>}
+              {v !== "stats" && v !== "media" && <El node={node} el="title" path={`items.${i}.title`} as="div" className="wb-fg-title" ctx={ctx}>{it.title}</El>}
+              {v !== "stats" && it.text && <El node={node} el="text" path={`items.${i}.text`} as="p" className="wb-fg-desc" ctx={ctx}>{it.text}</El>}
             </div>
           </div>
         ))}
@@ -230,8 +233,8 @@ function TextBlock({ node, ctx }: Bits) {
       <div className={`wb-prose ${node.props.rich ? "is-rich" : ""}`}>
         {lines.map((ln, i) => {
           if (node.props.rich && ln.trim().startsWith("- "))
-            return <p className="wb-li" key={i}><span className="wb-li-dot"><Icon name="check" size={12} /></span><El node={node} el="body" ctx={ctx}>{ln.slice(2)}</El></p>;
-          return <p key={i}><El node={node} el="body" ctx={ctx}>{ln}</El></p>;
+            return <p className="wb-li" key={i}><span className="wb-li-dot"><Icon name="check" size={12} /></span><El node={node} el="body" path={`body#${i}`} ctx={ctx}>{ln.slice(2)}</El></p>;
+          return <p key={i}><El node={node} el="body" path={`body#${i}`} ctx={ctx}>{ln}</El></p>;
         })}
       </div>
     </Shell>
@@ -246,7 +249,7 @@ function ListBlock({ node, ctx }: Bits) {
         {items.map((it, i) => (
           <li key={i}>
             <span className="wb-list-mark">{node.props.marker === "number" ? i + 1 : <Icon name="check" size={12} />}</span>
-            <El node={node} el="items" ctx={ctx}>{it.text}</El>
+            <El node={node} el="items" path={`items.${i}.text`} ctx={ctx}>{it.text}</El>
           </li>
         ))}
       </ul>
@@ -254,7 +257,7 @@ function ListBlock({ node, ctx }: Bits) {
   );
 }
 
-function TableBlock({ node }: Bits) {
+function TableBlock({ node, ctx }: Bits) {
   const rows: any[] = node.props.rows ?? [];
   const head: string[] = node.props.head ?? ["Column 1", "Column 2", "Column 3"];
   const cols = Number(node.props.headers ?? 3);
@@ -262,13 +265,13 @@ function TableBlock({ node }: Bits) {
     <Shell node={node}>
       <div className="wb-table">
         <div className="wb-tr wb-th">
-          {head.slice(0, cols).map((h, i) => <div className="wb-td" key={i}>{h}</div>)}
+          {head.slice(0, cols).map((h, i) => <El node={node} el="head" path={`head.${i}`} as="div" className="wb-td" key={i} ctx={ctx}>{h}</El>)}
         </div>
         {rows.map((r, i) => (
           <div className="wb-tr" key={i}>
-            <div className="wb-td">{r.a}</div>
-            {cols > 1 && <div className="wb-td">{r.b}</div>}
-            {cols > 2 && <div className="wb-td">{r.c}</div>}
+            <El node={node} el="a" path={`rows.${i}.a`} as="div" className="wb-td" ctx={ctx}>{r.a}</El>
+            {cols > 1 && <El node={node} el="b" path={`rows.${i}.b`} as="div" className="wb-td" ctx={ctx}>{r.b}</El>}
+            {cols > 2 && <El node={node} el="c" path={`rows.${i}.c`} as="div" className="wb-td" ctx={ctx}>{r.c}</El>}
           </div>
         ))}
         {!rows.length && <div className="wb-tr"><div className="wb-td wb-empty">No rows yet — add one in the inspector.</div></div>}
@@ -284,8 +287,8 @@ function Quote({ node, ctx }: Bits) {
         <span className="wb-quote-mark">“</span>
         <El node={node} el="text" as="p" className="wb-quote-text" ctx={ctx}>{node.props.text}</El>
         <footer className="wb-quote-by">
-          <span className="wb-quote-name">{node.props.author}</span>
-          {node.props.role && <span className="wb-quote-role">{node.props.role}</span>}
+          <El node={node} el="author" as="span" className="wb-quote-name" ctx={ctx}>{node.props.author}</El>
+          {node.props.role && <El node={node} el="role" as="span" className="wb-quote-role" ctx={ctx}>{node.props.role}</El>}
         </footer>
       </blockquote>
     </Shell>
@@ -307,7 +310,7 @@ function ImageBlock({ node, ctx }: Bits) {
   );
 }
 
-function VideoBlock({ node }: Bits) {
+function VideoBlock({ node, ctx }: Bits) {
   const src = node.props.media ? imageFor(node.props.media) : "";
   return (
     <Shell node={node}>
@@ -316,7 +319,7 @@ function VideoBlock({ node }: Bits) {
         <span className="wb-video-play"><Icon name="play" size={22} /></span>
         {!node.props.url && <span className="wb-video-note">No video URL yet</span>}
       </div>
-      {node.props.caption && <div className="wb-caption">{node.props.caption}</div>}
+      {node.props.caption && <El node={node} el="caption" as="div" className="wb-caption" ctx={ctx}>{node.props.caption}</El>}
     </Shell>
   );
 }
@@ -340,7 +343,7 @@ function AlertBlock({ node, ctx }: Bits) {
       <div className={`wb-alert wb-alert-${tone}`}>
         <span className="wb-alert-ico"><Icon name={tone === "danger" || tone === "warn" ? "alert" : tone === "success" ? "check" : "info"} size={16} /></span>
         <div>
-          <div className="wb-alert-title">{node.props.title}</div>
+          <El node={node} el="title" as="div" className="wb-alert-title" ctx={ctx}>{node.props.title}</El>
           {node.props.text && <p className="wb-alert-text"><El node={node} el="text" ctx={ctx}>{node.props.text}</El></p>}
         </div>
       </div>
@@ -356,14 +359,14 @@ function Pricing({ node, ctx }: Bits) {
       <div className={`wb-grid wb-grid-${Math.min(3, Math.max(2, tiers.length))} wb-pricing`}>
         {tiers.map((t, i) => (
           <div className={`wb-tier ${i === 0 ? "is-featured" : ""}`} key={i}>
-            <div className="wb-tier-name">{t.name}</div>
-            <div className="wb-tier-price">{t.price}<span>{t.period ? ` / ${t.period}` : ""}</span></div>
+            <El node={node} el="name" path={`tiers.${i}.name`} as="div" className="wb-tier-name" ctx={ctx}>{t.name}</El>
+            <div className="wb-tier-price"><El node={node} el="price" path={`tiers.${i}.price`} ctx={ctx}>{t.price}</El><span>{t.period ? " / " : ""}{t.period ? <El node={node} el="period" path={`tiers.${i}.period`} ctx={ctx}>{t.period}</El> : null}</span></div>
             <ul className="wb-tier-list">
-              {String(t.features ?? "").split(",").filter(Boolean).map((f, k) => (
-                <li key={k}><Icon name="check" size={13} /> {f.trim()}</li>
+              {String(t.features ?? "").split(",").map((f, k) => [f, k] as const).filter(([f]) => f.trim()).map(([f, k]) => (
+                <li key={k}><Icon name="check" size={13} /> <El node={node} el="features" path={`tiers.${i}.features@${k}`} as="span" ctx={ctx}>{f.trim()}</El></li>
               ))}
             </ul>
-            <span className={`wb-btn ${i === 0 ? "wb-btn-primary" : "wb-btn-secondary"} wb-btn-full`}>{t.cta}</span>
+            <span className={`wb-btn ${i === 0 ? "wb-btn-primary" : "wb-btn-secondary"} wb-btn-full`}><El node={node} el="cta" path={`tiers.${i}.cta`} ctx={ctx}>{t.cta}</El></span>
           </div>
         ))}
       </div>
@@ -382,12 +385,12 @@ function Testimonials({ node, ctx }: Bits) {
             <div className="wb-stars" aria-label={`${t.rating} out of 5`}>
               {Array.from({ length: Number(t.rating ?? 5) }).map((_, k) => <Icon key={k} name="star" size={12} />)}
             </div>
-            <p className="wb-quote-card-text">{t.quote}</p>
+            <El node={node} el="quote" path={`items.${i}.quote`} as="p" className="wb-quote-card-text" ctx={ctx}>{t.quote}</El>
             <div className="wb-quote-card-by">
               <span className="wb-avatar">{(t.name ?? "?").slice(0, 1)}</span>
               <span>
-                <b>{t.name}</b>
-                <i>{t.role}</i>
+                <El node={node} el="name" path={`items.${i}.name`} as="b" ctx={ctx}>{t.name}</El>
+                <El node={node} el="role" path={`items.${i}.role`} as="i" ctx={ctx}>{t.role}</El>
               </span>
             </div>
           </div>
@@ -405,8 +408,8 @@ function Faq({ node, ctx }: Bits) {
       <div className="wb-faq">
         {items.map((f, i) => (
           <div className={`wb-faq-row ${i === 0 ? "is-open" : ""}`} key={i}>
-            <div className="wb-faq-q"><span>{f.q}</span><Icon name="chevDown" size={14} /></div>
-            {i === 0 && <p className="wb-faq-a">{f.a}</p>}
+            <div className="wb-faq-q"><El node={node} el="q" path={`items.${i}.q`} ctx={ctx}>{f.q}</El><Icon name="chevDown" size={14} /></div>
+            {i === 0 && <El node={node} el="a" path={`items.${i}.a`} as="p" className="wb-faq-a" ctx={ctx}>{f.a}</El>}
           </div>
         ))}
       </div>
@@ -470,8 +473,8 @@ function FormBlock({ node, ctx }: Bits) {
           <div className="wb-form-fields">
             {fields.map((f) => <label className="wb-fld" key={f}><span>{f}</span><i /></label>)}
             <label className="wb-fld wb-fld-tall"><span>Message</span><i /></label>
-            <span className="wb-btn wb-btn-primary wb-btn-full">{node.props.submitLabel}</span>
-            {node.props.note && <div className="wb-form-note">{node.props.note}</div>}
+            <span className="wb-btn wb-btn-primary wb-btn-full"><El node={node} el="submitLabel" ctx={ctx}>{node.props.submitLabel}</El></span>
+            {node.props.note && <El node={node} el="note" as="div" className="wb-form-note" ctx={ctx}>{node.props.note}</El>}
           </div>
         ) : (
           <div className="wb-form-empty">
@@ -490,10 +493,10 @@ function CtaSection({ node, ctx }: Bits) {
     <Shell node={node} extra="wb-cta">
       <div className="wb-cta-body">
         {node.props.title && <El node={node} el="title" as="h2" className="wb-h2" ctx={ctx}>{node.props.title}</El>}
-        {node.props.text && <p className="wb-cta-text">{node.props.text}</p>}
+        {node.props.text && <El node={node} el="text" as="p" className="wb-cta-text" ctx={ctx}>{node.props.text}</El>}
         <div className="wb-hero-actions wb-centre">
-          {node.props.primaryLabel && <span className="wb-btn wb-btn-primary wb-btn-lg">{node.props.primaryLabel}<Icon name="arrowRight" size={16} /></span>}
-          {node.props.secondaryLabel && <span className="wb-btn wb-btn-ghost-light">{node.props.secondaryLabel}</span>}
+          {node.props.primaryLabel && <span className="wb-btn wb-btn-primary wb-btn-lg"><El node={node} el="primaryLabel" ctx={ctx}>{node.props.primaryLabel}</El><Icon name="arrowRight" size={16} /></span>}
+          {node.props.secondaryLabel && <span className="wb-btn wb-btn-ghost-light"><El node={node} el="secondaryLabel" ctx={ctx}>{node.props.secondaryLabel}</El></span>}
         </div>
       </div>
     </Shell>

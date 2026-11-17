@@ -292,3 +292,34 @@ concern, and it belongs with the data-export work in Settings. It is not built h
 the CSV has the expected header, width and line endings, quoting is correct, and XML and CSV
 agree on every prop value.
 
+
+## 10. Inline editing in the Visual Builder (Module 4)
+
+**Why.** The builder's text was edited only in the inspector. Every serious builder edits text where
+it is seen. The review of built screens found the same gap in the builder, which is where page
+content is composed.
+
+**What is editable on the canvas.** Every text element a visitor reads, in every block type that
+carries text: headings, eyebrows, descriptions, buttons (labels and hero link targets), text-block
+paragraphs (each line on its own), list items, feature-card titles and text, testimonial quote,
+name and role, FAQ questions and answers, table headings and cells, pricing names, prices, periods,
+features and buttons, alert titles and text, quote author and role, captions, form titles and
+notes, and CTA text.
+
+**What stays in the inspector, and why.** Non-text controls: images and media, toggles, selects,
+counts, form selection, the table's column count, and the footer. The footer's links are part of
+the footer's design, and its note belongs to the shared footer in the region drawer. Editing either
+inline would change text across every page, so it stays where it applies to all pages.
+
+**One grammar.** A text edit is addressed by a path (`src/lib/inline-edit.ts`): `heading`,
+`items.2.title`, `head.0`, `body#3` for a line, `tiers.0.features@2` for one item of a comma list.
+The renderer reads a path and only makes text editable when the path holds exactly the text on
+screen, so an edit can never land on the wrong field. Master layouts and page templates use the
+same grammar.
+
+**Undo.** One edit is one undo step, and a burst of typing merges into one step (the same key rule
+the inspector uses). Ctrl+Z inside a text field is that field's own undo, not the page's.
+
+**Proof.** `qa_builder_inline.py` B1–B22: every kind of text is present and editable, typing and
+undo behave, Escape and Enter behave, the inspector shows the same value, the status says unsaved,
+an empty edit is refused, and each kind of text edits independently of its neighbours.

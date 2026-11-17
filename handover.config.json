@@ -323,6 +323,12 @@
         "name": "Module 7 — inline editing on the canvas",
         "assertions": 15,
         "covers": "click-to-edit text on master layouts and page templates, Enter/Escape/empty rules, hero link kind, inspector shares the draft, Save enabled and persisted within the session"
+      },
+      {
+        "file": "qa_builder_inline.py",
+        "name": "Module 4 — inline text editing on the Visual Builder canvas",
+        "assertions": 30,
+        "covers": "every text kind editable in place (headings, eyebrows, descriptions, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing tiers, periods and features, buttons, captions, hero links); one edit is one undo step; Ctrl+Z in a field is the field's own; Escape reverts; Enter commits; empty refused; inspector shares the document; status shows unsaved"
       }
     ]
   },
