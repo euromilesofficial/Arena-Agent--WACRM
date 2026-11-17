@@ -577,6 +577,8 @@ export function Layouts() {
                 zoom={zoom}
                 slotLabel="Main Content Slot"
                 policy={draft.slot.policy}
+                selectedId={selBlock}
+                onSelectBlock={(id) => { setSelBlock(id); setItab("structure"); }}
               />
             ) : tab === "templates" && tplDraft && templateFrame ? (
               <LayoutCanvas
@@ -706,6 +708,25 @@ export function Layouts() {
             </div>
           ) : itab === "structure" && tab === "layouts" && draft ? (
             <div className="m7-pane">
+              {(() => {
+                const sel = draft.slot.seed.find((b) => b.id === selBlock);
+                if (!sel) return null;
+                return (
+                  <div className="m7-sec m7-bf-sec">
+                    <div className="m7-sec-h"><h4>Edit {sel.type}</h4><button className="m7-icon-btn" aria-label="Close block editor" onClick={() => setSelBlock(null)}><Icon name="x" size={11} /></button></div>
+                    <BlockFields
+                      node={sel}
+                      siteId={siteId}
+                      readOnly={readOnly}
+                      onChange={(key, value) => patch((d) => {
+                        const b = d.slot.seed.find((x) => x.id === sel.id);
+                        if (b) b.props = { ...b.props, [key]: value };
+                      })}
+                    />
+                    <p className="m7-muted">Changes stay in this draft until you press Save.</p>
+                  </div>
+                );
+              })()}
               <div className="m7-sec">
                 <div className="m7-sec-h"><h4>Region order</h4><span>Fixed by the block contract</span></div>
                 <div className="m7-order">
@@ -736,7 +757,7 @@ export function Layouts() {
                 <div className="m7-seedlist">
                   {draft.slot.seed.length === 0 && <p className="m7-muted">No seed. Pages created on this layout start with an empty slot.</p>}
                   {draft.slot.seed.map((b, i) => (
-                    <div key={b.id} className="m7-seed">
+                    <div key={b.id} className={`m7-seed ${selBlock === b.id ? "is-selected" : ""}`} onClick={() => setSelBlock(b.id)}>
                       <Icon name="grip" size={10} />
                       <span className="m7-seed-type">{b.type}</span>
                       <span className="m7-seed-meta">{(b.props as any)?.title ?? (b.props as any)?.text ?? "—"}</span>
@@ -899,6 +920,7 @@ export function Layouts() {
                     <div className="m7-sec-h"><h4>Edit {sel.type}</h4><button className="m7-icon-btn" aria-label="Close block editor" onClick={() => setSelBlock(null)}><Icon name="x" size={11} /></button></div>
                     <BlockFields
                       node={sel}
+                      siteId={siteId}
                       readOnly={readOnly}
                       onChange={(key, value) => patchTpl((t) => {
                         const b = t.blocks.find((x) => x.id === sel.id);

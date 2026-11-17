@@ -4790,3 +4790,14 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .m7-bf-toggle{grid-template-columns:1fr auto}
 .m7-bf-deferred{font-size:11px;color:var(--muted);margin:2px 0 0;line-height:1.45}
 
+/* ---------- Module 7 · inspector fields for every content kind ---------- */
+.m7-bf-items{display:flex;flex-direction:column;gap:6px}
+.m7-bf-items-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)}
+.m7-bf-items-h em{font-style:normal;font-size:10.5px;color:var(--muted-2)}
+.m7-bf-item{border:1px solid var(--line);border-radius:9px;padding:8px;display:flex;flex-direction:column;gap:6px;background:#fff}
+.m7-bf-item-bar{display:flex;align-items:center;gap:2px;font-size:11.5px;color:var(--ink-2)}
+.m7-bf-item-bar b{flex:1;font-weight:650}
+.m7-bf-add{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;border:1px dashed var(--line-strong);background:#FBFBFC;border-radius:8px;padding:5px 9px;font-size:11.5px;color:var(--brand-ink);cursor:pointer}
+.m7-bf-add:disabled{opacity:.5;cursor:not-allowed}
+.m7-seed.is-selected{border-color:var(--brand-line);background:var(--brand-soft)}
+
