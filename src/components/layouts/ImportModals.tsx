@@ -20,8 +20,9 @@ import { REGISTRY, type BlockNode, type BlockType } from "@/lib/builder";
 import { LayoutsAPI, type LayoutDraft, type PageTemplateDoc, type TemplateOrigin } from "@/lib/layout-db";
 import {
   exportTemplatesJson, exportTemplatesXml, exportTemplatesCsv, downloadJson, downloadText, importHtml, importJson, IMPORT_LIMITS,
-  type ImportReport, type JsonTemplate
+  type ImportReport, type ImportNote, type JsonTemplate
 } from "@/lib/html-import";
+import { readZip } from "@/lib/zip-import";
 import { KIT_CATEGORIES, KIT_COUNT, PREBUILT_SOURCE, kitContent, listKits } from "@/lib/prebuilt-db";
 
 /* ---------------- shared bits ---------------- */
@@ -281,7 +282,7 @@ export function PrebuiltModal({ siteId, onClose, onDone }: {
 
 /* ---------------- import ---------------- */
 
-type Mode = "html" | "json";
+type Mode = "html" | "json" | "zip";
 
 export function ImportModal({ siteId, layouts, onClose, onDone }: {
   siteId: string;
@@ -322,14 +323,55 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
     }
   };
 
+  /* A ZIP of HTML files: each entry goes through the same extractor as a single upload. */
+  const readZipFile = async (file: File) => {
+    setMode("zip"); setFileName(file.name); setText(""); setError(""); setReport(null); setParsed([]); setEdited([]);
+    let zip;
+    try { zip = await readZip(await file.arrayBuffer()); } catch (e) { setError((e as Error).message); return; }
+    const notes: ImportNote[] = zip.skipped.map((s) => ({ kind: "drop" as const, text: `${s.name} — ${s.reason}` }));
+    const docs: { name: string; blocks: BlockNode[] }[] = [];
+    const mapped = new Map<string, number>();
+    const colors = new Set<string>(); const fonts = new Set<string>();
+    let blocks = 0, dropped = 0, bytes = 0;
+    zip.files.forEach((f) => {
+      if (docs.length >= IMPORT_LIMITS.maxTemplates) {
+        notes.push({ kind: "drop", text: `${f.name} — past the ${IMPORT_LIMITS.maxTemplates}-template limit for one import` });
+        return;
+      }
+      try {
+        const res = importHtml(new TextDecoder("utf-8").decode(f.bytes), { name: f.name.replace(/\.html?$/i, "") });
+        docs.push({ name: res.report.templateName || f.name.replace(/\.html?$/i, ""), blocks: res.blocks });
+        blocks += res.report.blocks; dropped += res.report.dropped; bytes += res.report.bytes;
+        res.report.mapped.forEach((m) => mapped.set(m.type, (mapped.get(m.type) ?? 0) + m.count));
+        res.report.notes.forEach((n) => notes.push({ ...n, text: `${f.name}: ${n.text}` }));
+        res.report.brand.colors.forEach((c) => colors.add(c));
+        res.report.brand.fonts.forEach((x) => fonts.add(x));
+      } catch (e) {
+        notes.push({ kind: "drop", text: `${f.name} — ${(e as Error).message}` });
+      }
+    });
+    if (!docs.length) {
+      setError(zip.files.length ? "None of the HTML files in the archive produced blocks." : "No HTML files were found in the archive.");
+      return;
+    }
+    const merged: ImportReport = {
+      source: "html", bytes, sections: docs.length, blocks, dropped,
+      mapped: Array.from(mapped, ([type, count]) => ({ type: type as BlockType, count })),
+      notes, brand: { colors: Array.from(colors), fonts: Array.from(fonts) }, templateName: ""
+    };
+    setReport(merged); setParsed(docs);
+    setName((n) => n || file.name.replace(/\.zip$/i, "") || "Imported pages");
+  };
+
   const readFile = async (file: File) => {
+    if (/\.zip$/i.test(file.name)) { await readZipFile(file); return; }
     if (file.size > IMPORT_LIMITS.maxBytes) {
       setError(`${file.name} is ${Math.round(file.size / 1024)} KB. The limit is ${Math.round(IMPORT_LIMITS.maxBytes / 1024)} KB.`);
       return;
     }
     const lower = file.name.toLowerCase();
     if (!/\.(html?|json)$/.test(lower)) {
-      setError(`${file.name} is not an HTML or JSON file. Upload .html, .htm or .json.`);
+      setError(`${file.name} is not an HTML, JSON or ZIP file. Upload .html, .htm, .json or .zip.`);
       return;
     }
     const kind: Mode = lower.endsWith(".json") ? "json" : "html";
@@ -349,7 +391,7 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
     if (!parsed.length) return;
     setBusy(true);
     try {
-      const origin: TemplateOrigin = mode === "html"
+      const origin: TemplateOrigin = mode !== "json"
         ? { kind: "html", name: fileName || "pasted HTML" }
         : { kind: "json", name: fileName || "pasted JSON", source: "upload" };
       const made = await LayoutsAPI.importTemplates(
@@ -370,7 +412,7 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
   return (
     <Modal
       title="Import a template"
-      sub="HTML from anywhere, or a JSON bundle. Both are reduced to blocks — nothing in the file is executed."
+      sub="HTML, a ZIP of HTML files, or a JSON bundle. All are reduced to blocks — nothing in the file is executed."
       icon="upload" width="wide" onClose={onClose}
       footer={<>
         <span className="m7-imp-limits">{Math.round(IMPORT_LIMITS.maxBytes / 1024)} KB · {IMPORT_LIMITS.maxBlocks} blocks max · scripts and styles are always dropped</span>
@@ -381,11 +423,11 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
       </>}
     >
       <div className="m7-imp-tabs" role="tablist">
-        {(["html", "json"] as Mode[]).map((m) => (
+        {(["html", "zip", "json"] as Mode[]).map((m) => (
           <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? "is-on" : ""}
             onClick={() => { setMode(m); setText(""); setReport(null); setParsed([]); setError(""); setFileName(""); }}>
-            <Icon name={m === "html" ? "code" : "file"} size={12} />
-            {m === "html" ? "HTML file" : "JSON bundle"}
+            <Icon name={m === "html" ? "code" : m === "zip" ? "layers" : "file"} size={12} />
+            {m === "html" ? "HTML file" : m === "zip" ? "ZIP of HTML" : "JSON bundle"}
           </button>
         ))}
       </div>
@@ -397,18 +439,18 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
         onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) void readFile(f); }}
       >
         <Icon name="upload" size={18} />
-        <b>Drop an {mode === "html" ? ".html" : ".json"} file here</b>
+        <b>Drop {mode === "zip" ? "a .zip of .html files" : mode === "html" ? "an .html file" : "a .json file"} here</b>
         <span>or</span>
         <Btn icon="file" onClick={() => fileRef.current?.click()}>Choose a file</Btn>
         <input
-          ref={fileRef} type="file" accept=".html,.htm,.json,text/html,application/json" className="m7-file"
-          aria-label="Choose an HTML or JSON file"
+          ref={fileRef} type="file" accept=".html,.htm,.json,.zip,text/html,application/json,application/zip" className="m7-file"
+          aria-label="Choose an HTML, JSON or ZIP file"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void readFile(f); }}
         />
         {fileName && <em>{fileName}</em>}
       </div>
 
-      <details className="m7-imp-paste">
+      {mode !== "zip" && <details className="m7-imp-paste">
         <summary>Or paste the markup</summary>
         <textarea
           value={text} rows={6} spellCheck={false}
@@ -417,7 +459,7 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
           aria-label="Paste HTML or JSON"
         />
         <Btn icon="check" onClick={() => parse(text, mode)} disabled={!text.trim()}>Parse</Btn>
-      </details>
+      </details>}
 
       {error && <div className="m7-imp-error"><Icon name="alert" size={13} /><span>{error}</span></div>}
 
@@ -425,7 +467,7 @@ export function ImportModal({ siteId, layouts, onClose, onDone }: {
         <div className="m7-imp-report">
           <div className="m7-imp-stats">
             <div><b>{report.blocks}</b><span>blocks</span></div>
-            <div><b>{report.sections}</b><span>{mode === "html" ? "sections read" : "templates"}</span></div>
+            <div><b>{report.sections}</b><span>{mode === "json" ? "templates" : mode === "zip" ? "HTML files" : "sections read"}</span></div>
             <div><b>{report.dropped}</b><span>dropped</span></div>
             <div><b>{Math.round(report.bytes / 1024)}</b><span>KB</span></div>
           </div>

@@ -71,11 +71,15 @@ Ordered by how much a real user would notice.
 3. **No CSS / design import.** Colour, type and spacing always come from the active theme;
    there is no CSS-to-token mapper or image downloader. This is a policy, not an oversight:
    the Theme Studio owns those tokens.
-4. **No ZIP / batch upload.** One file at a time, 400 KB, 40 blocks, 20 templates per bundle,
-   120 templates per workspace.
-5. **Chrome is summarised, not edited block-by-block.** The shared-region drawer edits the
-   variant's name, announcement text, brand, nav list and CTA. Deep block editing of chrome
-   lives in M4 and is not wired back yet.
+4. ~~No ZIP / batch upload.~~ **Built** — a ZIP of HTML files imports as one batch with one report
+   entry per file. Limits: archive 2 MB, 200 entries, 400 KB per HTML file, 4 MB uncompressed in
+   total, 20 templates per bundle, 120 per workspace. Encrypted, ZIP64 and path-escaping (zip-slip)
+   entries are refused (`qa_m7_zip.py` 20/20).
+5. **Chrome is summarised, not edited block-by-block.** *Decision (this pass):* this stays open
+   on purpose. The header variant stores a flat `nav` list and a CTA, not blocks, so there is no
+   block tree to edit. Footer is edited in the Global Footer drawer only, never inline, because a
+   shared footer changes every layout that uses it; the drawer lists those layouts. Menu structure
+   now lives in Module 8. Revisit only if headers become block-based.
 6. ~~Templates are composed in the builder.~~ **Built in part.** Every starter block is edited in
    place: click a block on the canvas, or pick it in the Structure list, and its fields appear in
    one inspector. Text, select, segmented, toggle, number, link (page or URL), media (from the
@@ -83,9 +87,9 @@ Ordered by how much a real user would notice.
    edits master-layout seed blocks (`qa_m7_export_edit.py` Y1–Y10). What stays in the Visual
    Builder and Theme Studio: style tokens, and adding a block that was not in the starter.
    Text is edited inline on the canvas itself (MODULE-7-BUILD §8.1, `qa_m7_inline.py`).
-7. **`Draft Changes` is a count, not a diff.** The revision drawer now lists and restores
-   every recorded revision, but it summarises a step by its block-count delta — it does not
-   diff two revisions field by field.
+7. ~~`Draft Changes` is a count, not a diff.~~ **Built** — each revision row has a Changes panel
+   that compares the two structures: regions, blocks, variant fields and the shared footer, listed as
+   added, removed or changed (`qa_m7_diff.py` 16/16).
 8. **No rendered preview / thumbnail.** The canvas is a schematic of the resolved shell. There
    is no page renderer in a file-based prototype, so the stored `{url, revHash, renderedAt}`
    field stays empty.
@@ -96,9 +100,8 @@ Ordered by how much a real user would notice.
 11. **No cross-site clone.** Duplicating a layout or template works inside one website; copying
     a layout between websites is not offered.
 12. ~~Three interlinks are still open.~~ **Built**: M3 names the resolved shell and deep-links
-    to it, M5 counts layout and template usage per block, and M8's placeholder reads the header
-    variant instead of inventing a menu (`qa_m7_links.py` C1–E5). M8's actual editor is still
-    the next module — the placeholder shows the real source, it does not pretend to edit it.
+    to it, M5 counts layout and template usage per block, and M8 (Menus & Navigation, now built)
+    reads and writes the header and footer variants (`qa_m7_links.py` C1–E5, `qa_m8_menus.py`).
 14. ~~Export offers JSON only.~~ **Built**: each template exports as JSON (round-trips through
     Import), XML (`wacrm-templates`, props carry their kind) or CSV (one row per prop, RFC 4180
     quoting, CRLF). XML and CSV are cross-checked against each other (`qa_m7_export_edit.py`
@@ -110,13 +113,14 @@ Ordered by how much a real user would notice.
 
 ## 5. What I did next, and what would come after
 
-Done in the pass that followed this audit: the mapping editor, the revision-history drawer with
-real structure restore, and the three interlinks (`MODULE-7-BUILD.md` §7).
+Done in earlier passes: the mapping editor, the revision-history drawer with real structure
+restore, and the three interlinks (`MODULE-7-BUILD.md` §7).
 
-Next candidates, in order of user-visible value:
+Done in this pass: the revision diff (item 7) and the ZIP batch import (item 4).
+
+Remaining candidates, in order of user-visible value:
 
 1. **Region reorder inside the slot** — the shell order is fixed by contract, but the seed
    blocks could be dragged in the canvas instead of the Structure list.
-2. **A real diff view for revisions** — the drawer has the two structures; rendering which
-   region or block changed is a small, contained job.
-3. **Batch import** (a zipped folder of HTML) with the same report, one entry per file.
+2. **Rendered thumbnail** (item 8) — needs a page renderer; not possible in this prototype.
+3. **Whole-workspace export** (item 14 note) — one template at a time today.

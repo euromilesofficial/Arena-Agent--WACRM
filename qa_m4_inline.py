@@ -6,6 +6,7 @@ Complements qa_builder_inline.py (which covers each text kind and the undo butto
   S2  inspector edit appears on the canvas (the reverse direction)
   U1  Ctrl+Z on the canvas, with no field focused, undoes the last edit
   P1  Save persists an inline edit across a tab switch in the same session
+  L   a list item edits on the canvas and reaches the inspector
   D1  a button label edits in place and does not navigate
   C1  text inside a container (Boxed CTA section) is editable on the canvas, and the edit lands and shows in the inspector
 """
@@ -109,6 +110,23 @@ async def main():
             # selecting the block rewrites sel= in the hash, so compare the route and the page only
             ck("D2 editing the label does not navigate away", route(await pg.evaluate("location.hash")) == start_route,
                str(route(await pg.evaluate("location.hash"))))
+
+        # L — a list item edits on the canvas, the edit reaches the inspector, and sibling items stay put
+        await pg.click("#wb-tab-blocks"); await pg.wait_for_timeout(200)
+        await pg.click('.wb-tile[data-block="list"]'); await pg.wait_for_timeout(600)
+        li = pg.locator(".wb-doc .wb-list .wb-el-edit[data-el='items']").first
+        ck("L0 a list item is editable on the canvas", await li.count() == 1)
+        if await li.count():
+            all_before = await pg.locator(".wb-doc .wb-list .wb-el-edit[data-el='items']").all_inner_texts()
+            await li.click(); await pg.keyboard.press("Control+A")
+            await pg.keyboard.type("QA list item"); await pg.keyboard.press("Enter"); await pg.wait_for_timeout(300)
+            all_after = await pg.locator(".wb-doc .wb-list .wb-el-edit[data-el='items']").all_inner_texts()
+            ck("L1 the list item edit lands on the canvas", "QA list item" in [t.strip() for t in all_after])
+            ck("L2 the other list items are unchanged", [t.strip() for t in all_after[1:]] == [t.strip() for t in all_before[1:]],
+               f"{all_before} -> {all_after}")
+            await li.click(); await pg.wait_for_timeout(300)
+            vals = await pg.evaluate("[...document.querySelectorAll('input,textarea')].map(e=>e.value)")
+            ck("L3 the inspector shows the list item edit", "QA list item" in vals)
 
         ck("Z1 no console or page errors", not errs, "; ".join(errs[:3]))
         await b.close()

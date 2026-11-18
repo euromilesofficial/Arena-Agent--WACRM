@@ -89,8 +89,16 @@
       "name": "Layouts & Templates",
       "route": "#/layouts",
       "status": "done",
-      "evidence": "qa_layouts.py 99/99 · qa_states_m7.py 38/38 · qa_m7_links.py 45/45 · qa_m7_export_edit.py 24/24 · qa_m7_inline.py 15/15 · qa_m7_ai.py 18/18 · qa_m7_footer.py 14/14",
+      "evidence": "qa_layouts.py 99/99 · qa_states_m7.py 38/38 · qa_m7_links.py 45/45 · qa_m7_export_edit.py 24/24 · qa_m7_inline.py 15/15 · qa_m7_ai.py 18/18 · qa_m7_footer.py 17/17 · qa_m7_diff.py 16/16 · qa_m7_zip.py 20/20",
       "notes": "Master layouts (shell + required content slot + slot policy), page templates, shared regions (announcement, header, footer) with a Global Footer drawer, usage and bulk reassignment, revisions, prebuilt and HTML/JSON import, JSON/XML/CSV export, click-to-edit text on the canvas with the AI copy bubble. Shared chrome is edited in its drawer, not inline. Limits: MODULE-7-BUILD.md §5."
+    },
+    {
+      "id": "M8",
+      "name": "Menus & Navigation",
+      "route": "#/menus",
+      "status": "built",
+      "evidence": "qa_m8_menus.py 75/75 · qa_m7_links.py 45/45 (E1–E5 check the live header and Open in Layouts)",
+      "notes": "Menus (header, footer, custom) as a 3-level link tree with mega menu, mobile output, link checks against live pages, explicit apply to the Module 7 header and footer variants with a report, Viewer read-only, and all prototype states. Spec: MODULE-8-SPEC.md. The owner waived the mock-and-spec gate for this module; there is no approved mock image. Built before the spec existed; the spec was then written from the built behaviour and the cited sources."
     }
   ],
   "decisions": [
@@ -216,13 +224,13 @@
     }
   ],
   "next": {
-    "headline": "Modules 1–7 are built. Next: Module 8 (Menus & Navigation), then 9 (Media), 10 (Forms & Leads), 11 (Publishing & Releases); see README §18.",
+    "headline": "Modules 1–8 are built. Next: 9 (Media), 10 (Forms & Leads), 11 (Publishing & Releases); see README §18.",
     "blockedOn": [
       "Module 11 (Publishing & Releases) is the future owner of the publish surface — until then the theme draft rides Module 4's release dialog.",
       "The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost)."
     ],
     "tasks": [
-      "Module 8 (Menus & Navigation): awaiting its specification and mock. Module 7 owns the header and footer regions; Module 8 owns the navigation tree they reference.",
+      "Module 8 (Menus & Navigation): built; no approved mock image (owner waived the gate). Review MODULE-8-SPEC.md before treating it as final.",
       "Theme Studio 'Replace layout after review' stays disabled: a master layout references shared regions that an imported file cannot supply.",
       "Decide Tier B of THEME-STUDIO-BENCHMARK.md: dark mode/modes (G5), palette generation (G6), DTCG export (G7), APCA column (G8), partial presets (G9). All researched and ranked; none approved.",
       "Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.",
@@ -338,7 +346,7 @@
       {
         "file": "qa_m4_inline.py",
         "name": "Module 4 — inline editing gaps",
-        "assertions": 13,
+        "assertions": 17,
         "covers": "canvas<->inspector sync both ways, Ctrl+Z on canvas, Save persists across tab switch, text inside Boxed CTA container, button label edit does not navigate"
       },
       {
@@ -355,8 +363,26 @@
       {
         "file": "qa_m7_footer.py",
         "name": "Module 7 — shared Global Footer editing",
-        "assertions": 14,
+        "assertions": 17,
         "covers": "footer opens the Global Footer drawer from the canvas; note, column count, column titles and links save to the shared variant; footer has no inline text; template path"
+      },
+      {
+        "file": "qa_m7_diff.py",
+        "name": "Module 7 — revision diff (history drawer)",
+        "assertions": 16,
+        "covers": "per-revision Changes panel: added, removed and changed structure, with a diff of the shared chrome"
+      },
+      {
+        "file": "qa_m7_zip.py",
+        "name": "Module 7 — ZIP of HTML batch import",
+        "assertions": 20,
+        "covers": "ZIP tab: stored and deflated archives, zip-slip and encrypted refusal, size and count limits, one report across files"
+      },
+      {
+        "file": "qa_m8_menus.py",
+        "name": "Module 8 — Menus & Navigation",
+        "assertions": 75,
+        "covers": "menu tree (3 levels), link kinds and checks against live pages, mega menu, mobile output, apply to header and footer with report, Viewer read-only, prototype states (error, empty, loading, conflict, denied)"
       }
     ]
   },

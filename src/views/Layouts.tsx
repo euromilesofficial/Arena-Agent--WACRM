@@ -132,7 +132,10 @@ export function Layouts() {
   const [createKind, setCreateKind] = useState<Tab | null>(null);
   const [archiveFor, setArchiveFor] = useState<{ kind: "layout" | "template"; id: string; name: string; builtIn: boolean; isDefault: boolean; pages: number } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [regionFor, setRegionFor] = useState<SharedRegion | null>(null);
+  const [regionFor, setRegionForRaw] = useState<SharedRegion | null>(null);
+  /* every open gets a fresh drawer instance, so an unsaved edit from an earlier open cannot survive */
+  const [regionSeq, setRegionSeq] = useState(0);
+  const setRegionFor = (r: SharedRegion | null) => { setRegionSeq((n) => n + 1); setRegionForRaw(r); };
   const [seoOpen, setSeoOpen] = useState(false);
   const [pfOpen, setPfOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
@@ -1173,7 +1176,7 @@ export function Layouts() {
         <PreviewModal siteId={siteId} layout={previewLayout} frame={previewFrame} onClose={() => setPreviewOpen(false)} />
       )}
       {regionFor && (
-        <RegionDrawer region={regionFor} onClose={() => setRegionFor(null)} onDone={() => { setRegionFor(null); setTick((n) => n + 1); }} />
+        <RegionDrawer key={regionSeq} region={regionFor} onClose={() => setRegionFor(null)} onDone={() => { setRegionFor(null); setTick((n) => n + 1); }} />
       )}
       {seoOpen && draft && <SeoModal layout={draft} onClose={() => setSeoOpen(false)} />}
       {pfOpen && <PreflightModal issues={pf} onClose={() => setPfOpen(false)} onFix={() => { setPfOpen(false); location.hash = `#/pages?site=${siteId}`; }} />}

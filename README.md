@@ -307,7 +307,7 @@ The sidebar is the product's shape. Built screens navigate; the rest render a de
 | | Block Library | ✅ M5 |
 | | Theme Studio | ✅ M6 / M6.1 |
 | | Layouts & Templates | ✅ M7 (master layouts, slot policy, templates, usage) |
-| | Menus & Navigation | ⬜ M8 |
+| | Menus & Navigation | ✅ M8 (spec: MODULE-8-SPEC.md) |
 | | Media Library | ⬜ M9 |
 | | Forms & Leads | ⬜ M10 |
 | | Publishing & Releases | ⬜ **M11** — owns every publish action in the product |
@@ -642,14 +642,19 @@ Rules baked into those contracts, and into the UI:
 ## 18. Roadmap
 
 M7 is built (`#/layouts`, 99 + 38 checks) — see `MODULE-7-BUILD.md` for what shipped and
-the honest deltas. The remaining modules are below.
+the honest deltas. M8 Menus & Navigation is built (`#/menus`, 75 checks) — see `MODULE-8-SPEC.md`.
+The remaining modules are below.
+
+> **Open conflict (not resolved here):** the table below lists Menus & Navigation as unsequenced,
+> "after M11". The sidebar places it under Manage, and it was built now because the owner asked
+> for it. The owner should decide whether M8 keeps its place before M11 or moves back.
 
 | Module | Scope | Depends on |
 |---|---|---|
 | **M9** | **Media Library** | — |
 | **M10** | **Forms & Leads** — CRM-imported forms, consent policy | M5 |
 | **M11** | **Publishing & Releases** — the only place anything goes live | everything |
-| unsequenced | Menus & Navigation · SEO & Redirects · Localization · Security & Audit · CMS Settings | after M11 |
+| unsequenced | SEO & Redirects · Localization · Security & Audit · CMS Settings | after M11 |
 
 **Deliberately not built** (researched, ranked, unapproved — Tier B of the benchmark): dark mode / colour modes, palette generation, DTCG token export, an APCA column, partial presets. And nothing publishes anywhere in the product until M11.
 

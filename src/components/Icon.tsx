@@ -32,6 +32,7 @@ const P: Record<string, string> = {
     grip: '<circle cx="9" cy="6" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>',
     star: '<path d="m12 3.4 2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.9-5.3 2.9 1-6L3.3 9.8l6-.9Z"/>',
     chevDown: '<path d="m6 9 6 6 6-6"/>',
+    chevUp: '<path d="m18 15-6-6-6 6"/>',
     chevRight: '<path d="m9 6 6 6-6 6"/>',
     chevLeft: '<path d="m15 6-6 6 6 6"/>',
     check: '<path d="m5 13 4 4L19 7"/>',

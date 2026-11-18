@@ -103,6 +103,22 @@ async def main():
             ck("F13 a template on another footer does not show the Global Footer v1 edit",
                "qa footer note" not in tf_text, tf_text[-120:])
 
+        # F14 — an unsaved drawer edit does not survive closing and reopening the drawer
+        await footer.click(); await pg.wait_for_timeout(400)
+        note2 = pg.locator(".field:has(.label:text-is(\"Note\")) input")
+        saved_note = await note2.input_value() if await note2.count() else ""
+        ck("F14a reopening the drawer shows the saved note", saved_note == "QA footer note", saved_note)
+        if await note2.count():
+            await note2.fill("unsaved junk")
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+        closed = await pg.get_by_text("Global Footer — shared region").count() == 0
+        ck("F14b Escape closes the drawer without saving", closed)
+        await footer.click(); await pg.wait_for_timeout(400)
+        note3 = pg.locator(".field:has(.label:text-is(\"Note\")) input")
+        now_note = await note3.input_value() if await note3.count() else ""
+        ck("F14c the unsaved edit is gone after reopening", now_note == "QA footer note" and "unsaved junk" not in now_note, now_note)
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(300)
+
         ck("Z1 no console or page errors", not errs, "; ".join(errs[:3]))
         await b.close()
 

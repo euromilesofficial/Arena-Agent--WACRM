@@ -145,17 +145,16 @@ async def main():
         ck("D4 it names layouts, templates and chrome separately",
            ("master layout" in shell) and ("template" in shell), shell[:160])
 
-        # ---------------- E · Module 8 reads the header variant ----------------
+        # ---------------- E · Module 8 shows the live header and edits it through apply ----------------
         await cold(pg, "#/menus")
-        ck("E1 the placeholder shows the live navigation source", await n(pg, ".ph-nav") == 1)
-        nav = await txt(pg, ".ph-nav")
-        ck("E2 it names the layout and the header variant", "Default Website Layout" in nav and "Global Header" in nav, nav[:140])
-        items = await pg.locator(".ph-nav-list li").all_inner_texts()
-        ck("E3 it lists the real links from that variant", len(items) >= 3 and "Home" in " ".join(items), str(items))
-        ck("E4 it says where the links are edited today", "Layouts & Templates" in nav or "Layouts &amp; Templates" in nav)
-        await pg.get_by_role("button", name="Open layout").click()
+        ck("E1 Module 8 is live at #/menus (the placeholder is gone)", await n(pg, ".m8-wrap") == 1 and await n(pg, ".ph-nav") == 0)
+        apply_card = await txt(pg, ".m8-target")
+        ck("E2 the header target names the layout's header variant", "Global Header" in apply_card or "Default" in apply_card, apply_card[:140])
+        ck("E3 it shows what the live header holds now", "Live now:" in apply_card and "Home" in apply_card, apply_card[:160])
+        ck("E4 it says whether the saved menu and the live header agree", ("In sync" in apply_card) or ("Differs" in apply_card))
+        await pg.get_by_role("button", name="Open in Layouts").first.click()
         await pg.wait_for_timeout(1500)
-        ck("E5 Open layout reaches Module 7", "#/layouts" in pg.url, pg.url)
+        ck("E5 Open in Layouts reaches Module 7", "#/layouts" in pg.url, pg.url)
 
         # ---------------- G · the canvas shows real content, not sketches ----------------
         await cold(pg, "#/layouts")

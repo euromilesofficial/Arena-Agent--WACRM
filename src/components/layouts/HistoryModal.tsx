@@ -12,6 +12,7 @@ import { Icon } from "@/components/Icon";
 import { Btn, Modal, Pill, Skel } from "@/components/ui";
 import { useApp } from "@/lib/store";
 import { LayoutsAPI, type RevisionEntry } from "@/lib/layout-db";
+import { diffStructures, diffSummary } from "@/lib/revision-diff";
 
 const when = (iso: string) => {
   const d = new Date(iso);
@@ -31,6 +32,7 @@ export function HistoryModal({ kind, id, name, onClose, onRestored }: {
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<number | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
+  const [open, setOpen] = useState<number | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -100,7 +102,34 @@ export function HistoryModal({ kind, id, name, onClose, onRestored }: {
                   {r.by} · {when(r.at)} · {r.delta}
                   {r.isCurrent && <Pill tone="violet" dot>current draft</Pill>}
                 </span>
+                {open === r.rev && (() => {
+                  const idx = rows.indexOf(r);
+                  const below = rows[idx + 1];
+                  const lines = diffStructures(below?.snapshot ?? {}, r.snapshot ?? {});
+                  const head = below ? `Changes from r${below.rev} to r${r.rev}` : `First recorded structure (r${r.rev})`;
+                  return (
+                    <span className="m7-hist-diff" data-testid="rev-diff">
+                      <span className="m7-hist-diff-h">{head} · {below ? diffSummary(lines) : "nothing to compare with"}</span>
+                      {lines.length > 0 && (
+                        <ul>
+                          {lines.slice(0, 12).map((l, i) => (
+                            <li key={i} className={`is-${l.kind}`}>
+                              <code>{l.path}</code>
+                              <span className="m7-hist-diff-v">
+                                {l.kind === "added" ? `+ ${l.after}` : l.kind === "removed" ? `− ${l.before}` : `${l.before} → ${l.after}`}
+                              </span>
+                            </li>
+                          ))}
+                          {lines.length > 12 && <li className="is-more">…and {lines.length - 12} more</li>}
+                        </ul>
+                      )}
+                    </span>
+                  );
+                })()}
               </span>
+              <Btn variant="ghost" onClick={() => setOpen(open === r.rev ? null : r.rev)} aria-expanded={open === r.rev}>
+                {open === r.rev ? "Hide changes" : "Changes"}
+              </Btn>
               {confirm === r.rev ? (
                 <span className="m7-hist-confirm">
                   <span>Restore r{r.rev}?</span>
