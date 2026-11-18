@@ -139,10 +139,18 @@ async def browser():
         await pg.locator(".m8-select").click(); await pg.wait_for_timeout(150)
         ck("B7 the menu picker lists all four menus", await pg.get_by_role("option").count() == 4, str(await pg.get_by_role("option").count()))
         await pg.keyboard.press("Escape"); await pg.wait_for_timeout(100)
-        ck("B8 Escape closes the picker", await pg.locator(".m8-pop").count() == 0)
+        ck("B8 Escape closes the picker", await pg.locator(".m8-picker-pop").count() == 0)
 
         # ---- add items ----
-        await pg.locator(".m8-check input[type=checkbox]").first.check(); await pg.wait_for_timeout(100)
+        # pick the first page that is not already a link in the menu (the duplicate guard covers the rest)
+        rows_now = " ".join(await pg.locator(".m8-row-label").all_inner_texts())
+        pick = None
+        boxes = pg.locator(".m8-check input[type=checkbox]")
+        for i in range(await boxes.count()):
+            lab = await boxes.nth(i).get_attribute("aria-label") or ""
+            if lab.startswith("Select ") and lab[7:] not in rows_now:
+                pick = boxes.nth(i); break
+        await pick.check(); await pg.wait_for_timeout(100)
         ck("B9 picking a page enables Add to Menu", await pg.get_by_role("button", name="Add to Menu (1)").is_enabled())
         before = await pg.locator(".m8-row").count()
         await pg.get_by_role("button", name="Add to Menu (1)").click(); await pg.wait_for_timeout(200)
@@ -195,21 +203,23 @@ async def browser():
         await pg.get_by_role("button", name="Publish Changes").first.click(); await pg.wait_for_timeout(200)
         ck("B25 Publish asks for review and lists the changes", await pg.get_by_text("Publish changes").count() >= 1 and await pg.locator(".m8-changes li").count() >= 1)
         btn = pg.get_by_role("dialog").get_by_role("button", name=re.compile(r"^Publish \d+ change"))
-        await btn.click(); await pg.get_by_role("dialog").wait_for(state="detached", timeout=5000)
-        await pg.get_by_role("tab", name="Version History").click(); await pg.wait_for_timeout(300)
+        await btn.click(); await pg.get_by_role("dialog").wait_for(state="detached", timeout=15000)
+        await pg.get_by_role("tab", name="Version History").click(); await pg.locator("tbody tr", has_text="v2").first.wait_for(timeout=8000)
         ck("B26 a publish adds version 2, marked live", await pg.locator("tbody tr", has_text="v2").count() == 1 and await pg.get_by_text("Live", exact=True).count() >= 1)
 
         # ---- rollback ----
         await pg.locator("tbody tr", has_text="v1").get_by_role("button", name="Roll back").click(); await pg.wait_for_timeout(200)
-        await pg.get_by_role("button", name="Roll back and publish").click(); await pg.wait_for_timeout(600)
-        await pg.get_by_role("tab", name="Version History").click(); await pg.wait_for_timeout(250)
+        await pg.get_by_role("button", name="Roll back and publish").click()
+        await pg.get_by_role("dialog").wait_for(state="detached", timeout=15000)
+        await pg.get_by_role("tab", name="Version History").click(); await pg.locator("tbody tr").nth(2).wait_for(timeout=8000)
         ck("B27 a rollback publishes a new version and keeps history", await pg.locator("tbody tr").count() == 3, str(await pg.locator("tbody tr").count()))
 
         # ---- manage ----
         await pg.get_by_role("tab", name="Manage Menus").click(); await pg.wait_for_timeout(200)
         ck("B28 Manage lists every menu", await pg.locator("table tbody tr").count() >= 4)
         await pg.get_by_label("Filter menus").select_option("unassigned"); await pg.wait_for_timeout(120)
-        ck("B29 the filter narrows to unassigned menus", await pg.locator("table tbody tr").count() == 1, str(await pg.locator("table tbody tr").count()))
+        # Utility has no layout slot yet, so it is unassigned too: campaign + utility
+        ck("B29 the filter narrows to unassigned menus", await pg.locator("table tbody tr").count() == 2, str(await pg.locator("table tbody tr").count()))
         await pg.get_by_label("Filter menus").select_option("all")
         ck("B30 a menu placed on the site cannot be deleted (row Delete is disabled)",
            await pg.locator("table tbody tr", has_text="Primary Navigation").get_by_role("button", name="Delete").is_disabled())
@@ -219,15 +229,16 @@ async def browser():
 
         # ---- placements ----
         await pg.get_by_role("tab", name="Menu Placements").click(); await pg.wait_for_timeout(200)
-        ck("B31 placements shows header, footer and utility plus mobile auto", await pg.locator("table tbody tr").count() == 4)
+        ck("B31 placements shows header and footer per layout, plus utility and mobile rows", await pg.get_by_text("Top bar / Utility").count() == 1 and await pg.get_by_text("Save Placement Draft").count() == 1)
         ck("B32 mobile is generated from the header", await pg.get_by_text("Auto · responsive").count() == 1)
 
         # ---- mega menus tab ----
         await pg.get_by_role("tab", name="Mega Menus").click(); await pg.wait_for_timeout(200)
         ck("B33 the mega library shows what each panel is used in", await pg.get_by_text("Used in:").count() >= 1)
         await pg.get_by_role("button", name="Create Mega Menu").click(); await pg.wait_for_timeout(150)
-        await pg.get_by_label("New panel name").fill("Testing panel"); await pg.get_by_role("button", name="Create panel").click(); await pg.wait_for_timeout(400)
-        ck("B34 creating a panel selects it for editing", await pg.get_by_label("Mega panel name").input_value() == "Testing panel")
+        await pg.get_by_label("New panel name").fill("Testing panel"); await pg.get_by_role("button", name="Create panel").click(); await pg.wait_for_function("() => document.querySelector('input[aria-label=\"Mega panel name\"]')?.value === 'Testing panel'", timeout=8000)
+        _mp = await pg.get_by_label("Mega panel name").input_value()
+        ck("B34 creating a panel selects it for editing", _mp == "Testing panel", _mp)
 
         # ---- settings ----
         await pg.get_by_role("tab", name="Settings").click(); await pg.wait_for_timeout(200)

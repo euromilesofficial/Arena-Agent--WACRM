@@ -1,9 +1,9 @@
-/* Module 8 · small pieces used by the Menus screen: headings, KPIs, modals, tab strip, header/footer status. */
+/* Module 8 · shared pieces for the Menus screen: headings, KPIs, tabs, placement status, dialogs. */
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Field, Modal, Pill } from "@/components/ui";
-import type { SharedRegion } from "@/lib/layout-db";
-import { LOC_LABEL, MenusAPI, type Audience, type Loc, type MenuItem, type MenuRec, type VersionRec } from "@/lib/menu-db";
+import type { LayoutDraft, SharedRegion } from "@/lib/layout-db";
+import { LOC_LABEL, MENU_TYPE_LABEL, MenusAPI, type Audience, type MenuRec, type MenuType, type Slot, type VersionRec, type MenuItem } from "@/lib/menu-db";
 
 export type Tab = "builder" | "manage" | "placements" | "mega" | "history" | "settings";
 export type ModalState =
@@ -11,8 +11,11 @@ export type ModalState =
   | { kind: "create-menu" } | { kind: "create-mega" }
   | { kind: "delete-menu" } | { kind: "delete-mega"; megaId: string }
   | { kind: "changes" } | { kind: "validate" }
-  | { kind: "apply"; loc: "header" | "footer" }
-  | { kind: "rollback"; version: VersionRec };
+  | { kind: "rollback"; version: VersionRec }
+  | { kind: "remove-item"; itemId: string }
+  | { kind: "unsaved"; next: string }
+  | { kind: "dup-link"; pageIds: string[] }
+  | { kind: "replace"; layoutId: string; slot: Slot; to: string };
 
 export const AUD_LABEL: Record<Audience, string> = { everyone: "Everyone", members: "Members only", hidden: "Hidden" };
 
@@ -36,11 +39,9 @@ export const depthOfId = (items: MenuItem[], id: string, d = 0): number => {
   return -1;
 };
 
-export const menuChrome = (m: MenuRec, regions: SharedRegion[]): string => {
-  if (!m.appliedTo) return "Not applied to header or footer";
-  const r = regions.find((x) => x.id === m.appliedTo!.regionId);
-  return r ? `Applied to ${m.appliedTo.variantName}` : "Variant removed";
-};
+/** "Header · Default Website Layout" style labels for a menu's placements */
+export const placeLabel = (layouts: LayoutDraft[], p: { layoutId: string; slot: Slot }) =>
+  `${LOC_LABEL[p.slot]} · ${layouts.find((l) => l.id === p.layoutId)?.name ?? "Layout"}`;
 
 export function renderTabs(tab: Tab, setTab: (t: Tab) => void): ReactNode {
   const items: { id: Tab; label: string; icon: string }[] = [
@@ -63,7 +64,7 @@ export function Head({ siteName }: { siteName: string }) {
     <div className="m8-head">
       <div>
         <h1 className="m8-title">Menus &amp; Navigation</h1>
-        <p className="m8-desc">Create and manage website menus, build dropdowns and mega menus, assign them to the header or footer, and publish changes.</p>
+        <p className="m8-desc">Build accessible navigation menus and responsive mega menus. Assign each menu to a layout slot, then publish.</p>
       </div>
       <div className="m8-head-r">
         <span className="m8-lbl">Website</span>
@@ -97,45 +98,44 @@ export function Accordion({ title, children, defaultOpen = false }: { title: str
   );
 }
 
-export function ChromeLine({ menu, regions, usedIn }: { menu: MenuRec; regions: SharedRegion[]; usedIn: Loc | null }) {
-  const st = MenusAPI.chromeStatus(menu, regions);
-  const tone = st.state === "current" ? "green" : st.state === "stale" ? "amber" : st.state === "missing" ? "red" : "grey";
-  const label =
-    st.state === "none" ? (usedIn ? `Placed on ${LOC_LABEL[usedIn]}, not applied` : "Not placed")
-      : st.state === "current" ? `In sync · ${st.variantName}`
-      : st.state === "stale" ? `Out of date · ${st.variantName}`
-      : `Missing · ${st.variantName}`;
-  return <p><Pill tone={tone} dot>{label}</Pill> <span className="m8-hint">{st.detail}</span></p>;
-}
-
-export function ApplyList({ menu, loc, regions, busy, onApply }: {
-  menu: MenuRec; loc: "header" | "footer"; regions: SharedRegion[]; busy: boolean; onApply: (variantId: string, regionId: string) => void;
+/** Per placed slot: whether the layout shows the live menu (compiled on publish). */
+export function ChromeList({ menu, regions, layouts, placed }: {
+  menu: MenuRec; regions: SharedRegion[]; layouts: LayoutDraft[]; placed: { layoutId: string; slot: Slot }[];
 }) {
-  const targets = MenusAPI.chromeTargets(regions, loc);
-  if (targets.length === 0) return <p className="m8-muted">There is no {loc} in the layouts yet.</p>;
+  if (placed.length === 0) return <p className="m8-muted">Not placed in any layout yet. Assign it in Menu Placements.</p>;
+  const st = MenusAPI.chromeStatus(menu, regions);
   return (
-    <ul className="m8-apply-list">
-      {targets.map((t) => (
-        <li key={t.variantId}>
-          <div>
-            <b>{t.name}</b>
-            <span className="m8-hint">{t.note}</span>
-            <small>Now shows: {loc === "header" ? (t.nav.join(" · ") || "nothing") : (t.groups.map((g) => g.title).join(" · ") || "nothing")}</small>
-          </div>
-          <Btn variant="primary" disabled={busy || menu.liveRev === 0} loading={busy} onClick={() => onApply(t.variantId, t.regionId)}>Apply</Btn>
-        </li>
-      ))}
+    <ul className="m8-chrome">
+      {placed.map((p) => {
+        const s = st.find((x) => x.layoutId === p.layoutId && x.slot === p.slot);
+        const tone = !s ? "amber" : s.state === "current" ? "green" : s.state === "stale" ? "amber" : "red";
+        const label = !s ? "Compiles on publish" : s.state === "current" ? "In sync" : s.state === "stale" ? "Out of date" : "Missing";
+        return (
+          <li key={`${p.layoutId}-${p.slot}`}>
+            <span>{placeLabel(layouts, p)}</span>
+            <Pill tone={tone} dot>{label}</Pill>
+            {s && s.state !== "current" && <small>{s.detail}</small>}
+          </li>
+        );
+      })}
     </ul>
   );
 }
 
-export function CreateMenuModal({ name, desc, setName, setDesc, onClose, onCreate }: {
-  name: string; desc: string; setName: (s: string) => void; setDesc: (s: string) => void; onClose: () => void; onCreate: () => void;
+export function CreateMenuModal({ name, desc, type, setName, setDesc, setType, onClose, onCreate }: {
+  name: string; desc: string; type: MenuType;
+  setName: (s: string) => void; setDesc: (s: string) => void; setType: (t: MenuType) => void;
+  onClose: () => void; onCreate: () => void;
 }) {
   return (
-    <Modal title="Create menu" sub="A menu is a tree of links. Place it in the header, the footer or a utility bar once it is ready." icon="menu" onClose={onClose}
-      footer={<><Btn onClick={onClose}>Cancel</Btn><Btn variant="primary" disabled={!name.trim()} onClick={onCreate}>Create menu</Btn></>}>
-      <Field label="Menu name"><input aria-label="New menu name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Campaign navigation" autoFocus /></Field>
+    <Modal title="Create New Menu" sub="A menu is a tree of links. Assign it to a layout slot once it is ready." icon="menu" onClose={onClose}
+      footer={<><Btn onClick={onClose}>Cancel</Btn><Btn variant="primary" disabled={!name.trim()} onClick={onCreate}>Create Menu</Btn></>}>
+      <Field label="Menu Name *"><input aria-label="New menu name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Footer Navigation" autoFocus /></Field>
+      <Field label="Menu Type">
+        <select aria-label="Menu type" value={type} onChange={(e) => setType(e.target.value as MenuType)}>
+          {(Object.keys(MENU_TYPE_LABEL) as MenuType[]).map((t) => <option key={t} value={t}>{MENU_TYPE_LABEL[t]}</option>)}
+        </select>
+      </Field>
       <Field label="Description" hint="Shown in the menu list only"><input aria-label="New menu description" value={desc} onChange={(e) => setDesc(e.target.value)} /></Field>
     </Modal>
   );
@@ -144,7 +144,7 @@ export function CreateMenuModal({ name, desc, setName, setDesc, onClose, onCreat
 export function CreateMegaModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string) => void }) {
   const [name, setName] = useState("");
   return (
-    <Modal title="Create mega panel" sub="A panel with columns of links and an optional featured card." icon="columns" onClose={onClose}
+    <Modal title="Create Mega Menu" sub="A panel with columns of links and an optional featured card." icon="columns" onClose={onClose}
       footer={<><Btn onClick={onClose}>Cancel</Btn><Btn variant="primary" disabled={!name.trim()} onClick={() => onCreate(name.trim())}>Create panel</Btn></>}>
       <Field label="Panel name"><input aria-label="New panel name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Programs mega menu" autoFocus /></Field>
     </Modal>

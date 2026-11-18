@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Icon } from "../Icon";
 import { Btn, Field, Modal, Pill, Switch } from "../ui";
 import { useApp, useDash } from "@/lib/store";
+import { releaseMenuIssues } from "@/lib/menu-db";
 import { Wizard } from "./Wizard";
 import { ConnectDomain } from "../sites/ConnectDomain";
 import { DomainSettings } from "../sites/DomainSettings";
@@ -34,10 +35,11 @@ export function ModalHost() {
     const picked = changed.filter((p) => checked[p.id] !== false);
     const step = publishState === "running" ? 2 : 0;
 
+    const menuIssues = releaseMenuIssues(app.siteId === "all" ? "site_main" : app.siteId);
     const checks: [string, boolean][] = [
       ["DNS verified for all sites", true],
       ["SSL certificates active", true],
-      ["No broken internal links", true],
+      ["No broken menu references", menuIssues.length === 0],
       [`${picked.length} of ${changed.length} changed pages included`, picked.length > 0],
       ["Core Web Vitals within budget", true]
     ];
@@ -48,7 +50,7 @@ export function ModalHost() {
           footer={<>
             <Btn variant="ghost" onClick={app.closeModal}>Cancel</Btn>
             <span className="grow" />
-            <Btn variant="primary" disabled={!picked.length} onClick={() => setPublishState("running")}>
+            <Btn variant="primary" disabled={!picked.length || menuIssues.length > 0} onClick={() => setPublishState("running")}>
               Freeze manifest · {picked.length} page{picked.length === 1 ? "" : "s"} <Icon name="arrowRight" size={12} />
             </Btn>
           </>}>
@@ -82,6 +84,7 @@ export function ModalHost() {
             if (res.ok) app.openModal({ kind: "published", version: res.version ?? "v1.25", site: "EuroMiles Main" });
           }}>Publish {d.publishing.live === "v1.24" ? "v1.25" : "release"}</Btn>
         </>}>
+        {menuIssues.length > 0 && <div className="m8-banner is-warn" role="alert"><Icon name="alert" size={13} /><span><b>Publishing is blocked.</b> Fix these menu references in Menus &amp; Navigation first.<ul>{menuIssues.map((i) => <li key={i.id}>{i.detail}</li>)}</ul></span></div>}
         <div className="dr-table">
           {checks.map(([label, ok]) => (
             <div key={label} className="dr-row">

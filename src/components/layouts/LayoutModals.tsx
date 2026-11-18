@@ -9,7 +9,11 @@
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Field, Modal, Pill, Switch, Tip } from "@/components/ui";
+import { menuRefInfo } from "@/lib/menu-db";
 import { useApp } from "@/lib/store";
+
+/** the menu a header variant reads from, if it has been applied */
+const menuRefOf = (props: any): { menuId: string; liveRev: number } | null => (props?.menuRef?.menuId ? props.menuRef : null);
 import { DBX } from "@/lib/data";
 import { REGISTRY, type BlockType } from "@/lib/builder";
 import { footerCols, footerGroups } from "@/lib/footer";
@@ -375,7 +379,26 @@ export function RegionDrawer({ region: opened, onClose, onDone }: { region: Shar
       {region.kind === "header" && (
         <>
           <Field label="Brand"><input value={brand} onChange={(e) => setBrand(e.target.value)} /></Field>
-          <Field label="Navigation links" hint="Comma separated. The full navigation tree is owned by Menus & Navigation (Module 8)."><input value={nav} onChange={(e) => setNav(e.target.value)} /></Field>
+          {menuRefOf(props) ? (
+            <div className="m8-compiled" role="group" aria-label="Navigation menu">
+              <div className="f12"><b>Navigation menu</b></div>
+              {(() => {
+                const ref = menuRefOf(props)!;
+                const info = menuRefInfo(ref.menuId);
+                if (!info) return <p className="f12 muted">The menu this header reads from was deleted. Choose another in Menus &amp; Navigation.</p>;
+                const stale = info.liveRev !== ref.liveRev;
+                return (
+                  <p className="f12">
+                    <b>{info.name}</b> · <span className={stale ? "m8-warn-text" : "m8-ok-text"}>{stale ? "Out of date. Publish it from Menus to refresh the header." : "In sync with the live menu"}</span>
+                  </p>
+                );
+              })()}
+              <p className="f12 muted">Links come from the menu, so they are not edited here.</p>
+              <Btn variant="sm" icon="menu" onClick={() => { app.closeModal(); app.go("menus"); }}>Edit in Menus</Btn>
+            </div>
+          ) : (
+            <Field label="Navigation links" hint="Comma separated. Use a menu (Menus & Navigation) to manage links with depth and mega panels."><input value={nav} onChange={(e) => setNav(e.target.value)} /></Field>
+          )}
           <Field label="Call to action"><input value={cta} onChange={(e) => setCta(e.target.value)} /></Field>
         </>
       )}

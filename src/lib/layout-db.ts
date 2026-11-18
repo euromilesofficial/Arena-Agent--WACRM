@@ -510,6 +510,12 @@ export function kpis(siteId: string): Kpis {
   };
 }
 
+/** Synchronous read of the layout store, for release checks that run outside the Layouts screen. */
+export function layoutSnapshot(): { layouts: LayoutDraft[]; regions: SharedRegion[] } {
+  const d = get();
+  return { layouts: d.layouts, regions: d.regions };
+}
+
 export function preflight(siteId: string): PreflightIssue[] {
   const out: PreflightIssue[] = [];
   const layouts = get().layouts;

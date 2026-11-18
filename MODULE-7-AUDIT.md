@@ -124,3 +124,24 @@ Remaining candidates, in order of user-visible value:
    blocks could be dragged in the canvas instead of the Structure list.
 2. **Rendered thumbnail** (item 8) — needs a page renderer; not possible in this prototype.
 3. **Whole-workspace export** (item 14 note) — one template at a time today.
+
+## 6. Module 8 integration pass (spec v1.1 §31)
+
+Recorded against the M7 spec. What changed, and what is still open.
+
+- **Publish preflight blocks broken menu references (M7 spec L778): built.** The release modal's
+  "No broken menu references" check is computed from live menus, live placements and each variant's
+  `menuRef`, and Freeze manifest is disabled while it fails. `publishRelease` in the store refuses the
+  same release. The previous check was a fixed pass. Covered by `qa_m8_v3.py` (U3 clean baseline) and
+  the browser release modal; a dedicated broken-reference browser test is still to add.
+- **Release snapshot (M7 spec item 5, L854): built as a numbered version.** Each publish stores the
+  live menus, mega panels and layout bindings. Rollback restores all three together (`qa_m8_v3.py` U10, U11).
+- **Preview pinning (L854): partial.** The Menus preview shows the draft and says so. The Layouts
+  preview does not pin a menu revision yet.
+- **Footer edited only in the Global Footer drawer: unchanged and not re-verified** against the
+  menu-derived footer groups in this pass.
+- **Layouts owns the slot bindings: data built, UI partial.** The bindings are keyed by layout id and
+  slot. The Layouts header modal shows the bound menu, its sync state and an Edit in Menus link, and
+  replaces the free comma list with the menu's links. Editing bindings from Layouts is still open;
+  they are edited from Menus (Manage Placements).
+- **Release modal other checks** (DNS, SSL, Core Web Vitals) remain fixed passes, as before.

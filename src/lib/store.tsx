@@ -12,6 +12,7 @@ import { API, type Gran, type Point, type Site } from "./data";
 import { rangeLabel } from "./format";
 import type { Domain } from "./data";
 import { ALL_CMS_ITEMS } from "./nav";
+import { releaseMenuIssues } from "./menu-db";
 
 export type DemoState = "default" | "loading" | "empty" | "error" | "conflict" | "denied";
 export type Role = "Owner" | "Editor" | "Viewer";
@@ -365,6 +366,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return partial ? "partial" : "resolved";
     },
     publishRelease: async () => {
+      // M7 spec L778: a broken menu reference blocks the release. The check runs again here so the modal cannot be bypassed.
+      const blockers = releaseMenuIssues("site_main");
+      if (blockers.length) {
+        toast({ type: "error", title: "Publishing is blocked", sub: `${blockers.length} menu reference${blockers.length > 1 ? "s" : ""} broken. Fix in Menus & Navigation.` });
+        return { ok: false };
+      }
       try {
         await API.publishRelease();
         const version = API.raw().publishing.live;

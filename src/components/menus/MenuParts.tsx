@@ -180,7 +180,8 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
     fontFamily: stackFor(tokens.typography.body), width: DEVICE_WIDTH[device] > 980 ? "100%" : DEVICE_WIDTH[device],
   } as React.CSSProperties;
   const visible = items.filter((i) => i.audience !== "hidden");
-  if (device === "mobile") {
+  /* below 1024px the header becomes the drawer and accordion (tablet and phone) */
+  if (device !== "desktop") {
     return (
       <div className="m8-pv m8-pv-mobile" style={style} aria-label={label}>
         <div className="m8-pv-bar"><b>{brand}</b><span aria-hidden="true" className="m8-burger">☰</span></div>

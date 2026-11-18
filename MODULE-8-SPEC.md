@@ -1,121 +1,112 @@
-# Module 8 · Menus & Navigation — specification (v2, built to the mockup)
+# Module 8 · Menus & Navigation — specification (v1.1 working copy)
 
-Status: **built to the owner's three Module 8 mockups**, not yet owner-approved as a spec.
-Reference images: `uploads/Module 8_ Menus & Navigation UI-3.webp`, `uploads/SaaS Menus and Navigation Dashboard-2.webp`,
-`uploads/WACRM Menus & Navigation Dashboard-1.webp`. Earlier v1 spec (D-M8-1..12) is kept below; decisions that the mockup
-changed are marked **(v2)**.
+**Status:** owner-approved spec **v1.1**, §31 mandatory for production acceptance and superseding earlier conditional wording.
+§§1–30 are the design contract. §31 is the acceptance list.
 
-Sources cited in §4: [1] WCAG navigation examples, https://www.thewcag.com/examples/navigation ·
-[2] Responsive Menu, WordPress mega menu guide 2026, https://responsive.menu/wordpress-mega-menu-complete-guide-2026 ·
-[3] Design Shack, "Mega menus UX" (2025), https://designshack.net/articles/ux-design/mega-menus-ux
+> **Honest note on this file.** The verbatim v1.1 text was pasted into the conversation and was not saved to the workspace
+> before this revision. This file is a working copy written from the approval record: the §31 capabilities, the placement rule,
+> the footer rule, the exclusions and the decisions that follow from them. The owner should re-paste the exact v1.1 text so it can
+> replace this copy section by section. Where this file and the approved text differ, the approved text governs.
 
-## 1. Mockup features (complete list, from all three images)
+Reference mockups: `uploads/Module 8_ Menus & Navigation UI-3.webp`, `uploads/SaaS Menus and Navigation Dashboard-2.webp`,
+`uploads/WACRM Menus & Navigation Dashboard-1.webp`. Earlier v2 decisions D-M8-1..12 and the v2 mockup inventory (M1–M14) are kept
+in `MODULE-8-SPEC.md` history (git `3b646ff`). Decisions D-M8-13..16 still stand. **D-M8-17 is superseded by §31.3** (see below).
 
-| # | Feature | Where it is built |
-|---|---|---|
-| M1 | KPI strip: Menus, Assigned, Draft (unpublished), Link issues, Version history | `.m8-kpis`; Link issues and Version history are buttons |
-| M2 | Six tabs: Menu Builder, Manage Menus, Menu Placements, Mega Menus, Version History, Settings | `renderTabs` |
-| M3 | Menu picker: searchable, one badge per placement (Header, Footer, Utility), Published/Draft pill | `.m8-select`, `.m8-pop` |
-| M4 | Status pill "Published (live)" / "Draft" | menu bar |
-| M5 | Buttons: Preview Menu, Save Draft, Create Menu / New Menu, Publish Changes (count), Edit Menu, Manage Menus | top bar, menu bar, Menu Status card |
-| M6 | Add Items: Pages (count, checkboxes, search), Landing pages (count), Custom link (label + address), "Add to Menu (n)" | Add Items column |
-| M7 | Menu Structure: drag reorder, Alt+arrow reorder, type badges (Page, Dropdown, Mega Menu), Expand All, depth warning | Menu Structure column |
-| M8 | Menu Item Settings: Label (required, 40 max, counter), Link To, Behaviour (Link / Dropdown / Mega), Visibility, Open in new tab, Remove Item | Settings tab |
-| M9 | Mega Menu builder: Layout 2/3/4 columns, Column gap, Show Featured Content, columns with items, featured card (image, title, CTA), Add Column, Create Mega Menu, Attach Mega Panel, Edit Column | Mega Menus tab and Mega Panel tab |
-| M10 | Manage Menus table: name, description, status, Used In, Updated, row actions, search, filter | Manage Menus tab |
-| M11 | Menu Placements: Header (Primary), Footer, Utility (Top bar), Mobile (Drawer, auto responsive), each with a dropdown and Active status | Menu Placements tab |
-| M12 | Preview: Desktop, Tablet, Mobile toggle; navigation shown in the site header | Navigation Preview |
-| M13 | Publishing Status: live date, draft changes count, View changes; Publish Changes; Rollback to Previous Version; Validate Links (issue count); View Release History | Menu Status card, Publish dialog, Validate dialog |
-| M14 | Version History table: Version, Change summary, Published by, Date, Actions (Roll back) | Version History tab |
+## 1. Experience
 
-Mockup items that are **not** built, and why, are in §9.
+WordPress-familiar ease on a WACRM-native foundation. This is not a plugin or database clone.
+Default flow: **add left, organise centre, configure right, preview below**. No top-level tabs added just to expose features.
 
-## 2. Connections to Modules 1–7
+## 2. §31.1 — eleven required capabilities
 
-| From → To | What crosses | Check |
-|---|---|---|
-| Pages (M3) → menus | Page list for Add Items; page path and status feed link checks; a trashed page is an error, a draft is a warning | `checkMenu` against `DBX().cmsPages` |
-| Menus → Layouts (M7) | Apply writes the live menu into the header (flat `nav`) or footer (`groups`) variant, plus a `menuRef` `{menuId, name, liveRev}` | `MenusAPI.apply` → `LayoutsAPI.saveRegionVariant`; typed as `HeaderChromeProps` / `FooterChromeProps` in `layout-db.ts` |
-| Layouts (M7) → menus | "Out of date" when the live menu moved on since apply; "Missing" when the variant is gone | `MenusAPI.chromeStatus` |
-| Global Footer drawer (M7) → menus | The drawer is the manual footer path; Apply replaces the footer groups from the live menu and the drawer lists the affected layouts | same variant id |
-| Themes (M6) → menus | Preview uses the site's live theme tokens (colours, font, primary) | `themeFor(siteId).live.tokens` |
-| Sites → menus | Every menu, panel and placement belongs to one website | `siteId` on every record |
-| Roles and permission (M1, M7) | Viewer and denied roles get a read-only screen | `app.role`, `app.demo === "denied"` |
-| Publish (M7 release model) | Publish copies drafts to live as a numbered version; the version list is the release history | `MenusAPI.publish`, `versions` |
-
-## 3. Data model (v2)
-
-- **Menu** (`MenuRec`): `draft` and `live` documents, `rev` (draft compare-and-swap), `liveRev`, `appliedTo`, `liveAt`.
-- **Mega panel** (`MegaRec`): `draft` and `live` documents, `rev`; columns of links; featured card; gap; layout (2/3/4).
-- **Placements** (`PlacementRec`): `draft` and `live` `{header, footer, utility}` menu ids. Mobile is generated from the header menu; it is not stored separately.
-- **Versions** (`VersionRec`): numbered, with a change summary, publisher, and time. Rollback publishes an older version as a **new** version, so history is never rewritten.
-- **Link** (`LinkRef`, typed): `page` (by page id), `url`, or `anchor`. A page reference is checked against the live page registry.
-
-## 4. Decisions
-
-| ID | Decision | Why | Source |
+| # | Capability | Built | Where / how it is verified |
 |---|---|---|---|
-| D-M8-1 | Three levels maximum (top, child, grandchild) | Deeper trees are hard to scan and to operate by keyboard. Enforced in the data layer. | Editorial convention; [1] |
-| D-M8-2 | At most four mega columns; the mockup's 2, 3 and 4 layouts are offered, plus "custom" is not built | Three to four columns is the range the guide recommends. | [2] |
-| D-M8-3 | Mega and dropdown panels open on click, Enter or Space, not on hover alone | Hover-only menus exclude touch and keyboard users. | [3]; [1] |
-| D-M8-4 | Escape closes an open panel and focus returns to its trigger | Standard disclosure-menu keyboard behaviour. | [1], [2] |
-| D-M8-5 | Errors block Save, Publish and Apply; warnings do not | A broken link must not reach the chrome. A warning (for example a draft target) is the editor's call. | Product rule |
-| D-M8-6 | `javascript:` and other non-web schemes are refused. Accepted: `https:`, `mailto:`, `tel:`; anchors must be `#name` | A menu link is a navigation target; script URLs are an injection vector. | Security baseline |
-| D-M8-7 | A page link is checked against the live page registry: trashed is an error, draft is a warning, missing is an error | The seeded draft "Study in France" must show a warning, not a silent dead link. | Product rule |
-| D-M8-8 | Apply is explicit and writes a copy into the variant with a `menuRef`. The header gets the visible top-level labels; the report lists what was left out | A flat header list cannot hold a tree. The menu stays the source. | Module 7 header variant |
-| D-M8-9 | Footer apply turns each top-level link with children into one column, capped at three | The footer variant stores columns; the builder's footer supports up to four columns including the brand. | `footer.ts` |
-| D-M8-10 | A menu placed on a location, or applied to a variant, cannot be deleted. The Delete buttons are disabled and say why | Deleting it would leave the chrome or a placement pointing at nothing. | Product rule |
-| D-M8-11 | A Viewer or denied role can read menus and cannot change them | Matches Module 7 and the permission model. | Layouts (`readOnly`) |
-| D-M8-12 | Save is compare-and-swap on each record's revision. A stale save is a conflict shown inline; the draft is kept | Two editors must not overwrite each other silently. | Modules 3 and 7 |
-| D-M8-13 **(v2)** | Drafts and live are separate. Save Draft writes drafts; Publish copies them live as a numbered version and is refused on errors | Matches the mockup's Save Draft / Publish Changes pair and Module 7 release model. | Mockup M5, M13 |
-| D-M8-14 **(v2)** | Rollback publishes an older version as a new version | History is never rewritten; the audit trail stays complete. | Mockup M14; Module 7 |
-| D-M8-15 **(v2)** | Publishing a menu that is applied to chrome does not change the chrome until Apply runs again. The Menu Status card says "Out of date" | Keeps the header and footer under explicit control. | Module 7 header/footer rule |
-| D-M8-16 **(v2)** | Featured cards use built-in art presets, not uploaded media | Uploads need the media library (Module 9). | §9 |
-| D-M8-17 **(v2)** | The menu picker shows a badge for each placement, and a menu can hold one placement per location | The mockup shows one badge per placement; a location holds one menu. | Mockup M3, M11 |
+| 1 | Multiple menus (up to 12 per website) | Yes | Manage Menus, menu picker; limit enforced in `createMenu` |
+| 2 | Add pages and custom links | Yes | Add Items column; custom link validated by `urlOk` (U15–U18) |
+| 3 | Custom labels | Yes | Item Settings → Label; unique label per row |
+| 4 | Drag and keyboard reorder | Yes | Grip drag among siblings; Alt+↑/↓ reorder; Alt+Shift+←/→ level (B6, B7) |
+| 5 | Nested dropdowns to level 3 | Yes | `MENU_LIMITS.maxDepth = 3`; indent refused past the limit (U19–U22) |
+| 6 | Header and footer assignment | Yes, per layout slot | Layout slots, see §31.3 (U1, U2, U6) |
+| 7 | Mega builder, 2–4 columns | Yes | Mega Menus tab; featured card; column gap |
+| 8 | Mobile drawer and accordion below 1024 px | Yes, in the preview | Tablet and phone preview use the drawer (B8). The live site header is still a flat `nav`; see §5 |
+| 9 | Draft and live separation | Yes | Save Draft writes drafts; Publish copies them live as a numbered version (U9) |
+| 10 | Link validation with blocking | Yes | Validate Links; Publish blocked on errors; release gate blocks on broken menu refs (§4) |
+| 11 | Rollback | Yes, as a new version | Rollback restores menus and placements together (U10, U11) |
 
-## 5. States (each reachable from the Prototype states menu)
+## 3. §31.2 — create and manage menus
 
-| State | What the screen shows |
+Create Menu takes a name, a type (Main, Footer, Utility) and a description. Duplicate, Delete and Edit are on each row.
+Delete is refused while a menu is placed in a layout slot or compiled into one (U12, U13). Its Settings → Danger zone shows
+the same guard (B9). Copy uses plain words: "Move this menu out of its slots first."
+
+## 4. §31.3 — placements (decision replaces D-M8-17)
+
+- **Layouts & Templates owns the slot bindings.** A binding is `layout_id`, `slot_key` (`header` | `footer`) and `menu_id`,
+  all site-scoped. There is no independent menu location field.
+- **Manage Placements** in Menus is a shortcut that edits the same bindings.
+- Placement edits are a draft, saved with **Save Placement Draft** (toast `Navigation placement saved as draft.`) and go live
+  with Publish (U6, B5).
+- Replacing an occupied slot asks first: **Replace in Draft** (B2–B4).
+- **Unassigning a layout's header is refused** unless the layout shows no navigation (U4). The header select has no empty option (B1).
+- **One menu may fill many slots** across compatible layouts. One menu per single-menu slot per layout revision.
+  This supersedes D-M8-17 ("one placement per location per menu").
+- **One header or footer design cannot show two different menus.** If two layouts share a design and place different menus,
+  the release gate blocks publishing and asks for a separate design.
+- Footer menus render as footer navigation only. They are not used as mobile header content. A separate mobile menu is deferred.
+- The utility location has no layout slot yet. Utility menus can be created and edited but are shown as unassigned.
+
+## 5. §31.4 — item editing, parent disclosure, custom-link validation
+
+- A parent with children is not a link on mobile. It opens to show its children (drawer and accordion).
+- Custom links accept `https://`, `http://`, `mailto:` and `tel:`. Refused: embedded credentials, protocol-relative `//`, `javascript:`,
+  and whitespace in web addresses (U15–U18). The message is "Address not allowed. Use https://, http://, mailto: or tel:."
+- The live site header is a flat `nav` of top-level labels. Dropdowns and mega panels show in the preview and in the menu, and are
+  omitted from the header with a note at apply time. This is the current chrome limit.
+
+## 6. §31.5 — draft and rollback
+
+- Save Draft writes menus and mega panels. Save Placement Draft writes bindings. Publish writes both live as one numbered version.
+- Publish compiles each live menu into the layout slots that place it. Each header or footer variant records a `menuRef`
+  (`menuId`, `name`, `liveRev`). The Layouts header modal shows the menu, its sync state, and an Edit in Menus link.
+- Rollback publishes an older version as a new version. It restores menus, mega panels and bindings together, and it
+  recompiles the chrome (U10, U11).
+- Chrome status per compiled slot: **current**, **stale** (menu published since it compiled, or the design was edited by hand)
+  or **missing** (the variant was removed).
+
+## 7. §31.6–31.7 — behaviour and copy
+
+Copy follows the approved wording where it was quoted. Examples in use: "Navigation placement saved as draft.",
+"Publishing is blocked. Fix these menu references in Menus & Navigation first.", "Read-only. Your role can view menus but not
+change them.", "Publish changes", "Roll back and publish".
+
+## 8. Release gate (M7 spec L778 and item 5, L854)
+
+- The release modal's check **"No broken menu references"** is live, not a fixed pass. It checks live menus and mega panels for
+  broken links, live placements that point at deleted or never-published menus, `menuRef`s to deleted menus, and shared designs
+  that place different menus. Freeze manifest is disabled while any of these fail. The store refuses the same release (`publishRelease`).
+- Preview pinning: the Menus preview shows the draft and is labelled as a draft. The release snapshot is the numbered version,
+  which holds the live menus and bindings. **Partial:** the Layouts preview does not yet pin a menu revision.
+
+## 9. §31.8 — acceptance tests
+
+Mapped to the suites in this repo:
+
+| Test area | Suite |
 |---|---|
-| Loading | Skeleton blocks, with `aria-busy`, on first open and when the state is forced. |
-| Empty (no menus) | "No menus yet", with New menu. |
-| Error (service down) | "Menus did not load", with Try again. Nothing is written. |
-| Conflict (save loses the race) | Inline banner: someone saved while you were editing. Drafts stay. "Reload theirs" resets them. |
-| Permission denied / Viewer | Read-only banner. Every editing control is disabled; the menus still open. |
-| Validation errors | Save Draft works; Publish and Apply are disabled. The Validate Links dialog lists every issue with "Show". |
-| Unpublished | Menu Status shows "Not live yet". Apply is disabled until the menu is published. |
+| Data rules: placements, apply, publish, rollback, delete guards, URL policy, tree operations | `qa_m8_v3.py` U1–U25 |
+| Screen: tabs, picker, add items, settings, mega editor, preview, validate, publish, rollback, placements, states | `qa_m8_menus.py` (69) |
+| Placement dialog, Replace in Draft, toast, header unassign blocked, keyboard reorder, tablet drawer, settings guard | `qa_m8_v3.py` B1–B10 |
+| M7 links and M8 in the release | `qa_m7_links.py` |
 
-## 6. Accessibility
+## 10. Excluded from Phase 1
 
-- Every field has a label that names its row ("Label", "Link to", "Mega panel name").
-- The menu tree is a `tree` with `treeitem`, `aria-level`, `aria-expanded`, and `aria-selected`.
-- Reorder works by button, by drag, and by Alt + arrow keys.
-- Status is announced: the conflict banner is `role="alert"`; the read-only notice is `role="status"`.
-- Device switch is a radio group. Panels are buttons with `aria-expanded`, not hover-only.
+Arbitrary HTML, CSS or JS in menus; WordPress plugin compatibility; audience personalisation; separate mobile trees;
+scheduled visibility; animation timeline editors; menu-click analytics without a pipeline.
 
-## 7. Acceptance criteria
+## 11. Open items (not claimed as done)
 
-1. Every mockup feature in §1 is present (M1–M14).
-2. A link to a missing, trashed, or draft page is flagged per D-M8-7.
-3. A `javascript:` address cannot be saved, and a fourth level cannot be created.
-4. Save Draft and Publish are refused with errors; a stale save is a conflict.
-5. Publish creates a numbered version; a rollback creates a new one.
-6. Apply writes the header or footer, stores `menuRef`, reports what was left out, and the chrome shows "In sync" or "Out of date".
-7. A placed or applied menu cannot be deleted.
-8. Each state in §5 is reachable and tested.
-9. Keyboard: every control has a name and a visible focus style.
-
-Verified by `qa_m8_menus.py`: 24 unit checks (Node, the real data layer) and 45 browser checks (the mockup features, states, and interconnections).
-
-## 8. Interconnection test coverage
-
-- Unit: link and depth rules, mega checks, sibling-only reorder, typed links, counts.
-- Browser: Pages picker, item settings, mega panel editing, preview device modes, Validate Links, Publish and version numbers, rollback, placements, delete guards, read-only role, prototype states.
-
-## 9. Not built, on purpose
-
-- **Uploaded media for featured cards and mega slots.** Needs the media library (Module 9). Featured cards use built-in art.
-- **Scheduled publish and approval of menus.** Module 7 lists approval and scheduling on bindings as open. Menus publish immediately.
-- **Custom mega column layouts beyond 2, 3 and 4.** D-M8-2.
-- **Block-by-block editing of the header and footer chrome.** Chrome stays open by decision (Module 7 item 5): the header is a flat `nav` and the footer is edited only in the Global Footer drawer.
-- **Cross-site menu clone and whole-workspace export.** Open in Module 7.
+- Layouts screen does not yet edit bindings. It shows the binding read-only and links to Menus.
+- Footer drawer: links still edited there. Not re-verified against menu-derived groups in this pass.
+- Layouts preview does not pin a menu revision.
+- The release modal's other checks (DNS, SSL, Core Web Vitals) are still fixed passes, as they were before this change.
+- The live header is a flat `nav`; dropdowns and mega panels are omitted at apply time.

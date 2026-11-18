@@ -97,8 +97,8 @@
       "name": "Menus & Navigation",
       "route": "#/menus",
       "status": "built",
-      "evidence": "qa_m8_menus.py 69/69 (24 unit + 45 browser) · qa_m7_links.py 45/45 (E1–E5 check the live header and Open in Layouts)",
-      "notes": "Built to the owner's three Module 8 mockups (14 features, see MODULE-8-SPEC.md §1): six tabs; Menu Builder with Add Items (Pages, Landing pages, Custom link), Menu Structure with drag and Alt+arrow reorder, Item Settings (Link, Dropdown/Mega behaviour, Visibility); Mega Menus with 2/3/4-column panels, gap, featured card; Manage Menus with Used In; Menu Placements (Header, Footer, Utility, Mobile auto); Navigation Preview in desktop, tablet and mobile; Publish as numbered versions with rollback as a new version; Validate Links; draft and live per menu, panel and placement. Connected to Modules 1–7: pages feed link checks; Apply writes the live menu to the Module 7 header and footer variants with a menuRef; themes drive the preview; roles make it read-only. Owner waived the mock gate for the first build; this rebuild follows the supplied mockups. Not owner-approved."
+      "evidence": "qa_m8_menus.py 69/69 (24 unit + 45 browser) · qa_m8_v3.py 35/35 (25 Node data-layer checks + 10 browser checks for spec v1.1 §31) · qa_m7_links.py 45/45",
+      "notes": "Spec v1.1 (§31) build. Built to the owner's three Module 8 mockups (MODULE-8-SPEC.md §2). Menu data: multiple menus (max 12), typed LinkRef, custom links validated (https, http, mailto, tel only), tree depth 3, drag and Alt+arrow reorder, mega panels 2–4 columns. Placements are owned by layouts: each layout slot (header, footer) holds one menu; Save Placement Draft; Replace in Draft; header unassign blocked. Publish compiles each placed live menu into its layout's header or footer and records a menuRef; the Layouts header modal shows sync state. Release gate: 'No broken menu references' blocks Freeze and the store refuses publishRelease. Rollback restores menus and bindings together as a new version. Open: Layouts does not yet edit bindings (read-only there); footer drawer not re-verified; Layouts preview does not pin a menu revision; release modal DNS/SSL/CWV checks are still fixed passes. Not owner-approved as a verbatim copy: the v1.1 text must be re-pasted to replace the working copy."
     }
   ],
   "decisions": [
@@ -383,6 +383,12 @@
         "name": "Module 8 — Menus & Navigation",
         "assertions": 69,
         "covers": "unit (menu-db.ts in Node): link and depth rules, mega checks, sibling reorder, typed links, counts; browser: six tabs, menu picker, add items, item settings, mega panel editor, preview devices, Validate Links, publish and versions, rollback, placements, delete guards, Viewer read-only, prototype states"
+      },
+      {
+        "file": "qa_m8_v3.py",
+        "name": "Module 8 — spec v1.1 §31 (data rules and browser)",
+        "assertions": 35,
+        "covers": "Node (one bundle of menu-db.ts and layout-db.ts): apply writes menuRef, placement draft rules (header required, unknown menu refused), publish compiles chrome, rollback restores menus and bindings together, delete guards, URL policy, tree operations; browser: Replace in Draft, Save Placement Draft toast, header unassign blocked, Alt+arrow reorder, tablet drawer, settings delete guard"
       }
     ]
   },
