@@ -182,7 +182,7 @@ export function ImportReviewModal({ result, file, onClose, onImport }: {
             </label>
             <label className={`m6-d-radio is-off ${mode === "replace" ? "is-on" : ""}`}>
               <input type="radio" name="imp" disabled checked={mode === "replace"} onChange={() => setMode("replace")} />
-              <span><b>Replace layout after review</b><em>Disabled — this build has no layout import path (Module 7 owns Layouts &amp; Templates).</em></span>
+              <span><b>Replace layout after review</b><em>Disabled — a master layout depends on shared header and footer regions that an imported file cannot supply. Templates import through Layouts &amp; Templates.</em></span>
             </label>
           </div>
           {result.warnings.length > 0 && (

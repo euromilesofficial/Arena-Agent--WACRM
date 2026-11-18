@@ -505,6 +505,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ type: s === "default" ? "info" : "warn", title: label[s] });
   }, [toast, load]);
 
+  /* a hook must run on every render, so it lives here and not inside the memoised value below */
+  const setRange = useCallback((d: number, endOffset: number, name?: string) => {
+    setDaysRaw(d);
+    setRangeEnd(endOffset);
+    setRangeName(name ?? rangeLabel(d));
+  }, []);
+
   const value = useMemo<Store>(() => ({
     screen,
     go: (next) => { setScreen(next); setDrawer({ kind: "none" }); },
@@ -514,11 +521,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDays,
     rangeEnd,
     rangeName,
-    setRange: useCallback((d: number, endOffset: number, name?: string) => {
-      setDaysRaw(d);
-      setRangeEnd(endOffset);
-      setRangeName(name ?? rangeLabel(d));
-    }, []),
+    setRange,
     gran,
     setGran,
     visible,

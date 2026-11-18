@@ -657,15 +657,15 @@ the honest deltas. The remaining modules are below.
 
 ## 19. Troubleshooting and known issues
 
-### `npm run dev` fails with a React hooks error
+### `npm run dev` showed a blank page with a React hooks error (fixed)
 
 **Symptom:** the Vite dev server starts, then the page throws `Rendered fewer hooks than expected` (and logs `Do not call Hooks inside useEffect(...), useMemo(...)`), leaving a partial DOM.
 
-**Status:** known, **dev-mode only**. It is a hook-order violation that React's development build enforces and the production build tolerates. The shipped artifact and all 1042 assertions are unaffected — they run against the built file.
+**Status:** fixed. It was a hook-order violation that React's development build enforces and the production build tolerates. The shipped artifact was never affected; it runs the built file.
 
 **Workaround:** use the build. `npm run build && open WACRM-CMS.html`, or `python3 serve.py` for an `http://` origin. If you are editing source and need a live origin, `npm run build && npm run preview` serves the production bundle from `dist/`.
 
-**Not yet fixed** because it is cosmetic to the deliverable and the fix needs the offending component isolated against a dev-only render pass; it is on the list before M7.
+**Fixed.** The cause was a `useCallback` (`setRange`) called inside the `useMemo` that builds the store value in `src/lib/store.tsx`, so the hook count changed between renders. It now lives at the top level of the provider. `npm run dev` renders every route with no console errors; the production build never showed it because it tolerates the violation.
 
 ### The browser says "error while loading shared libraries: libnspr4.so"
 

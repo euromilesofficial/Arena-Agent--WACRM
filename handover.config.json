@@ -83,6 +83,14 @@
       "status": "done",
       "evidence": "qa_theme.py 198/198",
       "notes": "Closes the four Tier-A gaps from THEME-STUDIO-BENCHMARK.md: (G1) a derived six-step type scale with ratio, leadings, trackings and fluid clamp(), edited in a Type Scale card and obeyed by the preview; (G2) 13 colour roles adding muted/link/border/ring, 14 measured contrast pairs with per-role thresholds and the divider advisory floor; (G3) a 1:1 specimen sheet covering type, palette, buttons in four states, four field states, alerts, pills, card, table, radius and spacing; (G4) a Revisions rail + diff modal whose restore fills the working copy and never saves. Fonts: the 50 most-used Google Fonts families embedded (2.48 MB woff2, variable-first) plus the full 1,746-family index, searchable with category counts and an embedded-only default; locked rows state the reason. Document schema is now version 2 with a stated v1 migration. Embedded set trimmed from 247 to the top 50 on 2026-11-15 (D16); every family outside the 50 is searchable and one Get click from its fetch command."
+    },
+    {
+      "id": "M7",
+      "name": "Layouts & Templates",
+      "route": "#/layouts",
+      "status": "done",
+      "evidence": "qa_layouts.py 99/99 · qa_states_m7.py 38/38 · qa_m7_links.py 45/45 · qa_m7_export_edit.py 24/24 · qa_m7_inline.py 15/15 · qa_m7_ai.py 18/18 · qa_m7_footer.py 14/14",
+      "notes": "Master layouts (shell + required content slot + slot policy), page templates, shared regions (announcement, header, footer) with a Global Footer drawer, usage and bulk reassignment, revisions, prebuilt and HTML/JSON import, JSON/XML/CSV export, click-to-edit text on the canvas with the AI copy bubble. Shared chrome is edited in its drawer, not inline. Limits: MODULE-7-BUILD.md §5."
     }
   ],
   "decisions": [
@@ -208,17 +216,16 @@
     }
   ],
   "next": {
-    "headline": "Workspace cut from 140.6 MB to ~46 MB: the embedded font set is the top 50 (was 247), the mirror clone is gone and history is repacked. The artifact is 4.8 MB (was 15.5), the zip 3.6 MB (was 31), and every one of the 1,746 indexed families is now one Get click from a fetch command. 11/11 suites green, qa_theme.py 198/198.",
+    "headline": "Modules 1–7 are built. Next: Module 8 (Menus & Navigation), then 9 (Media), 10 (Forms & Leads), 11 (Publishing & Releases); see README §18.",
     "blockedOn": [
-      "Module 7 (Layouts & Templates) waits on its specification; the theme contract already reserves the layout/navigation import fields and keeps them switched off.",
       "Module 11 (Publishing & Releases) is the future owner of the publish surface — until then the theme draft rides Module 4's release dialog.",
       "The GitHub token expires 17 Nov 2026 — rotate before then or pushes 401 (commits stay local, nothing is lost)."
     ],
     "tasks": [
-      "Module 7 (Layouts & Templates) is the next build; the theme's layout/navigation import fields stay switched off until it lands.",
+      "Module 8 (Menus & Navigation): awaiting its specification and mock. Module 7 owns the header and footer regions; Module 8 owns the navigation tree they reference.",
+      "Theme Studio 'Replace layout after review' stays disabled: a master layout references shared regions that an imported file cannot supply.",
       "Decide Tier B of THEME-STUDIO-BENCHMARK.md: dark mode/modes (G5), palette generation (G6), DTCG export (G7), APCA column (G8), partial presets (G9). All researched and ranked; none approved.",
       "Rotate the GitHub PAT before 17 Nov 2026 and rewrite /home/user/.gh-token + .gh-token-expiry.",
-      "Module 7 (Layouts & Templates): headers/footers, reusable blocks, page templates, and only then the theme's 'Replace layout after review' radio becomes reachable.",
       "Keep the count contract after every change: the library, the builder palette and the KPI strip must return the same numbers.",
       "Font ingestion for the three non-embedded families is a server contract in BACKEND-PLAN.md — implementing it is what unblocks 'Requires ingestion'."
     ]
@@ -288,17 +295,15 @@
       },
       {
         "file": "qa_layouts.py",
-        "name": "Module 5 — Block Library",
-        "assertions": 90,
-        "covers": "M5 four views, filters, native catalogue, inspector tabs + diagram, insert path",
-        "module": "Module 7 · Layouts & Templates"
+        "name": "Module 7 — Layouts & Templates",
+        "assertions": 99,
+        "covers": "geometry, derived counts, library, canvas, inspector mutations, bulk reassignment, templates, guarded deletion, overlays, a11y"
       },
       {
         "file": "qa_states_m7.py",
-        "name": "Module 5 — Block Library",
-        "assertions": 90,
-        "covers": "M5 four views, filters, native catalogue, inspector tabs + diagram, insert path",
-        "module": "Module 7 · Layouts & Templates"
+        "name": "Module 7 — state matrix & cross-module interlinks",
+        "assertions": 38,
+        "covers": "loading, empty, error/retry, denied (Viewer), save conflict, unsaved-leave guard, protected deletions, slot-policy enforcement in Module 4, resolved master layout on the builder canvas"
       },
       {
         "file": "qa_import.py",
@@ -329,6 +334,23 @@
         "name": "Module 4 — inline text editing on the Visual Builder canvas",
         "assertions": 30,
         "covers": "every text kind editable in place (headings, eyebrows, descriptions, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing tiers, periods and features, buttons, captions, hero links); one edit is one undo step; Ctrl+Z in a field is the field's own; Escape reverts; Enter commits; empty refused; inspector shares the document; status shows unsaved"
+      },
+      {
+        "file": "qa_states.py",
+        "name": "Module 2 — state coverage audit",
+        "covers": "every state in MODULE-2-SPEC.md §6, against the built prototype"
+      },
+      {
+        "file": "qa_m7_ai.py",
+        "name": "Module 7 — AI copy on inline editing",
+        "assertions": 18,
+        "covers": "AI Copy bubble on master layout and page template canvases: streaming, Accept writes the draft and enables Save, Discard, Escape, viewer gets none"
+      },
+      {
+        "file": "qa_m7_footer.py",
+        "name": "Module 7 — shared Global Footer editing",
+        "assertions": 14,
+        "covers": "footer opens the Global Footer drawer from the canvas; note, column count, column titles and links save to the shared variant; footer has no inline text; template path"
       }
     ]
   },
