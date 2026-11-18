@@ -642,7 +642,7 @@ Rules baked into those contracts, and into the UI:
 ## 18. Roadmap
 
 M7 is built (`#/layouts`, 99 + 38 checks) — see `MODULE-7-BUILD.md` for what shipped and
-the honest deltas. M8 Menus & Navigation is built (`#/menus`, 75 checks) — see `MODULE-8-SPEC.md`.
+the honest deltas. M8 Menus & Navigation is rebuilt to the owner's three mockups (`#/menus`, 69 checks: 24 unit, 45 browser) — see `MODULE-8-SPEC.md`.
 The remaining modules are below.
 
 > **Open conflict (not resolved here):** the table below lists Menus & Navigation as unsequenced,

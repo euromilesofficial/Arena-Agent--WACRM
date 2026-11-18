@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-18 07:23:18 UTC · **generated against commit** `bf7a1ab` · **working tree** 24 uncommitted file(s)
+**Generated** 2026-11-18 15:10:55 UTC · **generated against commit** `15ee61d` · **working tree** 14 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -33,7 +33,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | M6 | Theme Studio | `#/theme` | **done** | qa_theme.py 127/127 |
 | M6.1 | Theme Studio completion + Google Fonts library | `#/theme` | **done** | qa_theme.py 198/198 |
 | M7 | Layouts & Templates | `#/layouts` | **done** | qa_layouts.py 99/99 · qa_states_m7.py 38/38 · qa_m7_links.py 45/45 · qa_m7_export_edit.py 24/24 · qa_m7_inline.py 15/15 · qa_m7_ai.py 18/18 · qa_m7_footer.py 17/17 · qa_m7_diff.py 16/16 · qa_m7_zip.py 20/20 |
-| M8 | Menus & Navigation | `#/menus` | **built** | qa_m8_menus.py 75/75 · qa_m7_links.py 45/45 (E1–E5 check the live header and Open in Layouts) |
+| M8 | Menus & Navigation | `#/menus` | **built** | qa_m8_menus.py 69/69 (24 unit + 45 browser) · qa_m7_links.py 45/45 (E1–E5 check the live header and Open in Layouts) |
 
 - **M1 Overview** — Dashboard grid, 6 KPI drawers, funnel, acquisition, site health, publishing rail, release wizard, rollback.
 - **M2 Sites & Domains** — Define.ai-style two-pane registry, create wizard, DNS/SSL verification, archive/restore, domain checks.
@@ -43,17 +43,17 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 - **M6 Theme Studio** — Three tabs (Brand Tokens · Typography · Presets), nine colour roles + derived on-primary, computed WCAG pairs, discrete geometry, six embedded self-hosted font families (242 KB woff2 in the artifact), live read-only preview through the M4 renderer at 1440/768/375, preset library with import/export, CAS draft save, conflict + unsaved guards, publish hand-off into M4's release flow.
 - **M6.1 Theme Studio completion + Google Fonts library** — Closes the four Tier-A gaps from THEME-STUDIO-BENCHMARK.md: (G1) a derived six-step type scale with ratio, leadings, trackings and fluid clamp(), edited in a Type Scale card and obeyed by the preview; (G2) 13 colour roles adding muted/link/border/ring, 14 measured contrast pairs with per-role thresholds and the divider advisory floor; (G3) a 1:1 specimen sheet covering type, palette, buttons in four states, four field states, alerts, pills, card, table, radius and spacing; (G4) a Revisions rail + diff modal whose restore fills the working copy and never saves. Fonts: the 50 most-used Google Fonts families embedded (2.48 MB woff2, variable-first) plus the full 1,746-family index, searchable with category counts and an embedded-only default; locked rows state the reason. Document schema is now version 2 with a stated v1 migration. Embedded set trimmed from 247 to the top 50 on 2026-11-15 (D16); every family outside the 50 is searchable and one Get click from its fetch command.
 - **M7 Layouts & Templates** — Master layouts (shell + required content slot + slot policy), page templates, shared regions (announcement, header, footer) with a Global Footer drawer, usage and bulk reassignment, revisions, prebuilt and HTML/JSON import, JSON/XML/CSV export, click-to-edit text on the canvas with the AI copy bubble. Shared chrome is edited in its drawer, not inline. Limits: MODULE-7-BUILD.md §5.
-- **M8 Menus & Navigation** — Menus (header, footer, custom) as a 3-level link tree with mega menu, mobile output, link checks against live pages, explicit apply to the Module 7 header and footer variants with a report, Viewer read-only, and all prototype states. Spec: MODULE-8-SPEC.md. The owner waived the mock-and-spec gate for this module; there is no approved mock image. Built before the spec existed; the spec was then written from the built behaviour and the cited sources.
+- **M8 Menus & Navigation** — Built to the owner's three Module 8 mockups (14 features, see MODULE-8-SPEC.md §1): six tabs; Menu Builder with Add Items (Pages, Landing pages, Custom link), Menu Structure with drag and Alt+arrow reorder, Item Settings (Link, Dropdown/Mega behaviour, Visibility); Mega Menus with 2/3/4-column panels, gap, featured card; Manage Menus with Used In; Menu Placements (Header, Footer, Utility, Mobile auto); Navigation Preview in desktop, tablet and mobile; Publish as numbered versions with rollback as a new version; Validate Links; draft and live per menu, panel and placement. Connected to Modules 1–7: pages feed link checks; Apply writes the live menu to the Module 7 header and footer variants with a menuRef; themes drive the preview; roles make it read-only. Owner waived the mock gate for the first build; this rebuild follows the supplied mockups. Not owner-approved.
 
 ## 3. Build artifact (measured now)
 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 5,099,272 B (4980 kB) · gzip 2986 kB |
-| md5 | `b21aa8574b516906c76bc70abb08a885` |
-| sha256 (first 16) | `9382a2eddf07e249` |
-| Built | 2026-11-18 07:23:18 |
+| Size | 5,156,317 B (5035 kB) · gzip 3000 kB |
+| md5 | `a21ef09ce39ea07a4d1d70b150d8d274` |
+| sha256 (first 16) | `241b4116f8d4c9e7` |
+| Built | 2026-11-18 15:10:55 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -66,35 +66,35 @@ npm run dev        # http://localhost:5173 while developing
 
 ## 4. Verification (last recorded run)
 
-Recorded 2026-11-18 07:22:09 UTC · node v20.20.2. Re-run with `npm run qa`.
+Recorded 2026-11-18 15:07:51 UTC · node v20.20.2. Re-run with `npm run qa`.
 
 | Suite | Passed | Failed | Time | Covers |
 | --- | --- | --- | --- | --- |
-| `qa_ai.py` | 60 | 0 | 36.0 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
-| `qa_theme.py` | 241 | 0 | 115.1 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
-| `qa_builder.py` | 98 | 0 | 42.6 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
-| `qa_states_m4.py` | 47 | 0 | 43.3 s | M4 state matrix |
-| `qa_pages.py` | 106 | 0 | 127.1 s | M3 registry, tree, inspector, modals, deep links |
-| `qa_states_m3.py` | 40 | 0 | 56.6 s | M3 state matrix |
-| `qa_module2.py` | 48 | 0 | 34.9 s | M2 layout, geometry, data consistency |
-| `qa_states_m1.py` | 39 | 0 | 45.3 s | M1 state matrix |
-| `qa_flows.py` | 38 | 0 | 49.8 s | cross-module interaction script |
-| `qa_react.py` | — | 0 | 3.9 s | full-page render, console clean, no overflow |
-| `qa_library.py` | 90 | 0 | 52.9 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
-| `qa_layouts.py` | 99 | 0 | 33.8 s | geometry, derived counts, library, canvas, inspector mutations, bulk reassignment, templates, guarded deletion, overlays, a11y |
-| `qa_states_m7.py` | 38 | 0 | 43.8 s | loading, empty, error/retry, denied (Viewer), save conflict, unsaved-leave guard, protected deletions, slot-policy enforcement in Module 4, resolved master layout on the builder canvas |
-| `qa_import.py` | 65 | 0 | 31.1 s | prebuilt browser (14 kits, search, category, provenance), HTML import report, script non-execution, dropped chrome, brand hints, bad file refusal, JSON bundle + page-builder project, unknown block naming, mapping editor + retype undo, export round trip, builder Save-as-template |
-| `qa_m7_links.py` | 45 | 0 | 34.5 s | revision drawer, M3 resolved-shell read-out + deep link, M5 block usage, M8 nav source, canvas shows real blocks, 100% vs Fit, Prebuilt kit drawn as a page, click-to-edit template blocks with save |
-| `qa_m7_export_edit.py` | 24 | 0 | 9.9 s | XML and CSV export parsed and cross-checked against each other; master-layout seed selection, live text edit, link field, items add/remove, Save enabled |
-| `qa_m7_inline.py` | 15 | 0 | 12.3 s | click-to-edit text on master layouts and page templates, Enter/Escape/empty rules, hero link kind, inspector shares the draft, Save enabled and persisted within the session |
-| `qa_builder_inline.py` | 30 | 0 | 24.6 s | every text kind editable in place (headings, eyebrows, descriptions, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing tiers, periods and features, buttons, captions, hero links); one edit is one undo step; Ctrl+Z in a field is the field's own; Escape reverts; Enter commits; empty refused; inspector shares the document; status shows unsaved |
-| `qa_m4_inline.py` | 17 | 0 | 11.5 s | canvas<->inspector sync both ways, Ctrl+Z on canvas, Save persists across tab switch, text inside Boxed CTA container, button label edit does not navigate |
-| `qa_states.py` | 25 | 0 | 37.4 s | every state in MODULE-2-SPEC.md §6, against the built prototype |
-| `qa_m7_ai.py` | 18 | 0 | 13.9 s | AI Copy bubble on master layout and page template canvases: streaming, Accept writes the draft and enables Save, Discard, Escape, viewer gets none |
-| `qa_m7_footer.py` | 17 | 0 | 8.7 s | footer opens the Global Footer drawer from the canvas; note, column count, column titles and links save to the shared variant; footer has no inline text; template path |
-| `qa_m7_diff.py` | 16 | 0 | 6.1 s | per-revision Changes panel: added, removed and changed structure, with a diff of the shared chrome |
-| `qa_m7_zip.py` | 20 | 0 | 8.3 s | ZIP tab: stored and deflated archives, zip-slip and encrypted refusal, size and count limits, one report across files |
-| `qa_m8_menus.py` | 75 | 0 | 29.2 s | menu tree (3 levels), link kinds and checks against live pages, mega menu, mobile output, apply to header and footer with report, Viewer read-only, prototype states (error, empty, loading, conflict, denied) |
+| `qa_ai.py` | 60 | 0 | 38.6 s | AI mode: composer, page generation, section, rewrite, 5 failure states, empty-page round trip |
+| `qa_theme.py` | 241 | 0 | 120.4 s | M6 three tabs, nine colour roles, WCAG ratios recomputed in Python, geometry, typography, presets CRUD, JSON import/export, preview viewports, guards, conflict, states |
+| `qa_builder.py` | 98 | 0 | 43.7 s | M4 screen, panels, drag, AI, autosave, publish, revisions, 3 widths |
+| `qa_states_m4.py` | 47 | 0 | 44.2 s | M4 state matrix |
+| `qa_pages.py` | 106 | 0 | 122.3 s | M3 registry, tree, inspector, modals, deep links |
+| `qa_states_m3.py` | 40 | 0 | 57.3 s | M3 state matrix |
+| `qa_module2.py` | 48 | 0 | 35.8 s | M2 layout, geometry, data consistency |
+| `qa_states_m1.py` | 39 | 0 | 45.9 s | M1 state matrix |
+| `qa_flows.py` | 38 | 0 | 57.9 s | cross-module interaction script |
+| `qa_react.py` | — | 0 | 4.7 s | full-page render, console clean, no overflow |
+| `qa_library.py` | 90 | 0 | 56.8 s | M5 four views, filters, native catalogue, inspector tabs + diagram, insert path |
+| `qa_layouts.py` | 99 | 0 | 36.9 s | geometry, derived counts, library, canvas, inspector mutations, bulk reassignment, templates, guarded deletion, overlays, a11y |
+| `qa_states_m7.py` | 38 | 0 | 45.7 s | loading, empty, error/retry, denied (Viewer), save conflict, unsaved-leave guard, protected deletions, slot-policy enforcement in Module 4, resolved master layout on the builder canvas |
+| `qa_import.py` | 65 | 0 | 34.6 s | prebuilt browser (14 kits, search, category, provenance), HTML import report, script non-execution, dropped chrome, brand hints, bad file refusal, JSON bundle + page-builder project, unknown block naming, mapping editor + retype undo, export round trip, builder Save-as-template |
+| `qa_m7_links.py` | 45 | 0 | 37.3 s | revision drawer, M3 resolved-shell read-out + deep link, M5 block usage, M8 nav source, canvas shows real blocks, 100% vs Fit, Prebuilt kit drawn as a page, click-to-edit template blocks with save |
+| `qa_m7_export_edit.py` | 24 | 0 | 11.2 s | XML and CSV export parsed and cross-checked against each other; master-layout seed selection, live text edit, link field, items add/remove, Save enabled |
+| `qa_m7_inline.py` | 15 | 0 | 13.9 s | click-to-edit text on master layouts and page templates, Enter/Escape/empty rules, hero link kind, inspector shares the draft, Save enabled and persisted within the session |
+| `qa_builder_inline.py` | 30 | 0 | 27.7 s | every text kind editable in place (headings, eyebrows, descriptions, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing tiers, periods and features, buttons, captions, hero links); one edit is one undo step; Ctrl+Z in a field is the field's own; Escape reverts; Enter commits; empty refused; inspector shares the document; status shows unsaved |
+| `qa_m4_inline.py` | 17 | 0 | 12.7 s | canvas<->inspector sync both ways, Ctrl+Z on canvas, Save persists across tab switch, text inside Boxed CTA container, button label edit does not navigate |
+| `qa_states.py` | 25 | 0 | 38.3 s | every state in MODULE-2-SPEC.md §6, against the built prototype |
+| `qa_m7_ai.py` | 18 | 0 | 14.1 s | AI Copy bubble on master layout and page template canvases: streaming, Accept writes the draft and enables Save, Discard, Escape, viewer gets none |
+| `qa_m7_footer.py` | 17 | 0 | 9.9 s | footer opens the Global Footer drawer from the canvas; note, column count, column titles and links save to the shared variant; footer has no inline text; template path |
+| `qa_m7_diff.py` | 16 | 0 | 6.5 s | per-revision Changes panel: added, removed and changed structure, with a diff of the shared chrome |
+| `qa_m7_zip.py` | 20 | 0 | 9.3 s | ZIP tab: stored and deflated archives, zip-slip and encrypted refusal, size and count limits, one report across files |
+| `qa_m8_menus.py` | 69 | 0 | 31.5 s | unit (menu-db.ts in Node): link and depth rules, mega checks, sibling reorder, typed links, counts; browser: six tabs, menu picker, add items, item settings, mega panel editor, preview devices, Validate Links, publish and versions, rollback, placements, delete guards, Viewer read-only, prototype states |
 
 > All recorded suites are green.
 
@@ -110,21 +110,21 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **78 source files, 30,681 lines** of TS/TSX/CSS (47,959 lines across all tracked text files).
+Source inventory: **80 source files, 31,911 lines** of TS/TSX/CSS (49,187 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 23 | 8,175 | data seams, registries, formatting, no JSX |
-| `src/components/` | 41 | 10,685 | reusable UI: shell, ui kit, charts, and per-module parts |
-| `src/views/` | 9 | 6,826 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 4,919 | one tokenised stylesheet (design system) |
+| `src/lib/` | 23 | 8,460 | data seams, registries, formatting, no JSX |
+| `src/components/` | 42 | 10,949 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/views/` | 10 | 7,394 | one file per screen; routes are hash-based |
+| `src/styles/` | 1 | 5,032 | one tokenised stylesheet (design system) |
 | `qa/` | 0 | — | 0 WebP captures of audited states (evidence, not fixtures) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 4,919 |
+| `src/styles/app.css` | 5,032 |
 | `BACKEND-PLAN.md` | 1,617 |
 | `src/lib/theme-db.ts` | 1,493 |
 | `src/views/ThemeStudio.tsx` | 1,417 |
@@ -132,10 +132,10 @@ Top files by size:
 | `src/views/Library.tsx` | 1,099 |
 | `src/views/Builder.tsx` | 1,053 |
 | `qa_theme.py` | 1,052 |
-| `src/lib/layout-db.ts` | 1,008 |
+| `src/lib/layout-db.ts` | 1,031 |
 | `MODULE-7-SPEC.md` | 979 |
 | `src/lib/data.ts` | 974 |
-| `MODULE-6-THEME-STUDIO-SPEC.md` | 880 |
+| `src/views/Menus.tsx` | 882 |
 
 ## 6. Data seam and contracts
 
@@ -255,13 +255,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `bf7a1ab` — QA: Module 4 inline-editing gap suite (qa_m4_inline.py 13/13) added to handover suites; button label edit verified not to navigate.
-- Working tree: 24 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `15ee61d` — M8 Menus & Navigation built (qa_m8_menus 75/75; no approved mock, spec self-written in MODULE-8-SPEC.md); M7 diff + ZIP import suites registered; M7 audit updated; qa-all 25/25 green.
+- Working tree: 14 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `15ee61d` | 2026-11-18 | M8 Menus & Navigation built (qa_m8_menus 75/75; no approved mock, spec self-written in MODULE-8-SPEC.md); M7 diff + ZIP import suites registered; M7 audit updated; qa-all 25/25 green |
 | `bf7a1ab` | 2026-11-18 | QA: Module 4 inline-editing gap suite (qa_m4_inline.py 13/13) added to handover suites; button label edit verified not to navigate |
 | `5f244eb` | 2026-11-18 | Audit: fix dev-mode blank page (hook called inside useMemo in store.tsx); Theme Studio layout-import copy corrected; handover config lists Module 7 and the 21 suites with correct labels; full QA 21/21 green |
 | `79e8044` | 2026-11-17 | Module 7: Global Footer editable in its drawer (note, columns, column titles and links); footer block reads the variant's groups; layout footer labels no longer hard-coded; drawer reads the live variant; qa_m7_footer.py 14/14 |
@@ -273,7 +274,6 @@ First tasks:
 | `f281862` | 2026-11-17 | Module 7 complete: XML and CSV template export beside JSON (one row per prop; XML cross-checked against CSV); master-layout seed blocks edited in place with the same inspector; new suite qa_m7_export_edit.py (24 checks); 16/16 suites green; audit and build docs updated to the real state |
 | `7b42926` | 2026-11-17 | Module 7 master layouts and templates: every block content kind editable in place (text, select, toggle, link, media, items); master-layout seed blocks selectable; preview shows real content; 15 suites green |
 | `6bace16` | 2026-11-17 | Module 7 templates: edit where you see them. Click a starter block on the canvas to edit its fields in the inspector; the canvas updates live; Save writes a revision. Structure stays in the list; items, links and media are edited in the Visual Builder. Decision and sources in MODULE-7-BUILD §8. 15 suites · 1054 assertions green. |
-| `cf5e7dd` | 2026-11-17 | Module 7 preview: Global Footer renders the variant's real columns and note (builder footer unchanged when no props); footer spans the frame; side panels narrowed for a wider preview. 15 suites · 1049 assertions green (qa_layouts flaked once, 99/99 on rerun). |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 

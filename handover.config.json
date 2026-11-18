@@ -97,8 +97,8 @@
       "name": "Menus & Navigation",
       "route": "#/menus",
       "status": "built",
-      "evidence": "qa_m8_menus.py 75/75 · qa_m7_links.py 45/45 (E1–E5 check the live header and Open in Layouts)",
-      "notes": "Menus (header, footer, custom) as a 3-level link tree with mega menu, mobile output, link checks against live pages, explicit apply to the Module 7 header and footer variants with a report, Viewer read-only, and all prototype states. Spec: MODULE-8-SPEC.md. The owner waived the mock-and-spec gate for this module; there is no approved mock image. Built before the spec existed; the spec was then written from the built behaviour and the cited sources."
+      "evidence": "qa_m8_menus.py 69/69 (24 unit + 45 browser) · qa_m7_links.py 45/45 (E1–E5 check the live header and Open in Layouts)",
+      "notes": "Built to the owner's three Module 8 mockups (14 features, see MODULE-8-SPEC.md §1): six tabs; Menu Builder with Add Items (Pages, Landing pages, Custom link), Menu Structure with drag and Alt+arrow reorder, Item Settings (Link, Dropdown/Mega behaviour, Visibility); Mega Menus with 2/3/4-column panels, gap, featured card; Manage Menus with Used In; Menu Placements (Header, Footer, Utility, Mobile auto); Navigation Preview in desktop, tablet and mobile; Publish as numbered versions with rollback as a new version; Validate Links; draft and live per menu, panel and placement. Connected to Modules 1–7: pages feed link checks; Apply writes the live menu to the Module 7 header and footer variants with a menuRef; themes drive the preview; roles make it read-only. Owner waived the mock gate for the first build; this rebuild follows the supplied mockups. Not owner-approved."
     }
   ],
   "decisions": [
@@ -381,8 +381,8 @@
       {
         "file": "qa_m8_menus.py",
         "name": "Module 8 — Menus & Navigation",
-        "assertions": 75,
-        "covers": "menu tree (3 levels), link kinds and checks against live pages, mega menu, mobile output, apply to header and footer with report, Viewer read-only, prototype states (error, empty, loading, conflict, denied)"
+        "assertions": 69,
+        "covers": "unit (menu-db.ts in Node): link and depth rules, mega checks, sibling reorder, typed links, counts; browser: six tabs, menu picker, add items, item settings, mega panel editor, preview devices, Validate Links, publish and versions, rollback, placements, delete guards, Viewer read-only, prototype states"
       }
     ]
   },

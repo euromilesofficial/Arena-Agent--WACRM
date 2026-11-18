@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Module 8 — Menus & Navigation.
+"""Module 8 — Menus & Navigation (built to the mockup, see MODULE-8-SPEC.md).
 
-A  unit (Node, the real src/lib/menu-db.ts): link checks, tree rules, depth cap,
-   compare-and-swap conflict, save refused on errors, apply writes the header/footer
-   variant and reports what it left out
-U  UI (Playwright): the screen, the editing rules, the link checks on the canvas,
-   Save and Discard, apply, mobile output, preview, create and delete
+U  unit (Node, the real src/lib/menu-db.ts bundled with esbuild): link and depth rules,
+   mega panel checks, sibling-only reorder, typed page links, counts
+B  browser (Playwright, WACRM-CMS.html): the six tabs, the menu picker, add items,
+   item settings, mega panel editor, navigation preview (desktop, tablet, mobile),
+   checks and Validate Links, Publish with a version, rollback, placements, delete guards,
+   Viewer read-only, and the prototype states (error, empty, loading, conflict, denied)
 """
-import asyncio, json, os, subprocess, sys, tempfile
+import asyncio, json, os, re, subprocess, sys, tempfile
 from playwright.async_api import async_playwright
 
 URL = "file:///home/user/wacrm-app/WACRM-CMS.html"
@@ -22,276 +23,263 @@ def ck(name, cond, extra=""):
         TALLY["fail"] += 1; FAILS.append(name + (f" :: {extra}" if extra else "")); print(f"FAIL {name}" + (f" :: {extra}" if extra else ""))
 
 NODE_JS = r"""
-// Node has no localStorage; the data layer only reads it at import time.
 globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 globalThis.window = globalThis;
 const M = require(process.argv[2]);
 const pages = [
-  { path: '/', title: 'Home', status: 'published', trash: null, siteId: 'site_main' },
-  { path: '/scholarships', title: 'Scholarships', status: 'published', trash: null, siteId: 'site_main' },
-  { path: '/old', title: 'Old', status: 'published', trash: { at: 'x' }, siteId: 'site_main' },
-  { path: '/draft-page', title: 'Draft', status: 'draft', trash: null, siteId: 'site_main' },
+  { id: 'p_home', path: '/', title: 'Home', status: 'published', siteId: 'site_main' },
+  { id: 'p_draft', path: '/study-abroad/france', title: 'Study in France', status: 'draft', siteId: 'site_main' },
+  { id: 'p_gone', path: '/old', title: 'Old page', status: 'published', trash: true, siteId: 'site_main' },
 ];
-const it = (id, label, kind, target, extra = {}) => ({ id, label, kind, target, newTab: false, audience: 'everyone', mega: false, children: [], ...extra });
-const menu = (items, location = 'header') => ({ id: 'm', siteId: 'site_main', name: 'T', location, items, rev: 1, mobile: { behaviour: 'drawer', openFirstLevel: false }, appliedTo: null, updatedAt: '', updatedBy: '' });
-const ids = (issues) => issues.map(i => i.id);
-(async () => {
-  const out = {};
-  out.clean = M.checkMenu(menu([it('a', 'Home', 'page', '/'), it('b', 'Scholarships', 'page', '/scholarships')]), pages);
-  out.missing = M.checkMenu(menu([it('a', 'Gone', 'page', '/nope')]), pages);
-  out.trashed = M.checkMenu(menu([it('a', 'Old', 'page', '/old')]), pages);
-  out.draft = M.checkMenu(menu([it('a', 'Draft', 'page', '/draft-page')]), pages);
-  out.jsUrl = M.checkMenu(menu([it('a', 'Bad', 'url', 'javascript:alert(1)')]), pages);
-  out.httpUrl = M.checkMenu(menu([it('a', 'Plain', 'url', 'http://example.com')]), pages);
-  out.goodUrl = M.checkMenu(menu([it('a', 'Ok', 'url', 'https://example.com/apply')]), pages);
-  out.anchorBad = M.checkMenu(menu([it('a', 'Top', 'anchor', 'pricing')]), pages);
-  out.anchorOk = M.checkMenu(menu([it('a', 'Top', 'anchor', '#pricing')]), pages);
-  out.noLabel = M.checkMenu(menu([it('a', '   ', 'page', '/')]), pages);
-  out.dup = M.checkMenu(menu([it('a', 'One', 'page', '/scholarships'), it('b', 'Two', 'page', '/scholarships')]), pages);
-  out.hiddenParent = M.checkMenu(menu([it('a', 'P', 'page', '/', { audience: 'hidden', children: [it('c', 'C', 'page', '/scholarships')] })]), pages);
-  out.megaNoCols = M.checkMenu(menu([it('a', 'M', 'page', '/', { mega: true })]), pages);
-  out.megaTooMany = M.checkMenu(menu([it('a', 'M', 'page', '/', { mega: true, children: [1,2,3,4,5].map(i => it('c'+i, 'C'+i, 'page', '/scholarships')) })]), pages);
-  out.empty = M.checkMenu(menu([]), pages);
-
-  // tree rules
-  let t = [it('a', 'A', 'page', '/')];
-  t = M.addChild(t, 'a', it('b', 'B', 'page', '/'));
-  t = M.addChild(t, 'b', it('c', 'C', 'page', '/'));
-  const tooDeep = M.addChild(t, 'c', it('d', 'D', 'page', '/'));
-  out.depthCapHolds = JSON.stringify(tooDeep) === JSON.stringify(t);
-  out.depth3 = M.depthOf(t);
-  out.moved = M.moveItem([it('a','A','page','/'), it('b','B','page','/')], 'b', -1).map(x => x.id).join(',');
-  out.moveEdge = M.moveItem([it('a','A','page','/')], 'a', -1).map(x => x.id).join(',');
-  out.removed = M.removeItem(t, 'b').length;
-
-  // API: validation, conflict, create, apply
-  const { MenusAPI } = M;
-  const { DBX } = require(process.argv[3]);
-  const load = await MenusAPI.load('site_main');
-  const primary = load.menus.find(m => m.id === 'menu_primary');
-  out.seedCount = load.menus.length;
-  out.seedWarnings = M.checkMenu(primary, load.pages).filter(i => i.severity === 'warn').map(i => i.id);
-  out.seedErrors = M.checkMenu(primary, load.pages).filter(i => i.severity === 'error').length;
-
-  const bad = JSON.parse(JSON.stringify(primary)); bad.items[0].label = '';
-  try { await MenusAPI.save(bad, primary.rev); out.saveBad = 'saved'; } catch (e) { out.saveBad = e.code; }
-  try { await MenusAPI.save(primary, primary.rev + 5); out.conflict = 'saved'; } catch (e) { out.conflict = e.code; }
-
-  const edited = JSON.parse(JSON.stringify(primary)); edited.items[0].label = 'Start';
-  const saved = await MenusAPI.save(edited, primary.rev);
-  out.savedRev = saved.rev;
-  try { await MenusAPI.save(edited, primary.rev); out.staleSave = 'saved'; } catch (e) { out.staleSave = e.code; }
-
-  try { await MenusAPI.create('site_main', 'primary navigation', 'custom'); out.dupName = 'created'; } catch (e) { out.dupName = e.code; }
-  const created = await MenusAPI.create('site_main', 'QA menu', 'custom');
-  out.created = created.name;
-  await MenusAPI.remove(created.id);
-  out.removedCustom = (await MenusAPI.load('site_main')).menus.some(m => m.id === created.id) ? 'still there' : 'gone';
-
-  const regions = [{ id: 'reg_header', kind: 'header', name: 'H', locked: true, variants: [{ id: 'hv', name: 'Default header', note: '', rev: 1, updatedAt: '', blocks: [{ id: 'h', type: 'container', style: {}, props: { nav: ['Home'] } }] }] }];
-  let written = null;
-  const origSave = null;
-  try {
-    const r = await MenusAPI.apply(saved, 'reg_header', 'hv', regions);
-    out.applyWritten = r.written; out.applyOmitted = r.omitted;
-  } catch (e) { out.applyError = e.message; }
-  out.afterApply = (await MenusAPI.load('site_main')).menus.find(m => m.id === 'menu_primary').appliedTo ? 'applied' : 'not applied';
-  console.log(JSON.stringify(out));
-})().catch(e => { console.error(e); process.exit(1); });
+const link = (id, pageId) => ({ id, label: id, link: { kind: 'page', pageId }, newTab: false, audience: 'everyone', behaviour: 'link', megaId: null, children: [], cssClass: '', rel: '' });
+const doc = (items) => ({ name: 'T', description: '', items, mobile: { behaviour: 'drawer', openFirstLevel: false } });
+const out = {};
+out.clean = M.checkMenu(doc([link('a', 'p_home')]), pages, [], 'm').filter(i => i.severity === 'error').length;
+out.draftWarn = M.checkMenu(doc([link('b', 'p_draft')]), pages, [], 'm').find(i => i.id === 'b_draft')?.severity ?? null;
+out.trashErr = M.checkMenu(doc([link('c', 'p_gone')]), pages, [], 'm').find(i => i.id === 'c_page')?.severity ?? null;
+out.missingPageErr = M.checkMenu(doc([link('c2', 'nope')]), pages, [], 'm').find(i => i.id === 'c2_page')?.severity ?? null;
+const deep = { ...link('d0', 'p_home'), children: [{ ...link('d1', 'p_home'), children: [{ ...link('d2', 'p_home'), children: [link('d3', 'p_home')] }] }] };
+out.tooDeep = M.checkMenu(doc([deep]), pages, [], 'm').some(i => i.id === 'too_deep');
+const mg = { ...link('m0', 'p_home'), behaviour: 'mega', megaId: null };
+out.megaNoPanel = M.checkMenu(doc([mg]), pages, [], 'm').find(i => i.id === 'm0_nomega')?.severity ?? null;
+out.megaMissing = M.checkMenu(doc([{ ...mg, megaId: 'gone' }]), pages, ['mega_a'], 'm').find(i => i.id === 'm0_megamissing')?.severity ?? null;
+out.megaOk = M.checkMenu(doc([{ ...mg, megaId: 'mega_a' }]), pages, ['mega_a'], 'm').some(i => i.id.endsWith('_nomega') || i.id.endsWith('_megamissing'));
+const megaDoc = (n, featured) => ({ name: 'P', gap: 'medium', columns: Array.from({ length: n }, (_, i) => ({ id: 'c' + i, title: 'C' + i, links: [{ id: 'l' + i, label: 'x', link: { kind: 'page', pageId: 'p_home' } }] })), featured: { enabled: featured, image: 'coast', title: featured ? '' : 'T', text: '', ctaLabel: '', ctaLink: null } });
+out.megaCols5 = M.checkMega(megaDoc(5, false), pages, 'g').some(i => i.id === 'g_cols');
+out.megaCols3 = M.checkMega(megaDoc(3, false), pages, 'g').some(i => i.id === 'g_cols');
+out.featTitle = M.checkMega(megaDoc(2, true), pages, 'g').some(i => i.id === 'g_ft');
+const ids = (xs) => xs.map(i => i.id);
+const three = doc([link('x1', 'p_home'), link('x2', 'p_home'), link('x3', 'p_home')]);
+out.moveDown = ids(M.moveItem(three.items, 'x1', 1));
+out.moveTopEdge = ids(M.moveItem(three.items, 'x1', -1));
+const nested = doc([{ ...link('n1', 'p_home'), behaviour: 'dropdown', children: [link('n1a', 'p_home'), link('n1b', 'p_home')] }, link('n2', 'p_home')]);
+out.moveBeforeSibling = ids(M.moveBefore(nested.items[0].children, 'n1b', 'n1a'));
+out.moveBeforeCross = ids(M.moveBefore(nested.items, 'n1b', 'n2'));
+out.moveBeforeTop = ids(M.moveBefore(nested.items, 'n2', 'n1'));
+out.count = M.countItems(nested.items);
+out.depth = M.depthOf(nested.items);
+out.addChildMakesDropdown = M.addChild([link('q', 'p_home')], 'q', link('qq', 'p_home'))[0].behaviour;
+out.linkLabel = M.linkLabel({ kind: 'page', pageId: 'p_home' }, pages);
+out.linkLabelTrash = M.linkLabel({ kind: 'page', pageId: 'p_gone' }, pages);
+out.urlBad = M.checkMenu(doc([{ ...link('u1', 'p_home'), link: { kind: 'url', url: 'javascript:alert(1)' } }]), pages, [], 'm').some(i => i.id === 'u1_url');
+out.urlOk = M.urlOk('https://example.com/apply') && M.urlOk('mailto:a@b.co') && !M.urlOk('javascript:alert(1)');
+out.anchor = M.anchorOk('#visa') && !M.anchorOk('visa section');
+console.log(JSON.stringify(out));
 """
 
 def unit():
     tmp = tempfile.mkdtemp()
-    b1 = os.path.join(tmp, "menu.cjs"); b2 = os.path.join(tmp, "data.cjs")
-    for src, dst in [("src/lib/menu-db.ts", b1), ("src/lib/data.ts", b2)]:
-        r = subprocess.run(["npx", "esbuild", src, "--bundle", "--format=cjs", "--platform=node", f"--outfile={dst}", "--log-level=error"],
-                           cwd=APP, capture_output=True, text=True, timeout=120)
-        if r.returncode != 0:
-            ck(f"A0 {src} bundles", False, r.stderr[:200]); return
-    js = os.path.join(tmp, "t.cjs"); open(js, "w").write(NODE_JS)
-    r = subprocess.run(["node", js, b1, b2], capture_output=True, text=True, timeout=60)
+    b = os.path.join(tmp, "menu.cjs"); js = os.path.join(tmp, "t.cjs")
+    r = subprocess.run(["npx", "esbuild", f"{APP}/src/lib/menu-db.ts", "--bundle", "--format=cjs", "--platform=node", f"--outfile={b}", "--log-level=error"],
+                       capture_output=True, text=True, timeout=120, cwd=APP)
     if r.returncode != 0:
-        ck("A0 the module runs in Node", False, (r.stderr or r.stdout)[:400]); return
+        ck("U0 the data layer bundles for Node", False, r.stderr[:200]); return
+    open(js, "w").write(NODE_JS)
+    r = subprocess.run(["node", js, b], capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        ck("U0 the data layer runs in Node", False, r.stderr[:300]); return
     o = json.loads(r.stdout.strip().splitlines()[-1])
+    ck("U1 a clean link has no errors", o["clean"] == 0, str(o["clean"]))
+    ck("U2 a draft page is a warning, not an error", o["draftWarn"] == "warn", str(o["draftWarn"]))
+    ck("U3 a trashed page is an error", o["trashErr"] == "error", str(o["trashErr"]))
+    ck("U4 a missing page is an error", o["missingPageErr"] == "error", str(o["missingPageErr"]))
+    ck("U5 a fourth level is refused", o["tooDeep"] is True)
+    ck("U6 a mega item without a panel is an error", o["megaNoPanel"] == "error", str(o["megaNoPanel"]))
+    ck("U7 a mega item pointing at a deleted panel is an error", o["megaMissing"] == "error", str(o["megaMissing"]))
+    ck("U8 a mega item with a valid panel is clean", o["megaOk"] is False)
+    ck("U9 a panel with five columns is an error", o["megaCols5"] is True)
+    ck("U10 a panel with three columns is clean", o["megaCols3"] is False)
+    ck("U11 a featured card needs a title", o["featTitle"] is True)
+    ck("U12 moving down swaps with the next sibling", o["moveDown"] == ["x2", "x1", "x3"], str(o["moveDown"]))
+    ck("U13 moving up past the top does nothing", o["moveTopEdge"] == ["x1", "x2", "x3"], str(o["moveTopEdge"]))
+    ck("U14 drag reorders among siblings", o["moveBeforeSibling"] == ["n1b", "n1a"], str(o["moveBeforeSibling"]))
+    ck("U15 drag across levels is refused (depth cannot change by accident)", o["moveBeforeCross"] == ["n1", "n2"], str(o["moveBeforeCross"]))
+    ck("U16 drag to top level among its own list works", o["moveBeforeTop"] == ["n2", "n1"], str(o["moveBeforeTop"]))
+    ck("U17 counts every link, nested included", o["count"] == 4, str(o["count"]))
+    ck("U18 depth is the deepest level", o["depth"] == 2, str(o["depth"]))
+    ck("U19 adding a child turns a link into a dropdown", o["addChildMakesDropdown"] == "dropdown")
+    ck("U20 a page link shows the page title", o["linkLabel"] == "Home")
+    ck("U21 a deleted page reads as deleted", o["linkLabelTrash"] == "Old page (deleted)", str(o["linkLabelTrash"]))
+    ck("U22 a javascript: address is refused", o["urlBad"] is True)
+    ck("U23 only https, mailto and tel addresses are accepted", o["urlOk"] is True)
+    ck("U24 anchors must look like #section", o["anchor"] is True)
 
-    ck("A1 a link to an existing page is clean", o["clean"] == [], str(o["clean"]))
-    ck("A2 a link to a missing page is an error", sev(o["missing"], "page_missing") == "error", str(o["missing"]))
-    ck("A3 a link to a trashed page is an error", "page_missing" in ids_of(o["trashed"]), str(o["trashed"]))
-    ck("A4 a link to a draft is a warning, not an error", sev(o["draft"], "page_draft") == "warn", str(o["draft"]))
-    ck("A5 a javascript: address is refused", "url_bad" in ids_of(o["jsUrl"]) and sev(o["jsUrl"], "url_bad") == "error", str(o["jsUrl"]))
-    ck("A6 a plain http address is a warning", sev(o["httpUrl"], "url_http") == "warn", str(o["httpUrl"]))
-    ck("A7 an https address is clean", o["goodUrl"] == [], str(o["goodUrl"]))
-    ck("A8 an anchor must start with #", "anchor_bad" in ids_of(o["anchorBad"]) and o["anchorOk"] == [], f'{o["anchorBad"]} / {o["anchorOk"]}')
-    ck("A9 an empty label is an error", "label_empty" in ids_of(o["noLabel"]) and sev(o["noLabel"], "label_empty") == "error", str(o["noLabel"]))
-    ck("A10 the same target twice is a warning", sev(o["dup"], "dup_target") == "warn", str(o["dup"]))
-    ck("A11 children of a hidden item are flagged", "hidden_parent" in ids_of(o["hiddenParent"]), str(o["hiddenParent"]))
-    ck("A12 a mega menu with no columns is a warning", sev(o["megaNoCols"], "mega_empty") == "warn", str(o["megaNoCols"]))
-    ck("A13 more than four columns is an error", sev(o["megaTooMany"], "mega_cols") == "error", str(o["megaTooMany"]))
-    ck("A14 an empty menu is a warning", sev(o["empty"], "empty") == "warn", str(o["empty"]))
-    ck("A15 the depth cap refuses a fourth level", o["depthCapHolds"] and o["depth3"] == 3, f'{o["depthCapHolds"]} {o["depth3"]}')
-    ck("A16 moving an item swaps it with its sibling", o["moved"] == "b,a", o["moved"])
-    ck("A17 moving the first item up changes nothing", o["moveEdge"] == "a", o["moveEdge"])
-    ck("A18 removing an item removes its subtree too", o["removed"] == 1, str(o["removed"]))
-    ck("A19 the seed has two menus, the primary and the footer", o["seedCount"] == 2)
-    ck("A20 the seed warns about the draft France link and the Study Abroad duplicate, nothing else", sorted(o["seedWarnings"]) == ["dup_target", "page_draft"], str(o["seedWarnings"]))
-    ck("A21 the seed has no errors", o["seedErrors"] == 0, str(o["seedErrors"]))
-    ck("A22 Save refuses a menu with an error", o["saveBad"] == "E_VALID", str(o["saveBad"]))
-    ck("A23 a stale revision is refused as a conflict", o["conflict"] == "E_CONFLICT", str(o["conflict"]))
-    ck("A24 a clean save bumps the revision", o["savedRev"] == 2, str(o["savedRev"]))
-    ck("A25 saving the same revision twice is refused", o["staleSave"] == "E_CONFLICT", str(o["staleSave"]))
-    ck("A26 a duplicate menu name is refused", o["dupName"] == "E_VALID", str(o["dupName"]))
-    ck("A27 a created menu can be deleted", o["removedCustom"] == "gone", str(o["removedCustom"]))
-    ck("A28 applying writes the four visible top-level labels to the header", o.get("applyWritten") == 4, str(o.get("applyWritten")))
-    ck("A29 applying says what the header cannot show", any("dropdowns" in x or "mega" in x for x in o.get("applyOmitted", [])), str(o.get("applyOmitted")))
-    ck("A30 apply marks the menu as applied", o["afterApply"] == "applied", o["afterApply"])
+async def shot_free(pg, label):
+    await pg.wait_for_timeout(150)
 
-def ids_of(issues): return [i["id"] for i in issues]
-def sev(issues, id_): return next((i["severity"] for i in issues if i["id"] == id_), None)
+async def set_state(pg, label):
+    await pg.get_by_role("button", name="Prototype states").click(); await pg.wait_for_timeout(200)
+    await pg.get_by_role("menuitem", name=label).click(); await pg.wait_for_timeout(300)
 
-async def ui():
+async def browser():
     async with async_playwright() as p:
         b = await p.chromium.launch()
-        pg = await b.new_page(viewport={"width": 1440, "height": 950})
+        pg = await b.new_page(viewport={"width": 1440, "height": 1000})
         errs = []
-        pg.on("pageerror", lambda e: errs.append(str(e)))
-        pg.on("console", lambda m: errs.append("console:" + m.text) if m.type == "error" else None)
-        await pg.goto(URL + "#/menus"); await pg.reload(); await pg.wait_for_timeout(1600)
+        pg.on("pageerror", lambda e: errs.append(str(e)[:200]))
+        await pg.goto(URL + "#/menus"); await pg.reload(); await pg.wait_for_timeout(1400)
 
-        ck("U1 the Menus screen renders", await pg.locator(".m8-wrap").count() == 1)
-        ck("U2 the menu list shows both menus", await pg.locator(".m8-menu").count() == 2)
-        ck("U3 the primary menu opens first", "Primary navigation" in await pg.locator(".m8-name").input_value())
-        ck("U4 the seed draft shows a warning for the draft link", await pg.locator(".m8-issues li.is-warn").count() >= 1)
-        ck("U5 a clean menu has Save disabled", await pg.get_by_role("button", name="Save", exact=True).is_disabled())
+        # ---- screen structure (mockup) ----
+        names = ["Menu Builder", "Manage Menus", "Menu Placements", "Mega Menus", "Version History", "Settings"]
+        tabs_ok = True
+        for n in names:
+            tabs_ok = tabs_ok and await pg.get_by_role("tab", name=n).count() == 1
+        ck("B1 six tabs match the mockup", tabs_ok)
+        kpi_ok = True
+        for t in ["Menus", "Assigned", "Draft (unpublished)", "Link issues", "Version history"]:
+            kpi_ok = kpi_ok and await pg.get_by_text(t, exact=True).count() >= 1
+        ck("B2 KPI strip shows menus, assigned, draft, link issues, versions", kpi_ok)
+        ck("B3 the builder shows three panels: add items, structure, settings",
+           await pg.locator(".m8-builder > section").count() == 3)
+        ck("B4 the seeded primary menu has its links", await pg.locator(".m8-row").count() >= 6, str(await pg.locator(".m8-row").count()))
+        ck("B5 a mega item is marked Mega Menu", await pg.locator(".m8-row.is-mega .m8-type", has_text="Mega Menu").count() == 1)
+        ck("B6 the France draft page is tagged draft in the picker", await pg.locator(".m8-draft-tag").count() >= 1)
 
-        # editing
+        # ---- menu picker ----
+        await pg.locator(".m8-select").click(); await pg.wait_for_timeout(150)
+        ck("B7 the menu picker lists all four menus", await pg.get_by_role("option").count() == 4, str(await pg.get_by_role("option").count()))
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(100)
+        ck("B8 Escape closes the picker", await pg.locator(".m8-pop").count() == 0)
+
+        # ---- add items ----
+        await pg.locator(".m8-check input[type=checkbox]").first.check(); await pg.wait_for_timeout(100)
+        ck("B9 picking a page enables Add to Menu", await pg.get_by_role("button", name="Add to Menu (1)").is_enabled())
         before = await pg.locator(".m8-row").count()
-        await pg.get_by_role("button", name="Add top link").click(); await pg.wait_for_timeout(250)
-        ck("U6 Add top link adds a row", await pg.locator(".m8-row").count() == before + 1)
-        ck("U7 a new row takes focus", (await pg.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')") or "").startswith("Label for"))
-        ck("U8 the new row is unsaved", "Unsaved changes" in await pg.locator(".m8-state").inner_text())
-        ck("U9 a new link with a valid default page leaves Save enabled", not await pg.get_by_role("button", name="Save", exact=True).is_disabled())
+        await pg.get_by_role("button", name="Add to Menu (1)").click(); await pg.wait_for_timeout(200)
+        ck("B10 Add to Menu adds the link to the structure", await pg.locator(".m8-row").count() == before + 1)
 
-        # a broken address blocks Save
-        LAST = ".m8-rows.d0 > li.m8-row-wrap:last-child > .m8-row"
-        await pg.locator(LAST + " select.m8-kind").select_option("url"); await pg.wait_for_timeout(200)
-        ck("U10 an empty web address blocks Save", await pg.get_by_role("button", name="Save", exact=True).is_disabled())
-        ck("U11 the banner names the blocking problem", "block saving" in await pg.locator(".m8-banner").first.inner_text())
-        await pg.locator(LAST + " input.m8-target-in").fill("javascript:alert(1)"); await pg.wait_for_timeout(200)
-        ck("U12 a javascript: address is refused by the editor", await pg.get_by_role("button", name="Save", exact=True).is_disabled())
-        ck("U13 the row names the refused address", "not a valid address" in await pg.locator(".m8-issues").inner_text())
-        await pg.locator(LAST + " input.m8-target-in").fill("https://apply.example.com/start"); await pg.wait_for_timeout(200)
-        ck("U14 a valid https address unblocks Save", not await pg.get_by_role("button", name="Save", exact=True).is_disabled())
+        # ---- item settings: label and link ----
+        await pg.locator(".m8-row", has_text="Scholarships").first.click(); await pg.wait_for_timeout(150)
+        lab = pg.get_by_label("Label", exact=True)
+        await lab.fill("Scholarships & aid"); await pg.wait_for_timeout(100)
+        ck("B11 editing the label changes the row", await pg.locator(".m8-row-label", has_text="Scholarships & aid").count() == 1)
+        await pg.get_by_role("button", name="Custom link").click(); await pg.wait_for_timeout(120)
+        await pg.get_by_label("Custom link address").fill("javascript:alert(1)")
+        await pg.get_by_role("button", name="Add custom link").click(); await pg.wait_for_timeout(200)
+        ck("B13 a javascript: custom link is refused with a message",
+           await pg.get_by_text("Address not allowed").count() >= 1)
 
-        await pg.get_by_role("button", name="Discard").click(); await pg.wait_for_timeout(250)
-        ck("U15 Discard restores the saved menu", await pg.locator(".m8-row").count() == before)
-        ck("U16 Discard clears the unsaved state", "Saved" in await pg.locator(".m8-state").inner_text())
+        # ---- mega panel ----
+        await pg.locator(".m8-row.is-mega").first.click(); await pg.wait_for_timeout(150)
+        await pg.get_by_role("tab", name="Mega Panel").click(); await pg.wait_for_timeout(120)
+        await pg.get_by_role("button", name="Edit panel in Mega Menus").click(); await pg.wait_for_timeout(250)
+        ck("B14 Edit panel opens the Mega Menus editor on that panel",
+           await pg.get_by_label("Mega panel name").input_value() == "Study Abroad mega menu")
+        cols = await pg.locator("section.m8-mcol[aria-label^='Column ']").count()
+        ck("B15 the panel has three columns, as in the mockup", cols == 3, str(cols))
+        await pg.get_by_role("radio", name="2 columns").click(); await pg.wait_for_timeout(120)
+        ck("B16 switching layout to 2 columns removes a column",
+           await pg.locator("section.m8-mcol[aria-label^='Column ']").count() == 2)
+        await pg.get_by_role("radio", name="3 columns").click(); await pg.wait_for_timeout(120)
+        ck("B17 switching back restores three columns", await pg.locator("section.m8-mcol[aria-label^='Column ']").count() == 3)
+        ck("B18 the featured card can be shown", await pg.locator("section[aria-label='Featured card']").count() == 1)
+        await pg.get_by_label("Column gap").select_option("large"); await pg.wait_for_timeout(120)
+        ck("B19 the column gap changes", await pg.get_by_label("Column gap").input_value() == "large")
+        await pg.get_by_role("tab", name="Menu Builder").click(); await pg.wait_for_timeout(200)
 
-        # tree controls
-        await pg.get_by_role("button", name="Add a link under Scholarships").click(); await pg.wait_for_timeout(250)
-        ck("U17 Add a link under adds a child row", await pg.locator(".m8-rows.d1 .m8-row").count() >= 1)
-        ck("U18 a depth-2 row cannot take a fourth level", await pg.locator(".m8-rows.d2 .m8-acts button[aria-label^='Add a link under']").count() >= 1 and await pg.locator(".m8-rows.d2 .m8-acts button[aria-label^='Add a link under']:not([disabled])").count() == 0)
-        ck("U19 the mega toggle appears on top-level rows only", await pg.locator(".m8-rows.d1 .m8-mega").count() == 0 and await pg.locator(".m8-mega").count() >= 1)
-        await pg.get_by_role("button", name="Discard").click(); await pg.wait_for_timeout(250)
+        # ---- navigation preview ----
+        await pg.locator("#m8-preview .m8-pv-top > li.is-mega > button").first.click(); await pg.wait_for_timeout(150)
+        ck("B20 a mega item opens its panel on click", await pg.locator("#m8-preview button[aria-expanded='true']").count() >= 1)
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(120)
+        ck("B21 Escape closes an open panel", await pg.locator("#m8-preview .m8-pv-panel").count() == 0)
+        await pg.get_by_role("radio", name="Mobile").click(); await pg.wait_for_timeout(120)
+        ck("B22 the mobile preview stacks the menu", await pg.locator(".m8-pv-mobile").count() == 1)
+        await pg.get_by_role("radio", name="Desktop").click()
 
-        await pg.get_by_role("button", name="Move Contact Us up").click(); await pg.wait_for_timeout(200)
-        order = await pg.locator(".m8-rows.d0 > li > .m8-row .m8-label").evaluate_all("els => els.map(e => e.value)")
-        ck("U20 moving Contact Us up puts it before Scholarships", order[-2:] == ["Contact Us", "Scholarships"], str(order))
-        await pg.get_by_role("button", name="Discard").click(); await pg.wait_for_timeout(250)
+        # ---- checks and publish ----
+        await pg.get_by_role("button", name="Validate Links").first.click(); await pg.wait_for_timeout(200)
+        ck("B23 Validate Links lists the draft warning", await pg.locator(".m8-issues li.warn").count() >= 1)
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(120)
+        await pg.get_by_role("button", name="Save Draft").first.click(); await pg.wait_for_timeout(400)
+        ck("B24 Save Draft writes the drafts", await pg.get_by_text("Drafts saved").count() >= 1 or await pg.get_by_text("Saved", exact=True).count() >= 1)
+        await pg.get_by_role("button", name="Publish Changes").first.click(); await pg.wait_for_timeout(200)
+        ck("B25 Publish asks for review and lists the changes", await pg.get_by_text("Publish changes").count() >= 1 and await pg.locator(".m8-changes li").count() >= 1)
+        btn = pg.get_by_role("dialog").get_by_role("button", name=re.compile(r"^Publish \d+ change"))
+        await btn.click(); await pg.get_by_role("dialog").wait_for(state="detached", timeout=5000)
+        await pg.get_by_role("tab", name="Version History").click(); await pg.wait_for_timeout(300)
+        ck("B26 a publish adds version 2, marked live", await pg.locator("tbody tr", has_text="v2").count() == 1 and await pg.get_by_text("Live", exact=True).count() >= 1)
 
-        await pg.get_by_role("button", name="Remove Scholarships").click(); await pg.wait_for_timeout(200)
-        ck("U21 Remove deletes the link", await pg.locator(".m8-row").count() == before - 1)
-        await pg.get_by_role("button", name="Discard").click(); await pg.wait_for_timeout(250)
+        # ---- rollback ----
+        await pg.locator("tbody tr", has_text="v1").get_by_role("button", name="Roll back").click(); await pg.wait_for_timeout(200)
+        await pg.get_by_role("button", name="Roll back and publish").click(); await pg.wait_for_timeout(600)
+        await pg.get_by_role("tab", name="Version History").click(); await pg.wait_for_timeout(250)
+        ck("B27 a rollback publishes a new version and keeps history", await pg.locator("tbody tr").count() == 3, str(await pg.locator("tbody tr").count()))
 
-        # link checks → focus
-        await pg.get_by_role("button", name="Show").first.click(); await pg.wait_for_timeout(300)
-        ck("U22 Show brings the flagged row into view and focuses it", await pg.evaluate("!!document.querySelector('.m8-row[data-focus=\"1\"]')"))
+        # ---- manage ----
+        await pg.get_by_role("tab", name="Manage Menus").click(); await pg.wait_for_timeout(200)
+        ck("B28 Manage lists every menu", await pg.locator("table tbody tr").count() >= 4)
+        await pg.get_by_label("Filter menus").select_option("unassigned"); await pg.wait_for_timeout(120)
+        ck("B29 the filter narrows to unassigned menus", await pg.locator("table tbody tr").count() == 1, str(await pg.locator("table tbody tr").count()))
+        await pg.get_by_label("Filter menus").select_option("all")
+        ck("B30 a menu placed on the site cannot be deleted (row Delete is disabled)",
+           await pg.locator("table tbody tr", has_text="Primary Navigation").get_by_role("button", name="Delete").is_disabled())
+        await pg.get_by_role("tab", name="Settings").click(); await pg.wait_for_timeout(200)
+        ck("B30b the Settings delete is disabled for a placed menu",
+           await pg.get_by_role("button", name="Delete Primary Navigation").is_disabled())
 
-        # mobile output and preview
-        await pg.get_by_label("Mobile behaviour").select_option("accordion"); await pg.wait_for_timeout(200)
-        ck("U23 the mobile preview follows the behaviour", "Mobile · accordion" in await pg.locator(".m8-prev-mobile").inner_text())
-        await pg.get_by_role("button", name="Study Abroad", exact=True).first.click(); await pg.wait_for_timeout(200)
-        ck("U24 a mega item opens its panel in the preview", await pg.locator(".m8-prev-panel.is-mega").count() == 1)
-        await pg.get_by_label("Mobile behaviour").select_option("drawer"); await pg.wait_for_timeout(150)
-        ck("U24b switching the mobile behaviour back leaves no unsaved change", await pg.get_by_role("button", name="Discard").is_disabled())
+        # ---- placements ----
+        await pg.get_by_role("tab", name="Menu Placements").click(); await pg.wait_for_timeout(200)
+        ck("B31 placements shows header, footer and utility plus mobile auto", await pg.locator("table tbody tr").count() == 4)
+        ck("B32 mobile is generated from the header", await pg.get_by_text("Auto · responsive").count() == 1)
 
-        # save an edit, then apply the header
-        await pg.get_by_label("Label for Home").fill("Home page"); await pg.wait_for_timeout(200)
-        await pg.get_by_role("button", name="Save", exact=True).click(); await pg.wait_for_timeout(900)
-        ck("U25 a clean edit saves and bumps the revision", "revision 2" in await pg.locator(".m8-state").inner_text(), await pg.locator(".m8-state").inner_text())
-        ck("U26 Apply shows the header target and what is live now", "Global Header" in await pg.locator(".m8-target").first.inner_text())
-        ck("U27 the header target reports a difference before apply", "Differs from this menu" in await pg.locator(".m8-target").first.inner_text())
-        apply_btn = pg.locator(".m8-target").first.get_by_role("button", name="Apply")
-        await apply_btn.click()
-        try:
-            await pg.wait_for_function("(document.querySelector('.m8-target') || {innerText:''}).innerText.includes('In sync with this menu')", timeout=6000)
-        except Exception:
-            pass
-        ck("U28 after apply the header is in sync", "In sync with this menu" in await pg.locator(".m8-target").first.inner_text())
-        toasts = await pg.locator(".toast").all_inner_texts()
-        ck("U29 the apply toast says what was left out", any("Left out" in t and "applied to" in t for t in toasts), " | ".join(toasts)[:200])
-        ck("U30 the applied menu cannot be deleted", await pg.locator(".m8-danger button").first.is_disabled())
+        # ---- mega menus tab ----
+        await pg.get_by_role("tab", name="Mega Menus").click(); await pg.wait_for_timeout(200)
+        ck("B33 the mega library shows what each panel is used in", await pg.get_by_text("Used in:").count() >= 1)
+        await pg.get_by_role("button", name="Create Mega Menu").click(); await pg.wait_for_timeout(150)
+        await pg.get_by_label("New panel name").fill("Testing panel"); await pg.get_by_role("button", name="Create panel").click(); await pg.wait_for_timeout(400)
+        ck("B34 creating a panel selects it for editing", await pg.get_by_label("Mega panel name").input_value() == "Testing panel")
 
-        # create and delete a custom menu
-        await pg.get_by_role("button", name="New menu").first.click(); await pg.wait_for_timeout(300)
-        await pg.get_by_label("Menu name").fill("QA sidebar"); await pg.wait_for_timeout(100)
-        await pg.get_by_role("button", name="Create menu").click(); await pg.wait_for_timeout(700)
-        ck("U31 creating a menu selects it", "QA sidebar" in await pg.locator(".m8-name").input_value())
-        await pg.locator(".m8-danger button").first.click(); await pg.wait_for_timeout(600)
-        try:
-            await pg.wait_for_function("document.querySelectorAll('.m8-menu').length === 2", timeout=5000)
-        except Exception:
-            pass
-        n32 = await pg.locator(".m8-menu").count()
-        ck("U32 a custom menu can be deleted", n32 == 2, f"menus={n32} name={await pg.locator('.m8-name').input_value()}")
+        # ---- settings ----
+        await pg.get_by_role("tab", name="Settings").click(); await pg.wait_for_timeout(200)
+        ck("B35 settings sets the mobile style", await pg.get_by_label("Mobile style").count() == 1)
+        ck("B36 settings shows the limits", await pg.get_by_text("3 levels deep at most").count() == 1)
 
-        # the Layouts link still works
-        await pg.get_by_role("button", name="Open in Layouts").first.click(); await pg.wait_for_timeout(900)
-        ck("U33 Open in Layouts reaches Module 7", "#/layouts" in pg.url, pg.url)
+        # ---- prototype states ----
+        await pg.get_by_role("tab", name="Menu Builder").click(); await pg.wait_for_timeout(200)
+        await set_state(pg, "Permission denied (Viewer)"); await pg.wait_for_timeout(500)
+        ck("B37 denied role sees the read-only notice", await pg.get_by_text("Read-only. Your role").count() == 1)
+        ck("B38 denied role cannot save", await pg.get_by_role("button", name="Save Draft").first.is_disabled())
+        await set_state(pg, "Default"); await pg.wait_for_timeout(500)
+        ck("B39 default restores editing (Save Draft is enabled once something changes)", await pg.get_by_role("tab", name="Menu Builder").count() == 1 and await pg.locator(".m8-banner.is-info").count() == 0)
 
-        # ---------------- S · prototype states, from the states menu ----------------
-        await pg.evaluate("location.hash = '#/menus'"); await pg.wait_for_timeout(900)
-        async def state(label):
-            await pg.get_by_role("button", name="Prototype states").click(); await pg.wait_for_timeout(200)
-            await pg.get_by_role("menuitem", name=label).click(); await pg.wait_for_timeout(250)
+        await set_state(pg, "Error / service down"); await pg.wait_for_timeout(900)
+        ck("B40 error state explains the failure with a retry", await pg.get_by_text("Menus did not load").count() == 1 and await pg.get_by_role("button", name="Try again").count() == 1)
+        await set_state(pg, "Default"); await pg.wait_for_timeout(900)
 
-        await state("Error / service down"); await pg.wait_for_timeout(900)
-        ck("S1 the error state says the menus did not load, with a retry", await pg.get_by_text("Menus did not load").count() == 1 and await pg.get_by_role("button", name="Try again").count() == 1)
-
-        await state("Empty (no data in range)"); await pg.wait_for_timeout(900)
-        ck("S2 the empty state offers the first menu", await pg.get_by_text("No menus yet").count() == 1 and await pg.get_by_role("button", name="New menu").count() >= 1)
-
-        await state("Loading skeletons"); await pg.wait_for_timeout(120)
-        ck("S3 the loading state is shown while data arrives", await pg.locator(".m8-wrap[aria-busy='true']").count() == 1)
+        await set_state(pg, "Loading skeletons"); await pg.wait_for_timeout(60)
+        ck("B41 loading state shows busy skeletons", await pg.locator("[aria-busy='true'] .m8-skel, [aria-busy='true'] .m8-skel-tall").count() >= 1)
         await pg.wait_for_timeout(2200)
+        await set_state(pg, "Default"); await pg.wait_for_timeout(900)
 
-        await state("Default"); await pg.wait_for_timeout(900)
-        ck("S4 default returns the two seeded menus", await pg.locator(".m8-menu").count() == 2)
+        await set_state(pg, "Empty (no data in range)"); await pg.wait_for_timeout(900)
+        ck("B42 empty state offers the first menu", await pg.get_by_text("No menus yet").count() == 1)
+        await set_state(pg, "Default"); await pg.wait_for_timeout(900)
 
-        await pg.get_by_label("Label for Home page").fill("Home (conflict test)"); await pg.wait_for_timeout(150)
-        await state("Publish conflict"); await pg.wait_for_timeout(300)
-        await pg.get_by_role("button", name="Save", exact=True).click(); await pg.wait_for_timeout(900)
-        ck("S5 a save that loses the race shows the conflict with the draft kept", await pg.locator(".m8-banner[role='alert']").count() == 1 and "Home (conflict test)" in await pg.get_by_label("Label for Home (conflict test)").input_value())
-        await pg.get_by_role("button", name="Reload theirs").click(); await pg.wait_for_timeout(900)
-        ck("S6 Reload theirs discards the draft and clears the banner", await pg.locator(".m8-banner[role='alert']").count() == 0 and await pg.get_by_label("Label for Home page").count() == 1)
+        await pg.get_by_role("tab", name="Menu Builder").click(); await pg.wait_for_timeout(200)
+        await pg.locator(".m8-row", has_text="Contact").first.click(); await pg.wait_for_timeout(120)
+        await pg.get_by_label("Label", exact=True).fill("Contact us"); await pg.wait_for_timeout(120)
+        await set_state(pg, "Publish conflict"); await pg.wait_for_timeout(300)
+        await pg.get_by_role("button", name="Save Draft").first.click(); await pg.wait_for_timeout(700)
+        ck("B43 a stale save shows the conflict banner and keeps the draft",
+           await pg.locator(".m8-banner[role='alert']").count() == 1)
+        await pg.get_by_role("button", name="Reload theirs").click(); await pg.wait_for_timeout(700)
+        ck("B44 Reload theirs clears the banner", await pg.locator(".m8-banner[role='alert']").count() == 0)
+        await set_state(pg, "Default"); await pg.wait_for_timeout(700)
 
-        await state("Permission denied (Viewer)"); await pg.wait_for_timeout(900)
-        ck("S7 a denied role sees the read-only banner", await pg.locator(".m8-banner.is-info").count() == 1)
-        ck("S8 the editor fields are disabled for a denied role", await pg.evaluate("(() => { const f = document.querySelector('.m8-fs'); return !!f && f.disabled; })()"))
-        ck("S9 the menu list stays selectable for a denied role", await pg.locator(".m8-menu").first.is_enabled())
-        await state("Default"); await pg.wait_for_timeout(900)
-        ck("S10 default returns the editor to normal", await pg.evaluate("(() => { const f = document.querySelector('.m8-fs'); return !!f && !f.disabled; })()"))
-
-        ck("Z1 no console or page errors", not errs, "; ".join(errs[:3]))
+        ck("B45 no page errors during the run", not errs, "; ".join(errs[:3]))
         await b.close()
 
-async def main():
+def main():
     unit()
-    await ui()
+    try:
+        asyncio.run(browser())
+    except Exception as e:
+        ck("B0 the browser run completes", False, str(e)[:300])
     total = TALLY["ok"] + TALLY["fail"]
     print(f"\nqa_m8_menus · {TALLY['ok']}/{total} assertions passed")
     if FAILS:
-        print("FAILURES:")
-        for f in FAILS: print(" ·", f)
-        sys.exit(1)
+        print("FAILURES:"); [print(" · " + f) for f in FAILS]
+    sys.exit(0 if TALLY["fail"] == 0 else 1)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    main()

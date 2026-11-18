@@ -351,7 +351,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <MenuItem icon="globe" onClick={() => { setMenu(null); app.openModal({ kind: "wizard" }); }}>New website</MenuItem>
         <MenuItem icon="file" onClick={() => { setMenu(null); app.go("pages"); app.toast({ type: "info", title: "New page", sub: "Page composer arrives with Module 3." }); }}>New page</MenuItem>
         <MenuItem icon="form" onClick={() => { setMenu(null); app.go("forms"); app.toast({ type: "info", title: "New form", sub: "Form builder arrives with Module 10." }); }}>New form</MenuItem>
-        <MenuItem icon="menu" onClick={() => { setMenu(null); app.go("menus"); app.toast({ type: "info", title: "New menu", sub: "Navigation editor arrives with Module 8." }); }}>New menu</MenuItem>
+        <MenuItem icon="menu" onClick={() => { setMenu(null); app.go("menus"); }}>New menu</MenuItem>
         <MenuItem icon="image" onClick={() => { setMenu(null); app.go("media"); app.toast({ type: "info", title: "Upload media", sub: "Media library arrives with Module 9." }); }}>Upload media</MenuItem>
         <div className="menu-sep" />
         <MenuItem icon="search" meta="⌘K" onClick={() => { setMenu(null); app.setPalette(true); }}>Search everything</MenuItem>

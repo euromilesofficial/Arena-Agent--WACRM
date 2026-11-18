@@ -32,6 +32,29 @@ export interface RegionVariant {
   updatedAt: string;
 }
 
+/** Set by Menus & Navigation when a menu is applied to a header or footer variant. */
+export interface MenuRef {
+  menuId: string;
+  name: string;
+  /** the menu's live revision the applied copy was built from (staleness check) */
+  liveRev: number;
+}
+
+/** Header variant props. `nav` is the flat list derived from the live menu at apply time. */
+export interface HeaderChromeProps {
+  brand: string;
+  nav: string[];
+  cta: string;
+  sticky: boolean;
+  menuRef?: MenuRef;
+}
+
+/** Footer variant props. `groups` is derived from the live menu at apply time; edited only in the Global Footer drawer. */
+export interface FooterChromeProps {
+  groups: { title: string; links: string[] }[];
+  menuRef?: MenuRef;
+}
+
 export interface SharedRegion {
   id: string;
   kind: RegionKind;
@@ -203,8 +226,8 @@ const tpl = (id: string, fallback: () => BlockNode[]): BlockNode[] => {
   return hit ? hit.build() : fallback();
 };
 
-const headerBlocks = (brand: string, nav: string[], cta: string) =>
-  [n("container", { props: { brand, nav, cta, sticky: true } })];
+const headerBlocks = (brand: string, nav: string[], cta: string, menuRef?: MenuRef) =>
+  [n("container", { props: { brand, nav, cta, sticky: true, ...(menuRef ? { menuRef } : {}) } })];
 
 /* ---------------- regions ---------------- */
 
@@ -212,7 +235,7 @@ const REGIONS: SharedRegion[] = [
   {
     id: "reg_header", kind: "header", name: "Global Header", locked: true,
     variants: [
-      { id: "hdr_v2", name: "Global Header v2", note: "Sticky, 5 links, Enquire CTA", blocks: headerBlocks("EuroMiles.in", ["Home", "Study Abroad", "Scholarships", "About Us", "Contact"], "Enquire Now"), rev: 2, updatedAt: "2026-11-08T09:12:00Z" },
+      { id: "hdr_v2", name: "Global Header v2", note: "Sticky, 6 links, Enquire CTA", blocks: headerBlocks("EuroMiles.in", ["Home", "Study Abroad", "Scholarships", "Services", "About Us", "Contact"], "Enquire Now", { menuId: "menu_primary", name: "Primary Navigation", liveRev: 1 }), rev: 2, updatedAt: "2026-11-08T09:12:00Z" },
       { id: "hdr_min", name: "Minimal Header", note: "Logo and one CTA — landing pages", blocks: headerBlocks("EuroMiles.in", ["Home"], "Apply Now"), rev: 1, updatedAt: "2026-10-22T11:40:00Z" },
       { id: "hdr_mega", name: "Mega Header", note: "Two-tier with destinations panel", blocks: headerBlocks("EuroMiles.in", ["Destinations", "Programs", "Universities", "Scholarships", "Guides", "Contact"], "Book a Call"), rev: 3, updatedAt: "2026-11-11T16:05:00Z" }
     ]
@@ -599,7 +622,7 @@ export function headerNavFor(pageLayout: string): HeaderNav {
   if (!l) return { layoutId: null, layoutName: "No layout", variantId: null, variantName: "—", items: [], visible: false };
   const reg = get().regions.find((r) => r.id === l.header.regionId);
   const v = reg?.variants.find((x) => x.id === l.header.variantId) ?? null;
-  const props = (v?.blocks[0]?.props ?? {}) as { nav?: string[] };
+  const props = (v?.blocks[0]?.props ?? {}) as Partial<HeaderChromeProps>;
   return {
     layoutId: l.id,
     layoutName: l.name,
