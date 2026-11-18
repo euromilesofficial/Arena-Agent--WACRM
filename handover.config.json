@@ -336,6 +336,12 @@
         "covers": "every text kind editable in place (headings, eyebrows, descriptions, list items, feature cards, text paragraphs, testimonials, FAQ, table cells, pricing tiers, periods and features, buttons, captions, hero links); one edit is one undo step; Ctrl+Z in a field is the field's own; Escape reverts; Enter commits; empty refused; inspector shares the document; status shows unsaved"
       },
       {
+        "file": "qa_m4_inline.py",
+        "name": "Module 4 — inline editing gaps",
+        "assertions": 13,
+        "covers": "canvas<->inspector sync both ways, Ctrl+Z on canvas, Save persists across tab switch, text inside Boxed CTA container, button label edit does not navigate"
+      },
+      {
         "file": "qa_states.py",
         "name": "Module 2 — state coverage audit",
         "covers": "every state in MODULE-2-SPEC.md §6, against the built prototype"

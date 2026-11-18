@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-18 06:11:22 UTC · **generated against commit** `79e8044` · **working tree** 10 uncommitted file(s)
+**Generated** 2026-11-18 06:30:00 UTC · **generated against commit** `5f244eb` · **working tree** 3 uncommitted file(s)
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -51,7 +51,7 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Size | 5,055,293 B (4937 kB) · gzip 2974 kB |
 | md5 | `9dea8bc5cf0d1bef803fc3c8fe25a1ba` |
 | sha256 (first 16) | `3aa40c989dc2b6ee` |
-| Built | 2026-11-18 06:11:22 |
+| Built | 2026-11-18 06:29:59 |
 
 Packaged deliverables: `wacrm-app.zip` — rebuilt after this document was generated, so their hashes are deliberately not recorded here (they would reference this file).
 
@@ -104,7 +104,7 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **74 source files, 29,479 lines** of TS/TSX/CSS (45,870 lines across all tracked text files).
+Source inventory: **74 source files, 29,479 lines** of TS/TSX/CSS (46,000 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
@@ -249,13 +249,14 @@ First tasks:
 
 ## 10. Repository state and rollback
 
-- Repo: that git directory is `.`; branch `main`; HEAD `79e8044` — Module 7: Global Footer editable in its drawer (note, columns, column titles and links); footer block reads the variant's groups; layout footer labels no longer hard-coded; drawer reads the live variant; qa_m7_footer.py 14/14.
-- Working tree: 10 uncommitted file(s).
+- Repo: that git directory is `.`; branch `main`; HEAD `5f244eb` — Audit: fix dev-mode blank page (hook called inside useMemo in store.tsx); Theme Studio layout-import copy corrected; handover config lists Module 7 and the 21 suites with correct labels; full QA 21/21 green.
+- Working tree: 3 uncommitted file(s).
 - Remote: **none configured** — add one before pushing (`git remote add origin <url>`).
 - Tags: `m6.1-slim` · `m6.1-theme-studio` · `m6-theme-studio-benchmark` · `m6-theme-studio` · `module-5-complete` · `module-4-ai` · `module-4-complete` · `module-3-complete` · `module-1-and-2-import` · `module-2-complete`.
 
 | Commit | Date | Subject |
 | --- | --- | --- |
+| `5f244eb` | 2026-11-18 | Audit: fix dev-mode blank page (hook called inside useMemo in store.tsx); Theme Studio layout-import copy corrected; handover config lists Module 7 and the 21 suites with correct labels; full QA 21/21 green |
 | `79e8044` | 2026-11-17 | Module 7: Global Footer editable in its drawer (note, columns, column titles and links); footer block reads the variant's groups; layout footer labels no longer hard-coded; drawer reads the live variant; qa_m7_footer.py 14/14 |
 | `11f8e09` | 2026-11-17 | Module 7: AI copy bubble on Layouts and Templates inline editing |
 | `2ecc0c8` | 2026-11-17 | Module 7: AI copy bubble on Layouts and Templates inline editing |
@@ -267,7 +268,6 @@ First tasks:
 | `6bace16` | 2026-11-17 | Module 7 templates: edit where you see them. Click a starter block on the canvas to edit its fields in the inspector; the canvas updates live; Save writes a revision. Structure stays in the list; items, links and media are edited in the Visual Builder. Decision and sources in MODULE-7-BUILD §8. 15 suites · 1054 assertions green. |
 | `cf5e7dd` | 2026-11-17 | Module 7 preview: Global Footer renders the variant's real columns and note (builder footer unchanged when no props); footer spans the frame; side panels narrowed for a wider preview. 15 suites · 1049 assertions green (qa_layouts flaked once, 99/99 on rerun). |
 | `e8b8a94` | 2026-11-16 | Module 7 preview: the canvas renders real blocks (not grey sketches), 100% is true width with scroll, Fit remains; the Prebuilt browser draws each kit as a page at its design width. 15 suites · 1049 assertions green. |
-| `f507caa` | 2026-11-16 | checkpoint.sh: the current script (budget guard, no automatic history rewrite, main-only push, lease-safe) now lives in Git; the stale copy that mirrored into a deleted clone is gone |
 
 Rollback recipes live in `ROLLBACK.md`; the short version: `git revert <sha>`, `git revert <tag>..HEAD`, or `git show <tag>:WACRM-CMS.html > old.html`.
 
