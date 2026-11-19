@@ -157,3 +157,28 @@ Decisions kept:
 - The Mega Menu layout cards offer 2, 3 and 4 columns. The mockup's "Custom" card is not offered, because the spec's column limits are 2 to 4 (`MENU_LIMITS`).
 - Utility menus can be created and edited but not placed, because layouts have no utility slot.
 - Footer menus render as footer navigation only. A separate mobile menu is deferred.
+
+## 14. Drag and drop, style, and beautify pass (v4)
+
+Decisions (taken without the owner; reported in the handover):
+
+| Area | Decision | Evidence |
+|---|---|---|
+| Drag and drop | A row drop lands in the top quarter (before), bottom quarter (after) or middle (inside) of a row. Pages dragged from Add Items use the same zones. Refusals show the reason as a toast and change nothing: depth above 3 levels, inside a mega item, a mega item below the top level, a mega item with children, dropping into its own subtree, and more than 80 items. Alt+arrow keyboard reorder stays as the fallback. | `qa_m8_dnd.py` D1–D11, DB1–DB8 |
+| Menu presets | Five presets: Classic, Minimal, Pill, Underline, Bold. Chosen in Menu Settings > Appearance. | `qa_m8_dnd.py` DS1, D12–D13 |
+| Dropdown animation | Fade (default), Slide, Scale, None. Honours reduced motion. | `qa_m8_dnd.py` DS3, DS7 |
+| Hover effect | Underline (default), Lift, Highlight, None. | `qa_m8_dnd.py` DS2 |
+| Mega panel | Surface Card (default), Flat, Bordered. Its own drop animation. | `qa_m8_dnd.py` DS5–DS7 |
+| Publish parity | `menuStyle` is compiled into the header and footer variant props, carried through `layoutSnapshot`, and applied in the layout canvas and the Layouts preview. | `src/lib/menu-db.ts` compileChrome, `src/lib/layout-db.ts` |
+
+Fixes in this pass:
+
+- The depth helper was duplicated during drag-and-drop work. The new one was removed. Inside-drops check the target's level with `levelOf`.
+- B0 in `qa_m8_menus.py` now matches "Add to Menu" exactly. It previously collided with "Add to Menu (1)".
+- Preset cards overflowed the left column. They now wrap in two columns.
+
+Open gaps after this pass:
+
+- Preset demo chips clip at the card edge on narrow columns.
+- Mega panels do not compile into the published header (the header is a flat `nav`, per scope).
+- §31.8 fifteen-test mapping is still approximate (§9).

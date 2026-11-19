@@ -5228,3 +5228,54 @@ button.m8-kpi{cursor:pointer}
 .m7-pv-pin{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--m8-mute);border:1px dashed #c4b5fd;border-radius:8px;padding:8px 10px;background:#faf7ff;margin-top:8px}
 .m8-bind{border:1px solid var(--m8-line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;margin:6px 0;background:#fff}
 .m8-bind .m7-region-h{display:flex;align-items:center;gap:6px;font-size:13px}
+
+/* ===== M8 · style presets, hover effects, drop animations, mega surfaces (v4) ===== */
+.m8-pv-top>li>button,.m8-pv-top>li>span,.m7l-nav span,.m7-pv-header nav span{transition:color .15s,background .15s,transform .15s,border-color .15s;border-bottom:2px solid transparent;padding-bottom:2px}
+/* presets (applied to the nav element) */
+.m8-preset-minimal .m8-pv-top>li>button,.m8-preset-minimal .m8-pv-top>li>span,.m8-preset-minimal.m7l-nav span,.m8-preset-minimal .m7-pv-header nav span{font-weight:400;letter-spacing:.01em;color:var(--m8-text,#4C5563);opacity:.9}
+.m8-preset-pill .m8-pv-top>li>button,.m8-preset-pill .m8-pv-top>li>span,.m8-preset-pill.m7l-nav span,.m8-preset-pill .m7-pv-header nav span{border-radius:999px;padding:6px 12px;border-bottom:0;background:rgba(124,58,237,.06)}
+.m8-preset-underline .m8-pv-top>li>button,.m8-preset-underline .m8-pv-top>li>span,.m8-preset-underline.m7l-nav span,.m8-preset-underline .m7-pv-header nav span{border-bottom:2px solid transparent;padding-bottom:4px}
+.m8-preset-bold .m8-pv-top>li>button,.m8-preset-bold .m8-pv-top>li>span,.m8-preset-bold.m7l-nav span,.m8-preset-bold .m7-pv-header nav span{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+/* hover effects */
+.m8-hover-underline .m8-pv-top>li>button:hover,.m8-hover-underline .m8-pv-top>li>span:hover,.m8-hover-underline.m7l-nav span:hover{border-bottom-color:var(--m8-primary,#7c3aed)}
+.m8-hover-lift .m8-pv-top>li>button:hover,.m8-hover-lift .m8-pv-top>li>span:hover,.m8-hover-lift.m7l-nav span:hover{transform:translateY(-2px)}
+.m8-hover-highlight .m8-pv-top>li>button:hover,.m8-hover-highlight .m8-pv-top>li>span:hover,.m8-hover-highlight.m7l-nav span:hover{background:rgba(124,58,237,.1);border-radius:6px}
+/* drop animations for dropdown and mega panels */
+@keyframes m8-fade{from{opacity:0}to{opacity:1}}
+@keyframes m8-slide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes m8-scale{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.m8-anim-fade{animation:m8-fade .18s ease-out}
+.m8-anim-slide{animation:m8-slide .22s ease-out}
+.m8-anim-scale{animation:m8-scale .2s ease-out;transform-origin:top center}
+.m8-anim-none{animation:none}
+@media (prefers-reduced-motion:reduce){.m8-anim-fade,.m8-anim-slide,.m8-anim-scale{animation:none}}
+/* mega panel surfaces */
+.m8-surface-card{background:#fff;border:1px solid var(--m8-line,#e5e7eb);border-radius:12px;box-shadow:0 10px 26px rgba(20,10,50,.12);padding:18px}
+.m8-surface-flat{background:#f6f5fb;border:0;border-radius:0;box-shadow:none;padding:18px}
+.m8-surface-bordered{background:#fff;border:1px solid var(--m8-primary,#7c3aed);border-radius:6px;box-shadow:none;padding:18px}
+/* builder drop indicators */
+.m8-row.is-drop-before{box-shadow:inset 0 2px 0 var(--m8-primary,#7c3aed)}
+.m8-row.is-drop-after{box-shadow:inset 0 -2px 0 var(--m8-primary,#7c3aed)}
+.m8-row.is-drop-inside{outline:2px dashed var(--m8-primary,#7c3aed);outline-offset:-2px;background:rgba(124,58,237,.06)}
+.m8-pagedrag{cursor:grab}
+.m8-pagedrag:active{cursor:grabbing}
+/* appearance controls in Menu Settings */
+.m8-appearance{border:0;padding:0;margin:14px 0 6px;display:grid;gap:10px;min-width:0}
+.m8-appearance legend{padding:0;margin-bottom:6px}
+.m8-presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.m8-preset-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px;border:1px solid var(--m8-line,#e5e7eb);border-radius:8px;background:#fff;cursor:pointer;text-align:left;font:inherit;min-width:0}
+.m8-preset-card.is-on{border-color:var(--m8-primary,#7c3aed);box-shadow:0 0 0 2px rgba(124,58,237,.18)}
+.m8-preset-card b{font-size:12px}
+.m8-preset-card small{font-size:10.5px;color:#6b7280;line-height:1.3}
+.m8-preset-demo{display:flex;gap:6px;font-size:10px;color:#4b5563;flex-wrap:wrap}
+.m8-preset-demo i{font-style:normal;padding:1px 2px}
+.m8-preset-card.m8-preset-pill .m8-preset-demo i{border-radius:999px;background:rgba(124,58,237,.1);padding:2px 6px}
+.m8-preset-card.m8-preset-underline .m8-preset-demo i{border-bottom:2px solid var(--m8-primary,#7c3aed)}
+.m8-preset-card.m8-preset-minimal .m8-preset-demo i{font-weight:400;color:#9ca3af}
+.m8-preset-card.m8-preset-bold .m8-preset-demo i{font-weight:700;text-transform:uppercase}
+.m8-appearance-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* v4 fix: preset cards wrap in the left column instead of overflowing */
+.m8-presets{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
+.m8-preset-card{overflow:hidden}
+.m8-preset-card b,.m8-preset-card small{white-space:normal;overflow-wrap:anywhere}
+.m8-preset-demo{flex-wrap:nowrap;overflow:hidden;max-width:100%;white-space:nowrap}

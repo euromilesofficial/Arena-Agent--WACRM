@@ -300,7 +300,7 @@ export function PreviewModal({ siteId, layout, frame, onClose }: {
       </div>
       <div className={`m7-pv-frame is-${device}`}>
         {frame.announcement && <div className="m7-pv-announce">{frame.announcement.text}</div>}
-        {shown.header && <div className="m7-pv-header"><b>{shown.header.brand}</b><nav>{shown.header.nav.map((l) => <span key={l}>{l}</span>)}</nav><em>{shown.header.cta}</em></div>}
+        {shown.header && <div className="m7-pv-header"><b>{shown.header.brand}</b><nav className={`m8-preset-${shown.header.menuStyle?.preset ?? "classic"} m8-hover-${shown.header.menuStyle?.hoverFx ?? "underline"}`}>{shown.header.nav.map((l) => <span key={l}>{l}</span>)}</nav><em>{shown.header.cta}</em></div>}
         <div className="m7-pv-body">
           <div className="m7-pv-slot">{page ? `${page.title} — page content (${page.blocks} blocks)` : "No page selected"}</div>
           <div className="m7-pv-meta">

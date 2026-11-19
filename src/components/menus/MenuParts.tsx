@@ -7,7 +7,7 @@ import type { ThemeTokens } from "@/lib/theme-db";
 import { stackFor } from "@/lib/theme-db";
 import {
   MENU_LIMITS, anchorOk, linkLabel, newId, urlOk, type LinkRef, type MegaColumn, type MegaDoc, type MegaFeatured, type MegaLink,
-  type MenuItem, type PageLike, type Gap,
+  type MenuItem, type PageLike, type Gap, type MenuStyle, type Surface, type DropAnim, SURFACES, DROP_ANIMS, styleOf,
 } from "@/lib/menu-db";
 
 export type Device = "desktop" | "tablet" | "mobile";
@@ -94,6 +94,18 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
             <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
           </select>
         </label>
+        <label className="m8-field">
+          <span className="m8-lbl">Panel surface</span>
+          <select aria-label="Panel surface" value={doc.surface ?? "card"} disabled={disabled} onChange={(e) => onChange({ ...doc, surface: e.target.value as Surface })}>
+            {SURFACES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </label>
+        <label className="m8-field">
+          <span className="m8-lbl">Panel animation</span>
+          <select aria-label="Panel animation" value={doc.dropAnim ?? "fade"} disabled={disabled} onChange={(e) => onChange({ ...doc, dropAnim: e.target.value as DropAnim })}>
+            {DROP_ANIMS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </label>
         <label className="m8-toggle">
           <input type="checkbox" checked={doc.featured.enabled} disabled={disabled} onChange={(e) => setFeat({ enabled: e.target.checked })} />
           <span>Show featured content</span>
@@ -171,10 +183,11 @@ export function FeaturedArt({ image }: { image: string }) {
 }
 
 /* ---------- navigation preview ---------- */
-export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobileBehaviour, openFirstLevel, openId, onOpen, label }: {
+export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobileBehaviour, openFirstLevel, openId, onOpen, label, menuStyle }: {
   items: MenuItem[]; megaOf: (id: string | null) => MegaDoc | undefined; pages: PageLike[]; tokens: ThemeTokens; device: Device;
-  brand: string; mobileBehaviour: "drawer" | "accordion"; openFirstLevel: boolean; openId: string | null; onOpen: (id: string | null) => void; label: string;
+  brand: string; mobileBehaviour: "drawer" | "accordion"; openFirstLevel: boolean; openId: string | null; onOpen: (id: string | null) => void; label: string; menuStyle?: MenuStyle;
 }) {
+  const st = styleOf({ style: menuStyle });
   const style = {
     "--m8-primary": tokens.colors.primary, "--m8-text": tokens.colors.text, "--m8-surface": tokens.colors.surface, "--m8-bg": tokens.colors.background,
     fontFamily: stackFor(tokens.typography.body), width: DEVICE_WIDTH[device] > 980 ? "100%" : DEVICE_WIDTH[device],
@@ -211,7 +224,7 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
   const openMega = (id: string) => onOpen(openId === id ? null : id);
   return (
     <div className="m8-pv" style={style} aria-label={label}>
-      <nav className="m8-pv-bar" aria-label="Navigation preview">
+      <nav className={`m8-pv-bar m8-preset-${st.preset} m8-hover-${st.hoverFx}`} aria-label="Navigation preview">
         <b className="m8-pv-brand">{brand}</b>
         <ul className="m8-pv-top">
           {visible.map((it) => {
@@ -226,7 +239,7 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
                   </button>
                 ) : <span>{it.label || "Untitled"}</span>}
                 {isOpen && (
-                  <div id={`pvp-${it.id}`} className="m8-pv-panel" role="region" aria-label={`${it.label} menu`} onKeyDown={(e) => { if (e.key === "Escape") onOpen(null); }}>
+                  <div id={`pvp-${it.id}`} className={`m8-pv-panel m8-anim-${megaOf(it.megaId)?.dropAnim ?? st.dropAnim}`} role="region" aria-label={`${it.label} menu`} onKeyDown={(e) => { if (e.key === "Escape") onOpen(null); }}>
                     {it.behaviour === "mega" && megaOf(it.megaId) ? <MegaPanelView mega={megaOf(it.megaId)!} pages={pages} tokens={tokens} />
                       : <ul className="m8-pv-drop">{it.children.map((c) => <li key={c.id}>{c.label}</li>)}</ul>}
                   </div>
@@ -244,7 +257,7 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
 export function MegaPanelView({ mega, pages, tokens }: { mega: MegaDoc; pages: PageLike[]; tokens: ThemeTokens }) {
   const cols = mega.columns.length + (mega.featured.enabled ? 1 : 0);
   return (
-    <div className="m8-mega-view" style={{ gap: GAP_PX[mega.gap], gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, color: tokens.colors.text }}>
+    <div className={`m8-mega-view m8-surface-${mega.surface ?? "card"}`} style={{ gap: GAP_PX[mega.gap], gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, color: tokens.colors.text }}>
       {mega.columns.map((c) => (
         <div key={c.id}>
           <b>{c.title || "Untitled"}</b>

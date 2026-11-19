@@ -17,6 +17,7 @@
 import { DBX } from "./data";
 import { PAGE_TEMPLATES, REGISTRY, type BlockNode, type BlockType } from "./builder";
 import { footerCols, footerGroups, type FooterGroup } from "@/lib/footer";
+import type { MenuStyle } from "./menu-db";
 
 /* ---------------- shared regions (global chrome) ---------------- */
 
@@ -47,12 +48,14 @@ export interface HeaderChromeProps {
   cta: string;
   sticky: boolean;
   menuRef?: MenuRef;
+  menuStyle?: MenuStyle;
 }
 
 /** Footer variant props. `groups` is derived from the live menu at apply time; edited only in the Global Footer drawer. */
 export interface FooterChromeProps {
   groups: { title: string; links: string[] }[];
   menuRef?: MenuRef;
+  menuStyle?: MenuStyle;
 }
 
 export interface SharedRegion {
@@ -199,8 +202,8 @@ export interface LayoutFrame {
   layoutId: string | null;
   layoutName: string;
   announcement: { text: string; visible: boolean } | null;
-  header: { name: string; brand: string; nav: string[]; cta: string; variant: string } | null;
-  footer: { name: string; variant: string; columns: string[]; note: string; groups: FooterGroup[] } | null;
+  header: { name: string; brand: string; nav: string[]; cta: string; variant: string; menuStyle?: MenuStyle } | null;
+  footer: { name: string; variant: string; columns: string[]; note: string; groups: FooterGroup[]; menuStyle?: MenuStyle } | null;
   slotPolicy: SlotPolicy;
   issues: PreflightIssue[];
 }
@@ -563,14 +566,16 @@ export function frameOf(l: LayoutDraft): LayoutFrame {
       brand: headerProps.brand ?? "EuroMiles.in",
       nav: (headerProps.nav as string[]) ?? ["Home"],
       cta: headerProps.cta ?? "Enquire Now",
-      variant: h.name
+      variant: h.name,
+      menuStyle: headerProps.menuStyle
     } : null,
     footer: f && l.footer.visible ? {
       name: f.name,
       variant: f.name,
       columns: ["Brand", ...footerGroups(footerProps).map((g) => g.title)].slice(0, footerCols(footerProps)),
       note: String(footerProps.note ?? ""),
-      groups: footerGroups(footerProps)
+      groups: footerGroups(footerProps),
+      menuStyle: footerProps.menuStyle
     } : null,
     slotPolicy: l.slot.policy,
     issues

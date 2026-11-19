@@ -163,7 +163,7 @@ async def browser():
         ck("B11 editing the label changes the row", await pg.locator(".m8-row-label", has_text="Scholarships & aid").count() == 1)
         await pg.get_by_role("radio", name="Custom Link").click(); await pg.wait_for_timeout(120)
         await pg.get_by_label("Custom link address").fill("javascript:alert(1)")
-        await pg.get_by_role("button", name="Add to Menu").click(); await pg.wait_for_timeout(200)
+        await pg.get_by_role("button", name="Add to Menu", exact=True).click(); await pg.wait_for_timeout(200)
         ck("B13 a javascript: custom link is refused with a message",
            await pg.get_by_text("Address not allowed").count() >= 1)
 

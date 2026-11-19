@@ -395,6 +395,12 @@
         "name": "Module 8 — closing gaps (Layouts bindings, pinned preview, footer drawer)",
         "assertions": 14,
         "covers": "browser: Layouts owns the header and footer menu bindings (placement draft, Replace in Draft confirmation, header cannot be unassigned); Layouts preview pins the live placement's menu revision and shows its nav and footer groups; a menu-bound footer's columns are read-only in the Global Footer drawer and show sync state"
+      },
+      {
+        "file": "qa_m8_dnd.py",
+        "name": "Module 8 — drag and drop and style controls (v4)",
+        "assertions": 29,
+        "covers": "unit (menu-db.ts in Node): drop before, after and inside; refusals for depth, mega placement, own subtree, item limit; page drops; style defaults. browser: real HTML5 drags onto top, middle and bottom zones; refused drop toast; page dragged from Add Items; Alt+arrow fallback; five presets, hover, dropdown animation, mega surface and animation reach the preview"
       }
     ]
   },

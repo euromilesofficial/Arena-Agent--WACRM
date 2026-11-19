@@ -102,7 +102,7 @@ export function LayoutCanvas({ frame, seed, device, zoom, slotLabel, slotNote = 
               <div className="m7l-header">
                 <span className="m7l-brand">{frame.header.brand.replace(/\.in$/, "")}<em>.in</em></span>
                 {!narrow && (
-                  <nav className="m7l-nav">
+                  <nav className={`m7l-nav m8-preset-${frame.header.menuStyle?.preset ?? "classic"} m8-hover-${frame.header.menuStyle?.hoverFx ?? "underline"}`}>
                     {frame.header.nav.slice(0, narrow ? 2 : 6).map((l) => <span key={l}>{l}</span>)}
                   </nav>
                 )}

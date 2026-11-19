@@ -50,12 +50,34 @@ export interface MenuItem {
   rel: "" | "nofollow" | "sponsored";
 }
 
+/** Look and motion of a menu. Optional on the document, so older drafts keep working. */
+export type Preset = "classic" | "minimal" | "pill" | "underline" | "bold";
+export type DropAnim = "fade" | "slide" | "scale" | "none";
+export type HoverFx = "none" | "underline" | "lift" | "highlight";
+export interface MenuStyle { preset: Preset; dropAnim: DropAnim; hoverFx: HoverFx }
+export const PRESETS: { id: Preset; label: string; hint: string }[] = [
+  { id: "classic", label: "Classic", hint: "Plain text, thin active line" },
+  { id: "minimal", label: "Minimal", hint: "Small caps, generous spacing" },
+  { id: "pill", label: "Pill", hint: "Rounded highlight behind the item" },
+  { id: "underline", label: "Underline", hint: "Accent line grows under the item" },
+  { id: "bold", label: "Bold", hint: "Heavy weight on a dark bar" },
+];
+export const DROP_ANIMS: { id: DropAnim; label: string }[] = [
+  { id: "fade", label: "Fade in" }, { id: "slide", label: "Slide down" }, { id: "scale", label: "Scale up" }, { id: "none", label: "No animation" },
+];
+export const HOVER_FX: { id: HoverFx; label: string }[] = [
+  { id: "underline", label: "Underline" }, { id: "lift", label: "Lift" }, { id: "highlight", label: "Highlight" }, { id: "none", label: "None" },
+];
+export const MENU_STYLE_DEFAULT: MenuStyle = { preset: "classic", dropAnim: "fade", hoverFx: "underline" };
+export const styleOf = (d: { style?: Partial<MenuStyle> }): MenuStyle => ({ ...MENU_STYLE_DEFAULT, ...(d.style ?? {}) });
+
 export interface MenuDoc {
   name: string;
   description: string;
   type: MenuType;
   items: MenuItem[];
   mobile: { behaviour: MobileBehaviour; openFirstLevel: boolean };
+  style?: MenuStyle;
 }
 /** a layout slot this menu was compiled into, and the live revision it carried */
 export interface AppliedRef { layoutId: string; slot: Slot; regionId: string; variantId: string; variantName: string; at: string; liveRev: number }
@@ -77,7 +99,9 @@ export interface MenuRec {
 export interface MegaLink { id: string; label: string; link: LinkRef | null }
 export interface MegaColumn { id: string; title: string; links: MegaLink[] }
 export interface MegaFeatured { enabled: boolean; image: string; title: string; text: string; ctaLabel: string; ctaLink: LinkRef | null }
-export interface MegaDoc { name: string; gap: Gap; columns: MegaColumn[]; featured: MegaFeatured }
+export type Surface = "card" | "flat" | "bordered";
+export interface MegaDoc { name: string; gap: Gap; columns: MegaColumn[]; featured: MegaFeatured; surface?: Surface; dropAnim?: DropAnim }
+export const SURFACES: { id: Surface; label: string }[] = [{ id: "card", label: "Card" }, { id: "flat", label: "Flat" }, { id: "bordered", label: "Bordered" }];
 export interface MegaRec {
   id: string; siteId: string; rev: number; updatedAt: string; updatedBy: string;
   draft: MegaDoc; live: MegaDoc | null; liveAt: string | null; liveRev: number;
@@ -226,6 +250,51 @@ export function duplicateItem(items: MenuItem[], id: string): MenuItem[] {
 }
 
 /* ---------- placements (per layout slot) ---------- */
+/* ---------- drag and drop (visual) ----------
+   A drop lands before a row, after it, or inside it (as its last child). Returns null when the drop
+   breaks a rule: more than 3 levels, a mega item below the top level, or a mega item receiving children. */
+export type DropWhere = "before" | "after" | "inside";
+
+function insertRelative(items: MenuItem[], targetId: string, where: "before" | "after", node: MenuItem): MenuItem[] | null {
+  const i = items.findIndex((x) => x.id === targetId);
+  if (i >= 0) { const out = [...items]; out.splice(where === "before" ? i : i + 1, 0, node); return out; }
+  for (let k = 0; k < items.length; k++) {
+    const sub = insertRelative(items[k].children, targetId, where, node);
+    if (sub) { const out = [...items]; out[k] = { ...items[k], children: sub }; return out; }
+  }
+  return null;
+}
+
+/** Places `node` (not yet in `items`) at a drop position. */
+export function dropNode(items: MenuItem[], node: MenuItem, targetId: string, where: DropWhere): { items: MenuItem[] } | { error: string } {
+  const target = findItem(items, targetId);
+  if (!target) return { error: "That row is no longer in the menu." };
+  let next: MenuItem[] | null;
+  if (where === "inside") {
+    if (target.behaviour === "mega") return { error: "A mega menu's top item opens its panel, so it can't hold sub-items." };
+    if (levelOf(items, targetId) >= MENU_LIMITS.maxDepth - 1) return { error: `Maximum depth is ${MENU_LIMITS.maxDepth} levels. Move it up first.` };
+    next = addChild(items, targetId, node);
+    if (next === items) return { error: "That drop is not allowed." };
+  } else {
+    next = insertRelative(items, targetId, where, node);
+    if (!next) return { error: "That drop is not allowed." };
+  }
+  if (depthOf(next) > MENU_LIMITS.maxDepth) return { error: `Maximum depth is ${MENU_LIMITS.maxDepth} levels.` };
+  if (node.behaviour === "mega" && levelOf(next, node.id) > 0) return { error: "Mega menus attach to top-level items only." };
+  if (countItems(next) > MENU_LIMITS.maxItems) return { error: `A menu takes ${MENU_LIMITS.maxItems} items at most.` };
+  return { items: next };
+}
+
+/** Moves an existing item to a drop position. Refuses to drop a row into its own subtree. */
+export function moveNode(items: MenuItem[], dragId: string, targetId: string, where: DropWhere): { items: MenuItem[] } | { error: string } {
+  if (dragId === targetId) return { error: "Drop it somewhere else." };
+  const dragged = findItem(items, dragId);
+  if (!dragged) return { error: "That item is no longer in the menu." };
+  if (findItem(dragged.children, targetId)) return { error: "An item can't move inside itself." };
+  const without = removeItem(items, dragId);
+  return dropNode(without, dragged, targetId, where);
+}
+
 export const slotsOf = (p: Placements | null | undefined, layoutId: string): LayoutSlots => p?.[layoutId] ?? { header: null, footer: null };
 /** Every layout slot a menu fills in a placement set. */
 export function placedIn(p: Placements | null | undefined, menuId: string): { layoutId: string; slot: Slot }[] {
@@ -805,6 +874,7 @@ export const MenusAPI = {
       const nested = live.items.filter((i) => i.children.length > 0 || i.behaviour === "mega").length;
       if (nested) omitted.push(`dropdowns and mega panels (${nested}) — a header variant shows top-level labels only`);
       props.nav = visible.map((i) => i.label.trim()).filter(Boolean);
+      props.menuStyle = styleOf(live);
       written = (props.nav as string[]).length;
     } else if (region.kind === "footer") {
       const groups: FooterGroup[] = live.items
@@ -814,6 +884,7 @@ export const MenusAPI = {
       if (flat.length) omitted.push(`links with no column: ${flat.join(", ")}`);
       if (groups.length > 3) { omitted.push(`columns past the third: ${groups.slice(3).map((g) => g.title).join(", ")}`); groups.length = 3; }
       props.groups = groups;
+      props.menuStyle = styleOf(live);
       written = groups.length;
     } else {
       throw new MenuError("E_VALID", "Only a header or footer menu can be applied to shared chrome.");

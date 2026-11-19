@@ -14,11 +14,12 @@ import { DBX, type CmsPage } from "@/lib/data";
 import { themeFor } from "@/lib/theme-db";
 import {
   LOCATIONS, LOC_LABEL, MENU_LIMITS, MENU_TYPE_LABEL, MenuError, MenusAPI, addChild, blankLink, checkMega, checkMenu, countItems,
-  duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, moveBefore, moveItem,
+  DropWhere, duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, dropNode, moveNode, moveItem,
   outdentItem, placedIn, removeItem, sameDoc, slotsOf, statusOf, toTopLevel, urlOk, walk, hasChanges,
   type Audience, type Behaviour, type Loaded, type MegaDoc, type MenuDoc, type MenuIssue, type MenuItem, type MenuType, type Placements, type Slot, type VersionRec,
 } from "@/lib/menu-db";
 import { type Device, LinkEditor, MegaEditor, MegaPanelView, NavPreview } from "@/components/menus/MenuParts";
+import { DROP_ANIMS, HOVER_FX, PRESETS, styleOf, type DropAnim, type HoverFx, type Preset } from "@/lib/menu-db";
 import { AUD_LABEL, Accordion, ago, ChromeList, CreateMegaModal, CreateMenuModal, Head, Kpi, depthOfId, placeLabel, renderTabs, when, type ModalState, type Tab } from "./MenusParts";
 
 type Draft<T> = { doc: T; base: number };
@@ -65,6 +66,8 @@ export function Menus() {
   const [manageQ, setManageQ] = useState("");
   const [manageFilter, setManageFilter] = useState<"all" | "published" | "draft" | "assigned" | "unassigned">("all");
   const [dragId, setDragId] = useState<string | null>(null);
+  const [dragPage, setDragPage] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<{ id: string; where: DropWhere } | null>(null);
   const [rowMenu, setRowMenu] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
   const [previewing, setPreviewing] = useState(false);
@@ -448,6 +451,35 @@ export function Menus() {
     setMegaDoc(itemSel.megaId, { ...gd, columns: [...gd.columns, ...extra] });
   };
 
+  /* ---------- drag and drop ---------- */
+  const zoneOf = (e: { clientY: number; currentTarget: Element }): DropWhere => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const y = (e.clientY - r.top) / Math.max(1, r.height);
+    return y < 0.25 ? "before" : y > 0.75 ? "after" : "inside";
+  };
+  const dropOnRow = (targetId: string, targetLabel: string, where: DropWhere) => {
+    if (!doc || readOnly) return;
+    const fromPage = dragPage;
+    const fromRow = dragId;
+    setDragId(null); setDragPage(null); setDropHint(null);
+    let res: { items: MenuItem[] } | { error: string };
+    let verb: string;
+    if (fromPage) {
+      const page = pages.find((x) => x.id === fromPage);
+      res = dropNode(doc.items, blankLink(page?.title ?? "Page", { kind: "page", pageId: fromPage }), targetId, where);
+      verb = `Added ${page?.title ?? "page"}`;
+    } else if (fromRow) {
+      if (fromRow === targetId) return;
+      res = moveNode(doc.items, fromRow, targetId, where);
+      verb = `Moved ${findItem(doc.items, fromRow)?.label ?? "item"}`;
+    } else return;
+    if ("error" in res) { app.toast({ type: "error", title: "Can't drop it here", sub: res.error }); setAnnounce(res.error); return; }
+    setDoc({ ...doc, items: res.items });
+    if (where === "inside") setCollapsed((c) => { const n = new Set(c); n.delete(targetId); return n; });
+    const place = where === "inside" ? `inside ${targetLabel}` : `${where} ${targetLabel}`;
+    setAnnounce(`${verb} ${place}.`);
+  };
+
   /* ---------- tree rows ---------- */
   const renderRows = (items: MenuItem[], depth: number): ReactNode =>
     items.map((it) => {
@@ -463,7 +495,7 @@ export function Menus() {
         <li key={it.id} role="none" className={`m8-node depth-${depth}`}>
           <div
             role="treeitem" aria-level={depth + 1} aria-selected={sel} aria-expanded={kids ? !isCollapsed : undefined}
-            tabIndex={0} className={`m8-row${sel ? " is-sel" : ""}${it.behaviour === "mega" ? " is-mega" : ""}${dragId === it.id ? " is-drag" : ""}`}
+            tabIndex={0} className={`m8-row${sel ? " is-sel" : ""}${it.behaviour === "mega" ? " is-mega" : ""}${dragId === it.id ? " is-drag" : ""}${dropHint?.id === it.id && (dragId || dragPage) ? ` is-drop-${dropHint.where}` : ""}`}
             onClick={() => { setItemId(it.id); setItemTab("settings"); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setItemId(it.id); setItemTab("settings"); return; }
@@ -473,18 +505,9 @@ export function Menus() {
               if (e.key === "ArrowRight" && e.shiftKey) { e.preventDefault(); indent(it.id); }
               if (e.key === "ArrowLeft" && e.shiftKey) { e.preventDefault(); outdent(it.id); }
             }}
-            onDragOver={(e) => { if (!readOnly && dragId) e.preventDefault(); }}
-            onDrop={(e) => {
-              e.preventDefault();
-              const from = dragId ?? e.dataTransfer.getData("text/plain");
-              setDragId(null);
-              if (from && from !== it.id && doc) {
-                const next = moveBefore(doc.items, from, it.id);
-                if (next === doc.items) { setAnnounce("That move is not allowed. Items move among siblings only."); return; }
-                setDoc({ ...doc, items: next });
-                setAnnounce(`Moved ${findItem(doc.items, from)?.label ?? "item"} above ${it.label}.`);
-              }
-            }}
+            onDragOver={(e) => { if (!readOnly && (dragId || dragPage)) { e.preventDefault(); e.dataTransfer.dropEffect = dragPage ? "copy" : "move"; const where = zoneOf(e); if (dropHint?.id !== it.id || dropHint.where !== where) setDropHint({ id: it.id, where }); } }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropHint((h) => (h?.id === it.id ? null : h)); }}
+            onDrop={(e) => { e.preventDefault(); dropOnRow(it.id, it.label || "item", zoneOf(e)); }}
           >
             <span className="m8-grip" draggable={!readOnly} aria-hidden="true" title="Drag to reorder. Or Alt + arrow keys; Alt + Shift + arrows change level."
               onDragStart={(e) => { e.dataTransfer.setData("text/plain", it.id); e.dataTransfer.effectAllowed = "move"; setDragId(it.id); }} onDragEnd={() => setDragId(null)}>
@@ -688,7 +711,7 @@ export function Menus() {
                             <input aria-label="Search pages" className="m8-search" placeholder="Search pages..." value={pageQ} onChange={(e) => setPageQ(e.target.value)} />
                             <ul className="m8-pick m8-check">
                               {standardPages.map((p) => (
-                                <li key={p.id}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
+                                <li key={p.id} className="m8-pagedrag" draggable={!readOnly} onDragStart={(e) => { e.dataTransfer.setData("text/plain", `page:${p.id}`); e.dataTransfer.effectAllowed = "copy"; setDragPage(p.id); }} onDragEnd={() => { setDragPage(null); setDropHint(null); }}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
                                   onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
                                   <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
                               ))}
@@ -698,7 +721,7 @@ export function Menus() {
                           <Accordion title={`Landing pages (${landingPages.length}/${allLanding})`}>
                             <ul className="m8-pick m8-check">
                               {landingPages.map((p) => (
-                                <li key={p.id}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
+                                <li key={p.id} className="m8-pagedrag" draggable={!readOnly} onDragStart={(e) => { e.dataTransfer.setData("text/plain", `page:${p.id}`); e.dataTransfer.effectAllowed = "copy"; setDragPage(p.id); }} onDragEnd={() => { setDragPage(null); setDropHint(null); }}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
                                   onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
                                   <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
                               ))}
@@ -734,6 +757,32 @@ export function Menus() {
                       </Field>
                       <div className="m8-inline"><Switch checked={d.mobile.openFirstLevel} onChange={(v) => !readOnly && patchDoc((x) => ({ ...x, mobile: { ...x.mobile, openFirstLevel: v } }))} label="Open first group" /><span>Open the first group on mobile</span></div>
                       <p className="m8-muted">Parent items with children are not links on mobile. They open to show their children. Footer menus are not used as mobile header content.</p>
+                      <fieldset className="m8-appearance" disabled={readOnly}>
+                        <legend className="m8-lbl">Appearance</legend>
+                        <div className="m8-presets" role="radiogroup" aria-label="Menu style preset">
+                          {PRESETS.map((pr) => (
+                            <button key={pr.id} type="button" role="radio" aria-checked={styleOf(d).preset === pr.id}
+                              className={`m8-preset-card m8-preset-${pr.id}${styleOf(d).preset === pr.id ? " is-on" : ""}`}
+                              onClick={() => patchDoc((x) => ({ ...x, style: { ...styleOf(x), preset: pr.id as Preset } }))}>
+                              <span className="m8-preset-demo" aria-hidden="true"><i>Home</i><i>Programs</i><i>About</i></span>
+                              <b>{pr.label}</b><small>{pr.hint}</small>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="m8-appearance-row">
+                          <Field label="Dropdown animation">
+                            <select aria-label="Dropdown animation" value={styleOf(d).dropAnim} onChange={(e) => patchDoc((x) => ({ ...x, style: { ...styleOf(x), dropAnim: e.target.value as DropAnim } }))}>
+                              {DROP_ANIMS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+                            </select>
+                          </Field>
+                          <Field label="Hover effect">
+                            <select aria-label="Hover effect" value={styleOf(d).hoverFx} onChange={(e) => patchDoc((x) => ({ ...x, style: { ...styleOf(x), hoverFx: e.target.value as HoverFx } }))}>
+                              {HOVER_FX.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+                            </select>
+                          </Field>
+                        </div>
+                        <p className="m8-muted">Style applies to this menu in the header and footer. Preview and publish use the same style.</p>
+                      </fieldset>
                       <div className="m8-acts">
                         <Btn icon="copy" disabled={readOnly || menus.length >= 12} onClick={async () => { try { const c = await MenusAPI.duplicateMenu(m.id); setTick((t) => t + 1); selectMenu(c.id, true); app.toast({ type: "success", title: `${c.draft.name} created` }); } catch (e) { toastErr(e, "Could not duplicate"); } }}>Duplicate Menu</Btn>
                         <Btn icon="link" onClick={() => app.go("layouts")}>Open in Layouts</Btn>
@@ -774,7 +823,7 @@ export function Menus() {
                   {d.items.length === 0 ? (
                     <EmptyState icon="menu" title="This menu is empty" desc="Add pages or a custom link from the left." />
                   ) : (
-                    <ul role="tree" aria-label="Menu items" className="m8-tree" onDragOver={(e) => { if (dragId) e.preventDefault(); }}>
+                    <ul role="tree" aria-label="Menu items" className="m8-tree" onDragOver={(e) => { if (dragId || dragPage) e.preventDefault(); }} onDragLeave={() => setDropHint(null)}>
                       {renderRows(d.items, 0)}
                     </ul>
                   )}
@@ -925,7 +974,7 @@ export function Menus() {
                   </div>
                 </div>
                 <NavPreview items={d.items} megaOf={(id) => (id ? megaDocOf(id) : undefined)} pages={pages as never} tokens={themeFor(siteId).live.tokens}
-                  device={device} brand={siteName} mobileBehaviour={device === "mobile" || device === "tablet" ? "accordion" : "drawer"} openFirstLevel={d.mobile.openFirstLevel}
+                  device={device} brand={siteName} menuStyle={styleOf(d)} mobileBehaviour={device === "mobile" || device === "tablet" ? "accordion" : "drawer"} openFirstLevel={d.mobile.openFirstLevel}
                   openId={openPanel} onOpen={setOpenPanel} label={`${d.name} preview`} />
               </section>
             </>
@@ -1139,7 +1188,7 @@ export function Menus() {
             <div className="m8-panel">
               <h4 className="m8-h4">Website Navigation Preview ({deviceLabel})</h4>
               <NavPreview items={d ? d.items : []} megaOf={(id) => (id ? megaDocOf(id) : undefined)} pages={pages as never} tokens={themeFor(siteId).live.tokens}
-                device={device} brand={siteName} mobileBehaviour={device === "desktop" ? "drawer" : "accordion"} openFirstLevel={d ? d.mobile.openFirstLevel : false}
+                device={device} brand={siteName} menuStyle={d ? styleOf(d) : undefined} mobileBehaviour={device === "desktop" ? "drawer" : "accordion"} openFirstLevel={d ? d.mobile.openFirstLevel : false}
                 openId={openPanel} onOpen={setOpenPanel} label={`${d ? d.name : "Menu"} preview`} />
             </div>
             <div className="m8-panel" id="m8-versions">
@@ -1216,7 +1265,7 @@ export function Menus() {
             {(["desktop", "tablet", "mobile"] as Device[]).map((dv) => <button key={dv} role="radio" aria-checked={device === dv} onClick={() => setDevice(dv)}>{dv[0].toUpperCase() + dv.slice(1)}</button>)}
           </div>
           <NavPreview items={d.items} megaOf={(id) => (id ? megaDocOf(id) : undefined)} pages={pages as never} tokens={themeFor(siteId).live.tokens}
-            device={device} brand={siteName} mobileBehaviour="accordion" openFirstLevel={d.mobile.openFirstLevel}
+            device={device} brand={siteName} menuStyle={styleOf(d)} mobileBehaviour="accordion" openFirstLevel={d.mobile.openFirstLevel}
             openId={openPanel} onOpen={setOpenPanel} label={`${d.name} preview`} />
         </Modal>
       )}
