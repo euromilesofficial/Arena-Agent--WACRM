@@ -36,12 +36,19 @@ export function ModalHost() {
     const step = publishState === "running" ? 2 : 0;
 
     const menuIssues = releaseMenuIssues(app.siteId === "all" ? "site_main" : app.siteId);
+    /* Each check reads real data. A failing domain or a poor vitals grade blocks the release. */
+    /* The release publishes EuroMiles Main (site_main); its domains decide the DNS and SSL checks. */
+    const releaseSite = app.siteId === "all" || !app.siteId ? "site_main" : app.siteId;
+    const doms = (d.domains ?? []).filter((x) => x.siteId === releaseSite);
+    const dnsOk = doms.length > 0 && doms.every((x) => x.dns === "verified");
+    const sslOk = doms.length > 0 && doms.every((x) => x.ssl === "active");
+    const vitalsOk = d.vitals.grade === "good";
     const checks: [string, boolean][] = [
-      ["DNS verified for all sites", true],
-      ["SSL certificates active", true],
+      [doms.length ? `DNS verified for ${doms.length} domain${doms.length === 1 ? "" : "s"} on this site` : "DNS: no domain connected", dnsOk],
+      [doms.length ? "SSL certificates active" : "SSL: no domain connected", sslOk],
       ["No broken menu references", menuIssues.length === 0],
       [`${picked.length} of ${changed.length} changed pages included`, picked.length > 0],
-      ["Core Web Vitals within budget", true]
+      [`Core Web Vitals within budget (${d.vitals.grade})`, vitalsOk]
     ];
 
     if (step === 0) {
@@ -76,7 +83,7 @@ export function ModalHost() {
         footer={<>
           <Btn variant="ghost" onClick={() => setPublishState("idle")}>Back</Btn>
           <span className="grow" />
-          <Btn variant="primary" loading={busy} onClick={async () => {
+          <Btn variant="primary" loading={busy} disabled={!checks.every(([, ok]) => ok)} title={checks.every(([, ok]) => ok) ? undefined : "A release check failed. Fix it before publishing."} onClick={async () => {
             setBusy(true);
             const res = await app.publishRelease();
             setBusy(false);

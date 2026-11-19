@@ -107,10 +107,10 @@ scheduled visibility; animation timeline editors; menu-click analytics without a
 
 Closed in the completion pass (see §13). Still open:
 
-- The release modal's DNS, SSL and Core Web Vitals checks are still fixed passes, as before. They belong to the release gate, not Module 8.
-- §31.8 mapping is approximate until the owner re-pastes the verbatim v1.1 text.
+- The release modal's DNS, SSL and Core Web Vitals checks were fixed passes. Closed in §16: they now read the release site's domains and the vitals grade.
+- §31.8 mapping is approximate until the owner re-pastes the verbatim v1.1 text. The text is not in the workspace, so this cannot be closed here.
 - README §18 conflict (M8 "after M11" vs built, sidebar under Manage): owner decision.
-- Tablet and mobile layouts: checked by `qa_m8_responsive.py` (no sideways scroll at 1280, 1024 and 768; builder stacks and tablet drawer at 768) and by screenshot at 768 px. Phone width (390 px) is not yet in the QA suite.
+- Tablet and mobile layouts: checked by `qa_m8_responsive.py` (no sideways scroll at 1280, 1024 and 768; builder stacks and tablet drawer at 768) and by screenshot at 768 px. Phone width (390 px) is in the QA suite (R9).
 
 ## 12. Mockup-to-build mapping (v4 visual pass)
 
@@ -195,3 +195,13 @@ Open gaps after this pass:
 Decision: README §18 says M8 comes "after M11", but the built module sits under Manage in the sidebar and has its own tab set. The assistant decided to keep the built position and record it as a deliberate placement, not a bug. The owner can overrule it later.
 
 Still deliberately out of scope: mega panels on the live header (the header is a flat `nav`, per M7); a "Custom" column layout (limits are 2 to 4 columns); a separate phone-width screenshot suite.
+
+## 16. Release checks and phone width
+
+| Gap | Resolution | Evidence |
+|---|---|---|
+| Release modal DNS, SSL and Core Web Vitals were hard-coded to pass | DNS and SSL read the release site's domains (`site_main`, the site the modal publishes). Vitals reads the live grade. A failed check disables Publish with a reason. | `ModalHost.tsx` preflight; `qa_flows.py` 15 (publish passes on seed data), 38/38 |
+| Scope choice | A pending domain on another site does not block EuroMiles Main's release. The first version checked all sites and blocked the release, which the assistant judged too broad; this was corrected and re-tested. | `qa_flows.py` 38/38 |
+| Phone width (390 px) not tested | Added to the responsive suite: builder stacks, phone drawer, tappable rows at least 36 px | `qa_m8_responsive.py` R9a–c, `/tmp/resp_390_builder.png` |
+
+Still open: §31.8 verbatim text is not in the workspace, so the fifteen-test mapping cannot be fully verified here.

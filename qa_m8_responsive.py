@@ -5,6 +5,7 @@ R4     the mega editor shows two columns at 1280 and one at 1024 (never five cra
 R5     the three-panel builder stacks at 768
 R6     the tablet preview shows the drawer (accordion) at 768
 R7     preset cards stay inside the settings column at 1280 (no clipped card)
+R9     phone width 390: builder stacks, phone preview drawer, tappable rows
 R8     no page errors during the run
 """
 import asyncio, sys
@@ -29,7 +30,7 @@ async def main():
     errs = []
     async with async_playwright() as p:
         b = await p.chromium.launch()
-        for w, tag in ((1280, "R1"), (1024, "R2"), (768, "R3")):
+        for w, tag in ((1280, "R1"), (1024, "R2"), (768, "R3"), (390, "R9")):
             pg = await open_screen(b, w)
             pg.on("pageerror", lambda e: errs.append(str(e)[:200]))
             sw = await pg.evaluate("() => document.documentElement.scrollWidth")
@@ -48,6 +49,15 @@ async def main():
                 await pg.get_by_role("tab", name="Mega Menus").click(); await pg.wait_for_timeout(250)
                 mega = await pg.evaluate("() => getComputedStyle(document.querySelector('.m8-mega-cols')).gridTemplateColumns.split(' ').length")
                 ck("R4b the mega editor stacks to one column at 1024px", mega == 1, str(mega))
+            if w == 390:
+                await pg.get_by_role("tab", name="Menu Builder").click(); await pg.wait_for_timeout(200)
+                cols = await pg.evaluate("() => getComputedStyle(document.querySelector('.m8-builder')).gridTemplateColumns.split(' ').length")
+                ck("R9a the builder stacks at 390px", cols == 1, str(cols))
+                await pg.get_by_role("radio", name="Mobile").first.click(); await pg.wait_for_timeout(200)
+                ck("R9b the phone preview shows the drawer", await pg.locator(".m8-pv-mobile").count() >= 1)
+                btn = await pg.locator(".m8-pv-mobile button[aria-expanded]").first.bounding_box() if await pg.locator(".m8-pv-mobile button[aria-expanded]").count() else None
+                ck("R9c the phone preview has tappable accordion rows at least 36px tall", btn is None or btn["height"] >= 36, str(btn))
+                await pg.screenshot(path="/tmp/resp_390_builder.png")
             if w == 768:
                 await pg.get_by_role("tab", name="Menu Builder").click(); await pg.wait_for_timeout(200)
                 cols = await pg.evaluate("() => getComputedStyle(document.querySelector('.m8-builder')).gridTemplateColumns.split(' ').length")

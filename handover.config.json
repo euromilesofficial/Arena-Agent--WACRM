@@ -405,8 +405,8 @@
       {
         "file": "qa_m8_responsive.py",
         "name": "Module 8 — responsive (1280, 1024, 768)",
-        "assertions": 9,
-        "covers": "browser: no sideways page scroll at 1280, 1024 and 768; mega editor two columns at 1280 and one at 1024; preset cards inside the settings column; builder stacks at 768; tablet preview shows the drawer; no page errors"
+        "assertions": 13,
+        "covers": "browser: no sideways page scroll at 1280, 1024 and 768; mega editor two columns at 1280 and one at 1024; preset cards inside the settings column; builder stacks at 768; tablet preview shows the drawer; phone 390px builder stacks, phone drawer, tappable rows; no page errors"
       }
     ]
   },

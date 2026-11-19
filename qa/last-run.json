@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19 21:35:07 UTC",
+  "generatedAt": "2026-11-19 22:44:12 UTC",
   "node": "v20.20.2",
   "artifact": "WACRM-CMS.html",
   "suites": [
@@ -7,175 +7,175 @@
       "file": "qa_ai.py",
       "passed": 60,
       "failed": 0,
-      "seconds": 36.877
+      "seconds": 37.164
     },
     {
       "file": "qa_theme.py",
       "passed": 241,
       "failed": 0,
-      "seconds": 116.474
+      "seconds": 116.98
     },
     {
       "file": "qa_builder.py",
       "passed": 98,
       "failed": 0,
-      "seconds": 43.359
+      "seconds": 43.069
     },
     {
       "file": "qa_states_m4.py",
       "passed": 47,
       "failed": 0,
-      "seconds": 44.194
+      "seconds": 43.744
     },
     {
       "file": "qa_pages.py",
       "passed": 106,
       "failed": 0,
-      "seconds": 121.878
+      "seconds": 121.661
     },
     {
       "file": "qa_states_m3.py",
       "passed": 40,
       "failed": 0,
-      "seconds": 56.837
+      "seconds": 56.884
     },
     {
       "file": "qa_module2.py",
       "passed": 48,
       "failed": 0,
-      "seconds": 35.758
+      "seconds": 35.257
     },
     {
       "file": "qa_states_m1.py",
       "passed": 39,
       "failed": 0,
-      "seconds": 45.735
+      "seconds": 45.528
     },
     {
       "file": "qa_flows.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 54.775
+      "seconds": 55.46
     },
     {
       "file": "qa_react.py",
       "passed": null,
       "failed": 0,
-      "seconds": 4.24
+      "seconds": 4.395
     },
     {
       "file": "qa_library.py",
       "passed": 90,
       "failed": 0,
-      "seconds": 54.324
+      "seconds": 55.303
     },
     {
       "file": "qa_layouts.py",
       "passed": 99,
       "failed": 0,
-      "seconds": 34.662
+      "seconds": 35.319
     },
     {
       "file": "qa_states_m7.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 44.537
+      "seconds": 44.566
     },
     {
       "file": "qa_import.py",
       "passed": 65,
       "failed": 0,
-      "seconds": 33.739
+      "seconds": 33.338
     },
     {
       "file": "qa_m7_links.py",
       "passed": 45,
       "failed": 0,
-      "seconds": 35.493
+      "seconds": 36.402
     },
     {
       "file": "qa_m7_export_edit.py",
       "passed": 24,
       "failed": 0,
-      "seconds": 10.321
+      "seconds": 10.382
     },
     {
       "file": "qa_m7_inline.py",
       "passed": 15,
       "failed": 0,
-      "seconds": 12.72
+      "seconds": 13.407
     },
     {
       "file": "qa_builder_inline.py",
       "passed": 30,
       "failed": 0,
-      "seconds": 25.083
+      "seconds": 25.697
     },
     {
       "file": "qa_m4_inline.py",
       "passed": 17,
       "failed": 0,
-      "seconds": 11.621
+      "seconds": 11.86
     },
     {
       "file": "qa_states.py",
       "passed": 25,
       "failed": 0,
-      "seconds": 37.545
+      "seconds": 37.611
     },
     {
       "file": "qa_m7_ai.py",
       "passed": 18,
       "failed": 0,
-      "seconds": 13.157
+      "seconds": 13.323
     },
     {
       "file": "qa_m7_footer.py",
       "passed": 17,
       "failed": 0,
-      "seconds": 8.976
+      "seconds": 9.358
     },
     {
       "file": "qa_m7_diff.py",
       "passed": 16,
       "failed": 0,
-      "seconds": 6.06
+      "seconds": 6.297
     },
     {
       "file": "qa_m7_zip.py",
       "passed": 20,
       "failed": 0,
-      "seconds": 8.857
+      "seconds": 8.714
     },
     {
       "file": "qa_m8_menus.py",
       "passed": 69,
       "failed": 0,
-      "seconds": 36.791
+      "seconds": 36.433
     },
     {
       "file": "qa_m8_v3.py",
       "passed": 35,
       "failed": 0,
-      "seconds": 18.646
+      "seconds": 18.733
     },
     {
       "file": "qa_m8_final.py",
       "passed": 14,
       "failed": 0,
-      "seconds": 18.997
+      "seconds": 19.078
     },
     {
       "file": "qa_m8_dnd.py",
       "passed": 29,
       "failed": 0,
-      "seconds": 8.212
+      "seconds": 8.295
     },
     {
       "file": "qa_m8_responsive.py",
-      "passed": 9,
+      "passed": 13,
       "failed": 0,
-      "seconds": 8.288
+      "seconds": 10.645
     }
   ]
 }

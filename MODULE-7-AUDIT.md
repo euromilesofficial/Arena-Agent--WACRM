@@ -144,4 +144,4 @@ Recorded against the M7 spec. What changed, and what is still open.
   slot. The Layouts header modal shows the bound menu, its sync state and an Edit in Menus link, and
   replaces the free comma list with the menu's links. Editing bindings from Layouts is still open;
   they are edited from Menus (Manage Placements).
-- **Release modal other checks** (DNS, SSL, Core Web Vitals) remain fixed passes, as before.
+- **Release modal other checks** (DNS, SSL, Core Web Vitals) now read real data (release site's domains; vitals grade). A failed check disables Publish.

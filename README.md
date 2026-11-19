@@ -642,7 +642,7 @@ Rules baked into those contracts, and into the UI:
 ## 18. Roadmap
 
 M7 is built (`#/layouts`, 99 + 38 checks) — see `MODULE-7-BUILD.md` for what shipped and
-the honest deltas. M8 Menus & Navigation is rebuilt to the owner's three mockups and spec v1.1 §31 (`#/menus`; 69 checks in `qa_m8_menus.py`, 35 in `qa_m8_v3.py`, 14 in `qa_m8_final.py`, 29 in `qa_m8_dnd.py` (drag and drop, style presets, hover, animation, mega surface), 9 in `qa_m8_responsive.py` (1280, 1024, 768) for the Layouts bindings, the pinned preview and the footer drawer) — see `MODULE-8-SPEC.md`. The v1.1 text was not saved verbatim; a working copy is in the file and the owner should re-paste it.
+the honest deltas. M8 Menus & Navigation is rebuilt to the owner's three mockups and spec v1.1 §31 (`#/menus`; 69 checks in `qa_m8_menus.py`, 35 in `qa_m8_v3.py`, 14 in `qa_m8_final.py`, 29 in `qa_m8_dnd.py` (drag and drop, style presets, hover, animation, mega surface), 13 in `qa_m8_responsive.py` (1280, 1024, 768, 390) for the Layouts bindings, the pinned preview and the footer drawer) — see `MODULE-8-SPEC.md`. The v1.1 text was not saved verbatim; a working copy is in the file and the owner should re-paste it.
 The remaining modules are below.
 
 > **Decision (sequencing, made by the assistant and reported):** the table below lists Menus &
