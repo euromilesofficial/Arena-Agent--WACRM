@@ -382,7 +382,7 @@
         "file": "qa_m8_menus.py",
         "name": "Module 8 — Menus & Navigation",
         "assertions": 69,
-        "covers": "unit (menu-db.ts in Node): link and depth rules, mega checks, sibling reorder, typed links, counts; browser: six tabs, menu picker, add items, item settings, mega panel editor, preview devices, Validate Links, publish and versions, rollback, placements, delete guards, Viewer read-only, prototype states"
+        "covers": "unit (menu-db.ts in Node): link and depth rules, mega checks, sibling reorder, typed links, counts; browser: five tabs (Settings moved into Menu Builder), menu picker, add items, item settings, mega panel editor, preview devices, Validate Links, publish and versions, rollback, placements, delete guards, Viewer read-only, prototype states"
       },
       {
         "file": "qa_m8_v3.py",

@@ -5,7 +5,7 @@ import { Btn, Field, Modal, Pill } from "@/components/ui";
 import type { LayoutDraft, SharedRegion } from "@/lib/layout-db";
 import { LOC_LABEL, MENU_TYPE_LABEL, MenusAPI, type Audience, type MenuRec, type MenuType, type Slot, type VersionRec, type MenuItem } from "@/lib/menu-db";
 
-export type Tab = "builder" | "manage" | "placements" | "mega" | "history" | "settings";
+export type Tab = "builder" | "manage" | "placements" | "mega" | "history";
 export type ModalState =
   | null
   | { kind: "create-menu" } | { kind: "create-mega" }
@@ -50,7 +50,6 @@ export function renderTabs(tab: Tab, setTab: (t: Tab) => void): ReactNode {
     { id: "placements", label: "Menu Placements", icon: "target" },
     { id: "mega", label: "Mega Menus", icon: "columns" },
     { id: "history", label: "Version History", icon: "clock" },
-    { id: "settings", label: "Settings", icon: "settings" },
   ];
   return items.map((t) => (
     <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? "is-on" : ""} onClick={() => setTab(t.id)}>

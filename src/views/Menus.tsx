@@ -71,6 +71,9 @@ export function Menus() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newType, setNewType] = useState<MenuType>("main");
+  const [leftTab, setLeftTab] = useState<"add" | "settings">("add");
+  const [addMode, setAddMode] = useState<"pages" | "custom">("pages");
+  const [placeLay, setPlaceLay] = useState<string>("");
 
   /* ---------- load ---------- */
   const reload = useCallback(async () => {
@@ -420,6 +423,30 @@ export function Menus() {
   const hasPast = !!menu && (hist[menu.id]?.past.length ?? 0) > 0;
   const hasFuture = !!menu && (hist[menu.id]?.future.length ?? 0) > 0;
   const liveNames = (id: string) => data.menus.find((x) => x.id === id)?.draft.name ?? "menu";
+  const parentIds = (items: MenuItem[]): string[] => items.flatMap((it) => (it.children.length ? [it.id, ...parentIds(it.children)] : []));
+  const versionsDesc = [...data.versions].sort((a, b) => b.v - a.v);
+  const liveRec = versionsDesc.find((v) => v.v === liveVersion) ?? null;
+  const prevVersion = versionsDesc.find((v) => v.v < liveVersion) ?? null;
+  const placeLayout = layouts.find((l) => l.id === placeLay) ?? layouts[0];
+  const attachedMega = itemSel?.megaId ? megaDocOf(itemSel.megaId) : undefined;
+  const attachedCols = attachedMega?.columns.length ?? 0;
+  const slotNames = (menuId: string) => placed(menuId).map((p) => LOC_LABEL[p.slot]);
+  const deviceLabel = device[0].toUpperCase() + device.slice(1);
+
+  /** sets the column count of the mega panel attached to the selected item; refuses to drop filled columns */
+  const setMegaCols = (n: number) => {
+    if (!itemSel?.megaId || readOnly) return;
+    const gd = megaDocOf(itemSel.megaId);
+    if (!gd) return;
+    if (n < gd.columns.length) {
+      const filled = gd.columns.slice(n).findIndex((c) => c.links.length > 0);
+      if (filled >= 0) { app.toast({ type: "error", title: "Move the links out of that column first", sub: `Column ${n + filled + 1} still has links.` }); return; }
+      setMegaDoc(itemSel.megaId, { ...gd, columns: gd.columns.slice(0, n) });
+      return;
+    }
+    const extra = Array.from({ length: n - gd.columns.length }, (_, i) => ({ id: `mc_${Math.random().toString(36).slice(2, 9)}`, title: `Column ${gd.columns.length + i + 1}`, links: [] }));
+    setMegaDoc(itemSel.megaId, { ...gd, columns: [...gd.columns, ...extra] });
+  };
 
   /* ---------- tree rows ---------- */
   const renderRows = (items: MenuItem[], depth: number): ReactNode =>
@@ -427,7 +454,7 @@ export function Menus() {
       const kids = it.children.length > 0;
       const isCollapsed = collapsed.has(it.id);
       const sel = itemId === it.id;
-      const badge = it.behaviour === "mega" ? "Mega Menu" : it.behaviour === "dropdown" ? "Dropdown" : it.link?.kind === "url" ? "Link" : it.link?.kind === "anchor" ? "Anchor" : "Page";
+      const badge = it.behaviour === "mega" ? "Mega Menu" : it.behaviour === "dropdown" || kids ? "Dropdown" : it.link?.kind === "url" ? "Link" : it.link?.kind === "anchor" ? "Anchor" : "Page";
       const mine = (checks.byMenu[menu?.id ?? ""] ?? []).filter((i) => i.itemId === it.id);
       const hasErr = mine.some((b) => b.severity === "error");
       const hasWarn = mine.some((b) => b.severity === "warn");
@@ -463,18 +490,18 @@ export function Menus() {
               onDragStart={(e) => { e.dataTransfer.setData("text/plain", it.id); e.dataTransfer.effectAllowed = "move"; setDragId(it.id); }} onDragEnd={() => setDragId(null)}>
               <Icon name="grip" size={14} />
             </span>
-            {kids ? (
-              <button type="button" className="m8-chev" aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${it.label}`}
-                onClick={(e) => { e.stopPropagation(); setCollapsed((s) => { const n = new Set(s); if (n.has(it.id)) n.delete(it.id); else n.add(it.id); return n; }); }}>
-                <Icon name={isCollapsed ? "chevRight" : "chevDown"} size={12} />
-              </button>
-            ) : <span className="m8-chev-gap" />}
-            <Icon name={it.behaviour === "mega" ? "columns" : it.behaviour === "dropdown" ? "layers" : "file"} size={14} />
+            <Icon name={it.behaviour === "mega" ? "columns" : it.behaviour === "dropdown" || kids ? "layers" : it.link?.kind === "url" ? "link" : "file"} size={14} />
             <span className="m8-row-label">{it.label || <em>Untitled</em>}</span>
             {hasErr && <span className="m8-flag is-err" title="Has errors"><Icon name="alert" size={11} /></span>}
             {!hasErr && hasWarn && <span className="m8-flag is-warn" title="Has warnings"><Icon name="alert" size={11} /></span>}
             {it.audience !== "everyone" && <span className="m8-aud">{AUD_LABEL[it.audience]}</span>}
             <span className={`m8-type${it.behaviour === "mega" ? " is-mega" : ""}`}>{badge}</span>
+            {kids && (
+              <button type="button" className="m8-chev" aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${it.label}`}
+                onClick={(e) => { e.stopPropagation(); setCollapsed((s) => { const n = new Set(s); if (n.has(it.id)) n.delete(it.id); else n.add(it.id); return n; }); }}>
+                <Icon name={isCollapsed ? "chevRight" : "chevDown"} size={12} />
+              </button>
+            )}
             <span className="m8-row-acts" onClick={(e) => e.stopPropagation()}>
               <button type="button" className="m8-icon" aria-label={`Move ${it.label} up`} disabled={readOnly} onClick={() => move(it.id, -1)}><Icon name="chevUp" size={12} /></button>
               <button type="button" className="m8-icon" aria-label={`Move ${it.label} down`} disabled={readOnly} onClick={() => move(it.id, 1)}><Icon name="chevDown" size={12} /></button>
@@ -501,10 +528,82 @@ export function Menus() {
       );
     });
 
+  /** one placement slot row, used on Manage Menus and in Menu Placements */
+  const slotRows = (l: (typeof layouts)[number]) => LOCATIONS.map((slot) => {
+    const visible = slot === "header" ? l.header.visible : l.footer.visible;
+    const cur = slotsOf(placeDoc, l.id)[slot];
+    const liveCur = slotsOf(data.placements.live, l.id)[slot];
+    const blocked = slot === "header" && !!cur && !visible;
+    return (
+      <div key={slot} className="m8-slot-row">
+        <span className="m8-slot-ic"><Icon name={slot === "header" ? "monitor" : "layers"} size={14} /></span>
+        <label htmlFor={`slot-${l.id}-${slot}`} className="m8-slot-lbl">{LOC_LABEL[slot]}{slot === "header" ? " (Primary)" : ""}</label>
+        {!visible ? (
+          <span className="m8-muted">This layout has no {slot.toLowerCase()}. Show it in Layouts &amp; Templates first.</span>
+        ) : (
+          <select id={`slot-${l.id}-${slot}`} aria-label={`${LOC_LABEL[slot]} menu for ${l.name}`} value={cur ?? ""} disabled={readOnly}
+            onChange={(e) => {
+              const v = e.target.value || null;
+              if (!v && slot === "header") { app.toast({ type: "error", title: "The header needs a menu", sub: "Choose another menu to replace it, or set this layout's header to None in Layouts." }); return; }
+              chooseSlot(l.id, slot, v);
+            }}>
+            {slot === "footer" && <option value="">None</option>}
+            {menus.map((x) => <option key={x.id} value={x.id}>{x.draft.name}</option>)}
+            {slot === "header" && !cur && <option value="" disabled>Choose a menu</option>}
+          </select>
+        )}
+        {visible && (cur !== liveCur ? <Pill tone="amber" dot>Draft</Pill> : cur ? <Pill tone="green" dot>Active</Pill> : <Pill tone="grey">Not assigned</Pill>)}
+        {blocked && <small className="m8-muted">Unassigning the header is blocked unless the layout supports no navigation.</small>}
+      </div>
+    );
+  });
+
+  const placementFooter = (
+    <div className="m8-slot-row is-fixed">
+      <span className="m8-slot-ic"><Icon name="monitor" size={14} /></span>
+      <span className="m8-slot-lbl">Top Bar / Utility</span>
+      <span className="m8-muted">No utility slot in layouts yet. Utility menus stay in the menu list.</span>
+    </div>
+  );
+  const mobileRow = (
+    <div className="m8-slot-row is-fixed">
+      <span className="m8-slot-ic"><Icon name="phone" size={14} /></span>
+      <span className="m8-slot-lbl">Mobile (Auto)</span>
+      <span className="m8-muted">Auto (Responsive)</span>
+      <Icon name="info" size={13} />
+    </div>
+  );
+
+  const saveButton = (
+    <Btn variant="primary" icon="check" disabled={!anyDirty || busy || readOnly} loading={busy} onClick={() => void saveAll()}>Save Draft</Btn>
+  );
+  const publishButton = (
+    <Btn variant="primary" icon="rocket" disabled={readOnly || busy || checks.errors > 0 || draftCount === 0}
+      title={checks.errors ? "Fix the errors first" : draftCount === 0 ? "Nothing to publish" : undefined}
+      onClick={() => setModal({ kind: "changes" })}>
+      Publish Changes{draftCount ? ` (${draftCount})` : ""}
+    </Btn>
+  );
+
   return (
     <div className={`m8-wrap${readOnly ? " is-readonly" : ""}`}>
-      <Head siteName={siteName} />
       <div className="m8-sr" role="status" aria-live="polite">{announce}</div>
+
+      <header className="m8-head">
+        <div className="m8-head-l">
+          <h1 className="m8-title">Menus &amp; Navigation</h1>
+          <p className="m8-desc">Create and manage website menus, build dropdowns and mega menus, assign them to header or footer, and publish changes.</p>
+        </div>
+        <div className="m8-head-r">
+          <span className="m8-website-lbl">Website</span>
+          <span className="m8-website"><Icon name="globe" size={13} /> {siteName}</span>
+          {anyDirty ? <Pill tone="amber" dot>Unsaved</Pill> : <Pill tone="green" dot>Saved</Pill>}
+          <Btn icon="link" onClick={() => setModal({ kind: "validate" })}>Validate Links{checks.errors ? ` (${checks.errors})` : ""}</Btn>
+          <Btn icon="eye" disabled={!m} onClick={() => setPreviewing(true)}>Preview</Btn>
+          {saveButton}
+          {publishButton}
+        </div>
+      </header>
 
       {app.demo === "denied" && <div className="m8-banner is-info" role="status"><Icon name="lock" size={13} /><span>Read-only. Your role can view menus but not change them. Ask an Admin or Editor to make changes.</span></div>}
       {app.demo !== "denied" && app.role === "Viewer" && <div className="m8-banner is-info" role="status"><Icon name="lock" size={13} /><span>Viewer: you can read every menu. Editing needs an Editor or Owner role.</span></div>}
@@ -521,116 +620,174 @@ export function Menus() {
       <div className="m8-kpis">
         <Kpi icon="menu" n={menus.length} label="Menus" tone="violet" />
         <Kpi icon="check" n={placedCount} label="Assigned" tone="green" />
-        <Kpi icon="pencil" n={draftCount} label="Draft (unpublished)" tone="amber" />
-        <Kpi icon="link" n={checks.errors} label="Link issues" tone={checks.errors ? "red" : "grey"} onClick={() => setModal({ kind: "validate" })} />
-        <Kpi icon="clock" n={data.versions.length} label="Version history" tone="blue" onClick={() => setTab("history")} />
+        <Kpi icon="pencil" n={draftCount} label="Draft (Unpublished)" tone="amber" />
+        <Kpi icon="link" n={checks.errors} label="Link Issues" tone={checks.errors ? "red" : "grey"} onClick={() => setModal({ kind: "validate" })} />
+        <Kpi icon="clock" n={data.versions.length} label="Version History" tone="blue" onClick={() => setTab("history")} />
       </div>
 
-      <div className="m8-tabs" role="tablist" aria-label="Menus sections">
+      <nav className="m8-tabs" role="tablist" aria-label="Menus sections">
         {renderTabs(tab, setTab)}
-        <span className="m8-tabs-meta">
-          {anyDirty ? <Pill tone="amber" dot>Unsaved menu changes</Pill> : <Pill tone="green" dot>Saved</Pill>}
-          <Btn icon="link" onClick={() => setModal({ kind: "validate" })}>Validate Links{checks.errors ? ` (${checks.errors})` : ""}</Btn>
-          <Btn icon="check" disabled={!anyDirty || busy || readOnly} loading={busy} onClick={() => void saveAll()}>Save Draft</Btn>
-          <Btn variant="primary" icon="rocket" disabled={readOnly || busy || checks.errors > 0 || draftCount === 0}
-            title={checks.errors ? "Fix the errors first" : draftCount === 0 ? "Nothing to publish" : undefined}
-            onClick={() => setModal({ kind: "changes" })}>
-            Publish Changes{draftCount ? ` (${draftCount})` : ""}
-          </Btn>
-        </span>
-      </div>
+      </nav>
 
       {/* ============ MENU BUILDER ============ */}
       {tab === "builder" && (
         <>
-          <div className="m8-pickrow">
+          <div className="m8-menubar">
+            <span className="m8-lbl">Menu</span>
             <div className="m8-picker" onKeyDown={(e) => { if (e.key === "Escape" && menuOpen) { setMenuOpen(false); } }}>
               <button type="button" className="m8-select m8-picker-btn" aria-haspopup="listbox" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
                 <Icon name="menu" size={14} /> <b>{m?.draft.name ?? "Choose a menu"}</b>
-                {m && <Pill tone={menuStatus === "published" ? "green" : "amber"} dot>{menuStatus === "published" ? "Published" : "Draft"}</Pill>}
+                {m && <Pill tone={menuStatus === "published" ? "green" : "amber"} dot>{menuStatus === "published" ? "Published (Live)" : "Draft"}</Pill>}
                 <Icon name="chevDown" size={12} />
               </button>
               {menuOpen && (
                 <div className="m8-picker-pop" role="listbox" aria-label="Menus">
-                  <input aria-label="Search menus" placeholder="Search menus" value={menuQ} onChange={(e) => setMenuQ(e.target.value)} />
+                  <input aria-label="Search menus" placeholder="Search menus..." value={menuQ} onChange={(e) => setMenuQ(e.target.value)} />
                   {menus.filter((x) => x.draft.name.toLowerCase().includes(menuQ.toLowerCase())).map((x) => (
                     <button key={x.id} role="option" aria-selected={x.id === menuId} onClick={() => selectMenu(x.id)}>
-                      {x.draft.name}
+                      <span className="m8-pick-check">{x.id === menuId && <Icon name="check" size={12} />}</span>
+                      <Icon name="menu" size={13} />
+                      <span className="m8-pick-name">{x.draft.name}</span>
+                      {placed(x.id).map((p) => <span key={`${p.layoutId}-${p.slot}`} className="m8-loc-tag">{LOC_LABEL[p.slot]}</span>)}
                       {statusOf(x) === "draft" && <span className="m8-draft-tag">Draft</span>}
-                      <span className="m8-muted">{MENU_TYPE_LABEL[x.draft.type ?? "main"]}</span>
-                      {placed(x.id).length > 0 && <Pill tone="violet">{placed(x.id).length} slot{placed(x.id).length > 1 ? "s" : ""}</Pill>}
                     </button>
                   ))}
                   <button className="m8-picker-new" onClick={() => { setMenuOpen(false); setModal({ kind: "create-menu" }); }}><Icon name="plus" size={12} /> Create Menu</button>
                 </div>
               )}
             </div>
-            {m && placed(m.id).map((p) => <Pill key={`${p.layoutId}-${p.slot}`} tone="violet">{placeLabel(layouts, p)}</Pill>)}
+            {m && (
+              <Pill tone={slotNames(m.id).length ? "violet" : "grey"} className="m8-assigned">
+                {slotNames(m.id).length ? `Assigned: ${slotNames(m.id).join(", ")}` : "Not assigned to a slot"}
+              </Pill>
+            )}
             <span className="m8-spacer" />
-            {m && <Btn icon="copy" disabled={readOnly} onClick={async () => { try { const c = await MenusAPI.duplicateMenu(m.id); setTick((t) => t + 1); selectMenu(c.id, true); app.toast({ type: "success", title: `${c.draft.name} created` }); } catch (e) { toastErr(e, "Could not duplicate"); } }}>Duplicate Menu</Btn>}
-            <Btn icon="link" onClick={() => app.go("layouts")}>Open in Layouts</Btn>
-            <Btn icon="target" onClick={() => setTab("placements")}>Manage Placements</Btn>
-            <Btn icon="eye" disabled={!m} onClick={() => setPreviewing(true)}>Preview</Btn>
+            <Btn icon="eye" disabled={!m} onClick={() => setPreviewing(true)}>Preview Menu</Btn>
+            <Btn variant="primary" icon="plus" disabled={readOnly || menus.length >= 12} title={menus.length >= 12 ? "A website can have 12 menus at most." : undefined} onClick={() => setModal({ kind: "create-menu" })}>Create Menu</Btn>
           </div>
 
           {!m || !d ? <EmptyState icon="menu" title="Choose a menu" desc="Pick a menu above, or create one." /> : (
             <>
               <div className="m8-builder">
-                {/* ---- LEFT: add ---- */}
+                {/* ---- LEFT: add items, or menu settings ---- */}
                 <section className="m8-col m8-add" aria-label="Add items">
-                  <h3 className="m8-h3">Add Menu Items</h3>
-                  <Accordion title={`Pages (${standardPages.length}/${allStandard})`} defaultOpen>
-                    <input aria-label="Search pages" className="m8-search" placeholder="Search pages" value={pageQ} onChange={(e) => setPageQ(e.target.value)} />
-                    <ul className="m8-pick m8-check">
-                      {standardPages.map((p) => (
-                        <li key={p.id}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
-                          onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
-                          <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
-                      ))}
-                      {standardPages.length === 0 && <li className="m8-muted">No pages match.</li>}
-                    </ul>
-                  </Accordion>
-                  <Accordion title={`Landing pages (${landingPages.length}/${allLanding})`}>
-                    <ul className="m8-pick m8-check">
-                      {landingPages.map((p) => (
-                        <li key={p.id}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
-                          onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
-                          <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
-                      ))}
-                      {landingPages.length === 0 && <li className="m8-muted">No landing pages match.</li>}
-                    </ul>
-                  </Accordion>
-                  <Btn variant="primary" icon="plus" disabled={readOnly || picked.length === 0} onClick={() => addPicked()}>
-                    Add to Menu{picked.length ? ` (${picked.length})` : ""}
-                  </Btn>
+                  <div className="m8-seg-tabs" role="tablist" aria-label="Left panel">
+                    <button role="tab" aria-selected={leftTab === "add"} className={leftTab === "add" ? "is-on" : ""} onClick={() => setLeftTab("add")}>Add Items</button>
+                    <button role="tab" aria-selected={leftTab === "settings"} className={leftTab === "settings" ? "is-on" : ""} onClick={() => setLeftTab("settings")}>Menu Settings</button>
+                  </div>
 
-                  <Accordion title="Custom Link">
-                    <Field label="Label"><input aria-label="Custom link label" value={customLabel} onChange={(e) => setCustomLabel(e.target.value)} placeholder="e.g., Book a call" /></Field>
-                    <Field label="Address" error={customErr && !urlOk(customUrl) ? customErr : undefined}><input aria-label="Custom link address" value={customUrl} onChange={(e) => setCustomUrl(e.target.value)} /></Field>
-                    <div className="m8-inline"><Switch checked={customNewTab} onChange={setCustomNewTab} label="Open in a new tab" /><span>Open in a new tab</span></div>
-                    {customErr && !customLabel.trim() && <p className="m8-err-text">{customErr}</p>}
-                    <Btn icon="plus" disabled={readOnly} onClick={addCustom}>Add Custom Link</Btn>
-                  </Accordion>
+                  {leftTab === "add" && (
+                    <>
+                      <div className="m8-seg m8-seg-wide" role="radiogroup" aria-label="Add source">
+                        <button role="radio" aria-checked={addMode === "pages"} onClick={() => setAddMode("pages")}><Icon name="file" size={13} /> Pages</button>
+                        <button role="radio" aria-checked={addMode === "custom"} onClick={() => setAddMode("custom")}><Icon name="link" size={13} /> Custom Link</button>
+                      </div>
+                      {addMode === "pages" ? (
+                        <>
+                          <Accordion title={`Pages (${standardPages.length}/${allStandard})`} defaultOpen>
+                            <input aria-label="Search pages" className="m8-search" placeholder="Search pages..." value={pageQ} onChange={(e) => setPageQ(e.target.value)} />
+                            <ul className="m8-pick m8-check">
+                              {standardPages.map((p) => (
+                                <li key={p.id}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
+                                  onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
+                                  <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
+                              ))}
+                              {standardPages.length === 0 && <li className="m8-muted">No pages match.</li>}
+                            </ul>
+                          </Accordion>
+                          <Accordion title={`Landing pages (${landingPages.length}/${allLanding})`}>
+                            <ul className="m8-pick m8-check">
+                              {landingPages.map((p) => (
+                                <li key={p.id}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
+                                  onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
+                                  <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
+                              ))}
+                              {landingPages.length === 0 && <li className="m8-muted">No landing pages match.</li>}
+                            </ul>
+                          </Accordion>
+                          <Btn variant="primary" icon="plus" disabled={readOnly || picked.length === 0} onClick={() => addPicked()}>
+                            Add to Menu{picked.length ? ` (${picked.length})` : ""}
+                          </Btn>
+                        </>
+                      ) : (
+                        <div className="m8-custom">
+                          <Field label="Label"><input aria-label="Custom link label" value={customLabel} onChange={(e) => setCustomLabel(e.target.value)} placeholder="e.g., Book a call" /></Field>
+                          <Field label="Custom link address" error={customErr && !urlOk(customUrl) ? customErr : undefined}><input aria-label="Custom link address" value={customUrl} onChange={(e) => setCustomUrl(e.target.value)} /></Field>
+                          <div className="m8-inline"><Switch checked={customNewTab} onChange={setCustomNewTab} label="Open in a new tab" /><span>Open in a new tab</span></div>
+                          {customErr && !customLabel.trim() && <p className="m8-err-text">{customErr}</p>}
+                          <Btn variant="primary" icon="plus" disabled={readOnly} onClick={addCustom}>Add to Menu</Btn>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {leftTab === "settings" && (
+                    <div className="m8-cfg-body">
+                      <Field label="Menu name">
+                        <input aria-label="Menu name" value={d.name} disabled={readOnly} onChange={(e) => patchDoc((x) => ({ ...x, name: e.target.value }))} />
+                      </Field>
+                      <Field label="Mobile menu">
+                        <select aria-label="Mobile style" value={d.mobile.behaviour} disabled={readOnly} onChange={(e) => patchDoc((x) => ({ ...x, mobile: { ...x.mobile, behaviour: e.target.value as "drawer" | "accordion" } }))}>
+                          <option value="drawer">Drawer with accordion</option>
+                          <option value="accordion">Accordion only</option>
+                        </select>
+                      </Field>
+                      <div className="m8-inline"><Switch checked={d.mobile.openFirstLevel} onChange={(v) => !readOnly && patchDoc((x) => ({ ...x, mobile: { ...x.mobile, openFirstLevel: v } }))} label="Open first group" /><span>Open the first group on mobile</span></div>
+                      <p className="m8-muted">Parent items with children are not links on mobile. They open to show their children. Footer menus are not used as mobile header content.</p>
+                      <div className="m8-acts">
+                        <Btn icon="copy" disabled={readOnly || menus.length >= 12} onClick={async () => { try { const c = await MenusAPI.duplicateMenu(m.id); setTick((t) => t + 1); selectMenu(c.id, true); app.toast({ type: "success", title: `${c.draft.name} created` }); } catch (e) { toastErr(e, "Could not duplicate"); } }}>Duplicate Menu</Btn>
+                        <Btn icon="link" onClick={() => app.go("layouts")}>Open in Layouts</Btn>
+                        <Btn icon="target" onClick={() => setTab("placements")}>Manage Placements</Btn>
+                      </div>
+                      <h4 className="m8-h4">Limits</h4>
+                      <ul className="m8-limits">
+                        <li>3 levels deep at most</li>
+                        <li>{MENU_LIMITS.maxTop} top-level items per menu</li>
+                        <li>Mega panels: up to {MENU_LIMITS.maxColumns} columns</li>
+                        <li>{MENU_LIMITS.maxItems} items per menu</li>
+                      </ul>
+                      <h4 className="m8-h4 is-danger">Danger zone</h4>
+                      <p className="m8-muted">A menu that is placed in a layout slot or compiled into one can't be deleted. Move it out first.</p>
+                      <Btn variant="danger" icon="trash" disabled={readOnly || placed(m.id).length > 0 || m.applied.length > 0}
+                        title={placed(m.id).length || m.applied.length ? "Move this menu out of its slots first." : undefined}
+                        onClick={() => setModal({ kind: "delete-menu" })}>Delete {m.draft.name}</Btn>
+                    </div>
+                  )}
                 </section>
 
                 {/* ---- CENTRE: structure ---- */}
                 <section className="m8-col m8-tree-col" aria-label="Menu structure">
                   <div className="m8-col-head">
-                    <h3 className="m8-h3">Menu Structure</h3>
-                    <span className="m8-muted">{countItems(d.items)} items · {MENU_LIMITS.maxDepth} levels deep</span>
+                    <div className="m8-col-title">
+                      <h3 className="m8-h3">Menu Structure</h3>
+                      <p className="m8-muted">{countItems(d.items)} items · drag and drop to organise. Create dropdowns or a mega menu.</p>
+                    </div>
                     <span className="m8-spacer" />
+                    {collapsed.size > 0 || parentIds(d.items).length === 0
+                      ? <Btn variant="sm" disabled={parentIds(d.items).length === 0} onClick={() => setCollapsed(new Set())}>Expand All</Btn>
+                      : <Btn variant="sm" onClick={() => setCollapsed(new Set(parentIds(d.items)))}>Collapse All</Btn>}
                     <Btn variant="sm" icon="undo" aria-label="Undo" disabled={readOnly || !hasPast} onClick={() => stepHistory("undo")}>Undo</Btn>
                     <Btn variant="sm" icon="redo" aria-label="Redo" disabled={readOnly || !hasFuture} onClick={() => stepHistory("redo")}>Redo</Btn>
                   </div>
-                  <Field label="Menu name">
-                    <input aria-label="Menu name" value={d.name} disabled={readOnly} onChange={(e) => patchDoc((x) => ({ ...x, name: e.target.value }))} />
-                  </Field>
+                  <div className="m8-depth-warn" role="note"><Icon name="alert" size={13} /><span>Maximum depth: {MENU_LIMITS.maxDepth} levels (e.g., Main › Submenu › Sub-item)</span></div>
+                  <div className="m8-hint-line">Drag the grip to reorder. Alt + ↑/↓ moves an item, Alt + Shift + →/← changes its level.</div>
+                  {d.items.length === 0 ? (
+                    <EmptyState icon="menu" title="This menu is empty" desc="Add pages or a custom link from the left." />
+                  ) : (
+                    <ul role="tree" aria-label="Menu items" className="m8-tree" onDragOver={(e) => { if (dragId) e.preventDefault(); }}>
+                      {renderRows(d.items, 0)}
+                    </ul>
+                  )}
+                  <div className="m8-tree-acts">
+                    <Btn icon="plus" disabled={readOnly || d.items.length >= MENU_LIMITS.maxTop} onClick={() => { const it = blankLink("New link", null); setDoc({ ...d, items: [...d.items, it] }); setItemId(it.id); }}>Add Top-Level Item</Btn>
+                    {d.items.length >= MENU_LIMITS.maxTop && <span className="m8-muted">Limit: {MENU_LIMITS.maxTop} top-level items</span>}
+                  </div>
                   {m && (
                     <div className="m8-compiled m8-apply m8-target">
                       <h4 className="m8-h4">Header and footer</h4>
                       <ChromeList menu={m} regions={regions} layouts={layouts} placed={placed(m.id)} />
                       <p className="m8-hint">Target: {placed(m.id).length
-                        ? placed(m.id).map((p) => { const ref = layouts.find((l) => l.id === p.layoutId)?.[p.slot]; const v = regions.find((r) => r.id === ref?.regionId)?.variants.find((x) => x.id === ref?.variantId); return v ? `${v.name} (${placeLabel(layouts, p)})` : placeLabel(layouts, p); }).join(" · ")
+                        ? placed(m.id).map((p) => { const ref = layouts.find((l) => l.id === p.layoutId)?.[p.slot]; const v = regions.find((r) => r.id === ref?.regionId)?.variants.find((x) => x.id === ref?.variantId); return v ? `${v.name} (${LOC_LABEL[p.slot]})` : LOC_LABEL[p.slot]; }).join(" · ")
                         : "not placed in any layout yet"}</p>
                       <p className="m8-hint">Live now: {m.live ? (m.live.items.filter((i) => i.audience === "everyone").map((i) => i.label).join(" · ") || "nothing") : "not published yet"}</p>
                       <div className="m8-acts">
@@ -651,44 +808,35 @@ export function Menus() {
                           }}>Apply now</Btn>
                         <Btn variant="ghost" icon="arrowRight" onClick={() => app.go("layouts")}>Open in Layouts</Btn>
                       </div>
-                      {hasChanges(m) && placed(m.id).length > 0 && <p className="m8-hint">Apply uses the live version, so publish first.</p>}
                     </div>
                   )}
-                  <div className="m8-hint-line">Drag the grip to reorder. Alt + ↑/↓ moves an item, Alt + Shift + →/← changes its level.</div>
-                  {d.items.length === 0 ? (
-                    <EmptyState icon="menu" title="This menu is empty" desc="Add pages or a custom link from the left." />
-                  ) : (
-                    <ul role="tree" aria-label="Menu items" className="m8-tree" onDragOver={(e) => { if (dragId) e.preventDefault(); }}>
-                      {renderRows(d.items, 0)}
-                    </ul>
-                  )}
-                  <div className="m8-tree-acts">
-                    <Btn icon="plus" disabled={readOnly || d.items.length >= MENU_LIMITS.maxTop} onClick={() => { const it = blankLink("New link", null); setDoc({ ...d, items: [...d.items, it] }); setItemId(it.id); }}>Add Top-Level Item</Btn>
-                    {d.items.length >= MENU_LIMITS.maxTop && <span className="m8-muted">Limit: {MENU_LIMITS.maxTop} top-level items</span>}
-                  </div>
                 </section>
 
-                {/* ---- RIGHT: configure ---- */}
+                {/* ---- RIGHT: item settings ---- */}
                 <section className="m8-col m8-cfg" aria-label="Item settings">
                   {itemSel ? (
                     <>
-                      <div className="m8-col-head"><h3 className="m8-h3">Item Settings</h3><Pill tone="grey">Level {itemDepth + 1}</Pill></div>
+                      <div className="m8-col-head">
+                        <h3 className="m8-h3">Menu Item Settings</h3>
+                        <span className="m8-spacer" />
+                        {itemSel.behaviour === "mega" && <Pill tone="violet">Mega Menu</Pill>}
+                      </div>
                       <div className="m8-itabs" role="tablist" aria-label="Item settings sections">
                         <button role="tab" aria-selected={itemTab === "settings"} onClick={() => setItemTab("settings")}>Settings</button>
-                        {itemSel.behaviour === "mega" && <button role="tab" aria-selected={itemTab === "mega"} onClick={() => setItemTab("mega")}>Mega Panel</button>}
+                        {itemSel.behaviour === "mega" && <button role="tab" aria-selected={itemTab === "mega"} onClick={() => setItemTab("mega")}>Mega Menu</button>}
                         <button role="tab" aria-selected={itemTab === "advanced"} onClick={() => setItemTab("advanced")}>Advanced</button>
                       </div>
                       {itemTab === "settings" && (
                         <div className="m8-cfg-body">
                           <Field label="Label"><input aria-label="Label" value={itemSel.label} disabled={readOnly} onChange={(e) => setItemField((x) => ({ ...x, label: e.target.value }))} /></Field>
-                          <Field label="Link to" hint={itemSel.behaviour === "mega" ? "A mega menu's top item opens its panel, so the link is optional." : undefined}>
+                          <Field label="Link To" hint={itemSel.behaviour === "mega" ? "A mega menu's top item opens its panel, so the link is optional." : undefined}>
                             <LinkEditor link={itemSel.link} pages={pages} idp="item" disabled={readOnly} onChange={(lk) => setItemField((x) => ({ ...x, link: lk }))} compact />
                           </Field>
                           <Field label="Behaviour">
                             <select aria-label="Item behaviour" value={itemSel.behaviour} disabled={readOnly || itemDepth > 0 && itemSel.behaviour === "mega"}
                               onChange={(e) => setItemField((x) => ({ ...x, behaviour: e.target.value as Behaviour }))}>
                               <option value="link">Link</option>
-                              <option value="dropdown" disabled={itemDepth >= MENU_LIMITS.maxDepth - 1}>Dropdown</option>
+                              <option value="dropdown" disabled={itemDepth >= MENU_LIMITS.maxDepth - 1}>Dropdown (with sub-menu)</option>
                               {itemDepth === 0 && <option value="mega">Mega menu</option>}
                             </select>
                           </Field>
@@ -700,13 +848,23 @@ export function Menus() {
                           <div className="m8-inline"><Switch checked={itemSel.newTab} onChange={(v) => !readOnly && setItemField((x) => ({ ...x, newTab: v }))} label="Open in a new tab" /><span>Open in a new tab</span></div>
                           <div className="m8-cfg-acts">
                             <Btn icon="plus" disabled={readOnly || itemDepth >= MENU_LIMITS.maxDepth - 1 || itemSel.behaviour === "mega"} onClick={() => addUnder(itemSel.id)}>Add Submenu Item</Btn>
-                            <Btn variant="danger" icon="trash" disabled={readOnly} onClick={() => rowAction(itemSel.id, "remove")}>Remove from Menu</Btn>
+                            <Btn variant="danger" icon="trash" disabled={readOnly} onClick={() => rowAction(itemSel.id, "remove")}>Remove Item</Btn>
                           </div>
-                          <p className="m8-muted">Parent items with children are not links on mobile. They open to show their children.</p>
                         </div>
                       )}
                       {itemTab === "mega" && itemSel.behaviour === "mega" && (
                         <div className="m8-cfg-body">
+                          <h4 className="m8-h4">Mega Menu Layout</h4>
+                          <div className="m8-layout-cards" role="radiogroup" aria-label="Columns">
+                            {[2, 3, 4].map((n) => (
+                              <button key={n} type="button" role="radio" aria-checked={attachedCols === n} className={attachedCols === n ? "is-on" : ""}
+                                disabled={readOnly || !itemSel.megaId} onClick={() => setMegaCols(n)}>
+                                <span className="m8-lc-ic">{Array.from({ length: n }, (_, i) => <i key={i} />)}</span>
+                                <b>{n} Columns</b>
+                                {attachedCols === n && <span className="m8-lc-check"><Icon name="check" size={11} /></span>}
+                              </button>
+                            ))}
+                          </div>
                           <Field label="Mega panel">
                             <select aria-label="Attached mega panel" value={itemSel.megaId ?? ""} disabled={readOnly}
                               onChange={(e) => setItemField((x) => ({ ...x, megaId: e.target.value || null }))}>
@@ -714,8 +872,27 @@ export function Menus() {
                               {megas.map((g) => <option key={g.id} value={g.id}>{megaDocOf(g.id)?.name}</option>)}
                             </select>
                           </Field>
-                          {itemSel.megaId && megaDocOf(itemSel.megaId) && <p className="m8-muted">{megaDocOf(itemSel.megaId)!.columns.length} columns · edit the panel in Mega Menus.</p>}
-                          <Btn icon="columns" onClick={() => setTab("mega")}>Edit panel in Mega Menus</Btn>
+                          {attachedMega ? (
+                            <>
+                              <h4 className="m8-h4">Column Content</h4>
+                              <ul className="m8-colcontent">
+                                {attachedMega.columns.map((c, i) => (
+                                  <li key={c.id}>
+                                    <Icon name="grip" size={12} />
+                                    <span className="m8-col-name">Column {i + 1}: <b>{c.title || "Untitled"}</b></span>
+                                    <span className="m8-muted">({c.links.length} items)</span>
+                                    <button type="button" className="m8-icon" aria-label={`Edit column ${i + 1}`} disabled={readOnly} onClick={() => { setMegaId(itemSel.megaId); setTab("mega"); }}><Icon name="pencil" size={12} /></button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <div className="m8-acts">
+                                <Btn variant="sm" icon="plus" disabled={readOnly || attachedCols >= 4} onClick={() => setMegaCols(Math.min(4, attachedCols + 1))}>Add Column</Btn>
+                                <Btn variant="sm" icon="columns" onClick={() => { setMegaId(itemSel.megaId); setTab("mega"); }}>Edit panel in Mega Menus</Btn>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="m8-muted">Attach a panel above, or create one in Mega Menus. Mega panels need 2 to 4 columns.</p>
+                          )}
                         </div>
                       )}
                       {itemTab === "advanced" && (
@@ -729,22 +906,24 @@ export function Menus() {
                       )}
                     </>
                   ) : (
-                    <EmptyState icon="pencil" title="Select an item" desc="Choose a row to change its label, link, behaviour and visibility." />
+                    <div className="m8-cfg-empty">
+                      <EmptyState icon="pencil" title="Select an item" desc="Choose a row to change its label, link, behaviour and visibility." />
+                    </div>
                   )}
                 </section>
               </div>
 
               {/* ---- PREVIEW (below) ---- */}
               <section id="m8-preview" className="m8-preview" aria-label="Menu preview">
-                <div className="m8-col-head">
-                  <h3 className="m8-h3">Preview</h3>
+                <div className="m8-preview-bar">
+                  <span className="m8-preview-title"><Icon name={device === "desktop" ? "monitor" : device === "tablet" ? "tablet" : "phone"} size={14} /> Navigation Preview ({deviceLabel})</span>
+                  <span className="m8-spacer" />
                   <div className="m8-seg" role="radiogroup" aria-label="Preview device">
-                    {(["desktop", "tablet", "mobile"] as Device[]).map((dv) => (
-                      <button key={dv} role="radio" aria-checked={device === dv} onClick={() => setDevice(dv)}>{dv[0].toUpperCase() + dv.slice(1)}</button>
+                    {([["desktop", "Desktop"], ["mobile", "Mobile"], ["tablet", "Tablet"]] as [Device, string][]).map(([dv, lbl]) => (
+                      <button key={dv} role="radio" aria-checked={device === dv} onClick={() => setDevice(dv)}>{lbl}</button>
                     ))}
                   </div>
                 </div>
-                <p className="m8-muted">{device === "desktop" ? "Shows the top-level bar with dropdowns and mega panels." : device === "tablet" ? "Under 1024 px the header uses the mobile drawer and accordion." : "Accordion drawer: parent items open to show their children."}</p>
                 <NavPreview items={d.items} megaOf={(id) => (id ? megaDocOf(id) : undefined)} pages={pages as never} tokens={themeFor(siteId).live.tokens}
                   device={device} brand={siteName} mobileBehaviour={device === "mobile" || device === "tablet" ? "accordion" : "drawer"} openFirstLevel={d.mobile.openFirstLevel}
                   openId={openPanel} onOpen={setOpenPanel} label={`${d.name} preview`} />
@@ -754,7 +933,7 @@ export function Menus() {
         </>
       )}
 
-      {/* ============ MANAGE MENUS ============ */}
+      {/* ============ MANAGE MENUS (with placements) ============ */}
       {tab === "manage" && (() => {
         const rows = menus.filter((x) => {
           if (!x.draft.name.toLowerCase().includes(manageQ.toLowerCase())) return false;
@@ -766,96 +945,93 @@ export function Menus() {
           return true;
         });
         return (
-          <div className="m8-panel">
-            <div className="m8-toolbar">
-              <input aria-label="Search menus" className="m8-search" placeholder="Search menus" value={manageQ} onChange={(e) => setManageQ(e.target.value)} />
-              <select aria-label="Filter menus" value={manageFilter} onChange={(e) => setManageFilter(e.target.value as typeof manageFilter)}>
-                <option value="all">All menus</option><option value="published">Published</option><option value="draft">Draft</option>
-                <option value="assigned">Assigned to a slot</option><option value="unassigned">Not assigned</option>
-              </select>
-              <span className="m8-spacer" />
-              <Btn variant="primary" icon="plus" disabled={readOnly || menus.length >= 12} title={menus.length >= 12 ? "A website can have 12 menus at most." : undefined} onClick={() => setModal({ kind: "create-menu" })}>Create Menu</Btn>
+          <div className="m8-two m8-manage">
+            <div className="m8-panel">
+              <div className="m8-panel-head">
+                <h3 className="m8-h3">Menus ({menus.length})</h3>
+                <span className="m8-spacer" />
+                <Btn variant="primary" icon="plus" disabled={readOnly || menus.length >= 12} title={menus.length >= 12 ? "A website can have 12 menus at most." : undefined} onClick={() => setModal({ kind: "create-menu" })}>Create Menu</Btn>
+              </div>
+              <div className="m8-toolbar">
+                <input aria-label="Search menus" className="m8-search" placeholder="Search menus..." value={manageQ} onChange={(e) => setManageQ(e.target.value)} />
+                <select aria-label="Filter menus" value={manageFilter} onChange={(e) => setManageFilter(e.target.value as typeof manageFilter)}>
+                  <option value="all">All menus</option><option value="published">Published</option><option value="draft">Draft</option>
+                  <option value="assigned">Assigned to a slot</option><option value="unassigned">Not assigned</option>
+                </select>
+              </div>
+              <div className="m8-table-wrap"><table className="m8-table">
+                <thead><tr><th>Menu Name</th><th>Type</th><th>Items</th><th>Used In</th><th>Status</th><th>Updated</th><th><span className="m8-sr">Actions</span></th></tr></thead>
+                <tbody>
+                  {rows.map((x) => {
+                    const pl = placed(x.id);
+                    const st = statusOf(x);
+                    return (
+                      <tr key={x.id}>
+                        <td><button className="m8-link-btn" onClick={() => selectMenu(x.id)}>{x.draft.name}</button><small className="m8-muted">{x.draft.description}</small></td>
+                        <td>{MENU_TYPE_LABEL[x.draft.type ?? "main"]}</td>
+                        <td>{countItems(x.draft.items)}</td>
+                        <td>{pl.length ? pl.map((p) => <Pill key={`${p.layoutId}-${p.slot}`} tone="violet">{placeLabel(layouts, p)}</Pill>) : <span className="m8-muted">Not assigned</span>}</td>
+                        <td><Pill tone={st === "published" ? "green" : "amber"} dot>{st === "published" ? "Published" : "Draft"}</Pill></td>
+                        <td>{ago(x.updatedAt)} · {x.updatedBy}</td>
+                        <td className="m8-row-end">
+                          <Btn variant="sm" onClick={() => selectMenu(x.id)}>Edit</Btn>
+                          <Btn variant="sm" icon="copy" disabled={readOnly || menus.length >= 12} onClick={async () => { try { const c = await MenusAPI.duplicateMenu(x.id); setTick((t) => t + 1); selectMenu(c.id, true); app.toast({ type: "success", title: `${c.draft.name} created` }); } catch (e) { toastErr(e, "Could not duplicate"); } }}>Duplicate</Btn>
+                          <Btn variant="sm" disabled={readOnly || pl.length > 0 || x.applied.length > 0} title={pl.length || x.applied.length ? "Move this menu out of its slots first." : undefined}
+                            onClick={() => { setMenuId(x.id); setModal({ kind: "delete-menu" }); }}>Delete</Btn>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {rows.length === 0 && <tr><td colSpan={7} className="m8-muted">No menus match this filter.</td></tr>}
+                </tbody>
+              </table></div>
+              <p className="m8-muted">{menus.length} of 12 menus used. A menu can be placed in more than one layout.</p>
             </div>
-            <table className="m8-table">
-              <thead><tr><th>Menu</th><th>Type</th><th>Items</th><th>Assigned to</th><th>Status</th><th>Last edited</th><th><span className="m8-sr">Actions</span></th></tr></thead>
-              <tbody>
-                {rows.map((x) => {
-                  const pl = placed(x.id);
-                  const st = statusOf(x);
-                  return (
-                    <tr key={x.id}>
-                      <td><button className="m8-link-btn" onClick={() => selectMenu(x.id)}>{x.draft.name}</button><small className="m8-muted">{x.draft.description}</small></td>
-                      <td>{MENU_TYPE_LABEL[x.draft.type ?? "main"]}</td>
-                      <td>{countItems(x.draft.items)}</td>
-                      <td>{pl.length ? pl.map((p) => <Pill key={`${p.layoutId}-${p.slot}`} tone="violet">{placeLabel(layouts, p)}</Pill>) : <span className="m8-muted">Not assigned</span>}</td>
-                      <td><Pill tone={st === "published" ? "green" : "amber"} dot>{st === "published" ? "Published" : "Draft"}</Pill></td>
-                      <td>{ago(x.updatedAt)} · {x.updatedBy}</td>
-                      <td className="m8-row-end">
-                        <Btn variant="sm" onClick={() => selectMenu(x.id)}>Edit</Btn>
-                        <Btn variant="sm" icon="copy" disabled={readOnly || menus.length >= 12} onClick={async () => { try { const c = await MenusAPI.duplicateMenu(x.id); setTick((t) => t + 1); selectMenu(c.id, true); app.toast({ type: "success", title: `${c.draft.name} created` }); } catch (e) { toastErr(e, "Could not duplicate"); } }}>Duplicate</Btn>
-                        <Btn variant="sm" disabled={readOnly || pl.length > 0 || x.applied.length > 0} title={pl.length || x.applied.length ? "Move this menu out of its slots first." : undefined}
-                          onClick={() => { setMenuId(x.id); setModal({ kind: "delete-menu" }); }}>Delete</Btn>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {rows.length === 0 && <tr><td colSpan={7} className="m8-muted">No menus match this filter.</td></tr>}
-              </tbody>
-            </table>
-            <p className="m8-muted">{menus.length} of 12 menus used. A menu can be placed in more than one layout.</p>
+
+            <div className="m8-panel">
+              <div className="m8-panel-head">
+                <h3 className="m8-h3">Menu Placements</h3>
+                <span className="m8-spacer" />
+                {layouts.length > 1 && (
+                  <select aria-label="Layout for placements" value={placeLayout?.id ?? ""} onChange={(e) => setPlaceLay(e.target.value)}>
+                    {layouts.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                )}
+              </div>
+              <p className="m8-muted">Assign which menu appears in each website location.</p>
+              {placeLayout && <div className="m8-slots">{slotRows(placeLayout)}{placementFooter}{mobileRow}</div>}
+              <div className="m8-banner is-info" role="note"><Icon name="info" size={13} /><span>Mobile navigation is automatically generated from the header menu. Footer menus are not used on mobile.</span></div>
+              <div className="m8-acts">
+                <Btn variant="primary" icon="check" disabled={!placeDirty || busy || readOnly} loading={busy} onClick={() => void savePlacementDraft()}>Save Placement Draft</Btn>
+                <Btn disabled={!placeDirty} onClick={() => setPDraft(null)}>Discard placement changes</Btn>
+                <Btn icon="link" onClick={() => app.go("layouts")}>Open in Layouts</Btn>
+              </div>
+            </div>
           </div>
         );
       })()}
 
-      {/* ============ MENU PLACEMENTS (shortcut to Layouts' slots) ============ */}
+      {/* ============ MENU PLACEMENTS (all layouts) ============ */}
       {tab === "placements" && (
         <div className="m8-panel">
-          <div className="m8-banner is-info" role="note"><Icon name="info" size={13} /><span>Placements are owned by layouts. Each layout has a header and footer slot, and each slot holds one menu. Edits here save as a placement draft and go live when you publish. Layouts & Templates shows the same slots.</span></div>
-          {layouts.map((l) => {
-            const hdr = l.header.visible;
-            const ftr = l.footer.visible;
-            return (
-              <div key={l.id} className="m8-slotcard">
-                <div className="m8-slotcard-h">
-                  <b>{l.name}</b>
-                  <span className="m8-muted">{l.isDefault ? "Default layout" : l.scope === "builtin" ? "Built-in layout" : "Workspace layout"}</span>
-                  <span className="m8-spacer" />
-                  <Btn variant="sm" icon="link" onClick={() => app.go("layouts")}>Open in Layouts</Btn>
-                </div>
-                {LOCATIONS.map((slot) => {
-                  const visibleSlot = slot === "header" ? hdr : ftr;
-                  const cur = slotsOf(placeDoc, l.id)[slot];
-                  const liveCur = slotsOf(data.placements.live, l.id)[slot];
-                  const isUnassignHeaderBlocked = slot === "header" && !!cur && !visibleSlot;
-                  return (
-                    <div key={slot} className="m8-slot">
-                      <label htmlFor={`slot-${l.id}-${slot}`}>{LOC_LABEL[slot]}</label>
-                      {!visibleSlot ? (
-                        <span className="m8-muted">This layout has no {slot}. Show it in Layouts & Templates first.</span>
-                      ) : (
-                        <select id={`slot-${l.id}-${slot}`} aria-label={`${LOC_LABEL[slot]} menu for ${l.name}`} value={cur ?? ""} disabled={readOnly}
-                          onChange={(e) => {
-                            const v = e.target.value || null;
-                            if (!v && slot === "header") { app.toast({ type: "error", title: "The header needs a menu", sub: "Choose another menu to replace it, or set this layout's header to None in Layouts." }); return; }
-                            chooseSlot(l.id, slot, v);
-                          }}>
-                          {slot === "footer" && <option value="">None</option>}
-                          {menus.map((x) => <option key={x.id} value={x.id}>{x.draft.name}</option>)}
-                          {slot === "header" && !cur && <option value="" disabled>Choose a menu</option>}
-                        </select>
-                      )}
-                      {cur !== liveCur && <Pill tone="amber" dot>Draft</Pill>}
-                      {isUnassignHeaderBlocked && <small className="m8-muted">Unassigning the header is blocked unless the layout supports no navigation.</small>}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-          <div className="m8-slotcard m8-slotcard-fixed">
-            <div className="m8-slot"><label>Top bar / Utility</label><span className="m8-muted">No utility slot in layouts yet. Utility menus stay in the menu list.</span></div>
-            <div className="m8-slot"><label>Mobile</label><span className="m8-muted">Auto · responsive. Generated from the header on phones and tablets. A separate mobile menu is deferred.</span></div>
+          <div className="m8-panel-head">
+            <div>
+              <h3 className="m8-h3">Menu Placements</h3>
+              <p className="m8-muted">Placements belong to layouts. Each layout has a header and footer slot, and each slot holds one menu. Edits save as a placement draft and go live when you publish.</p>
+            </div>
           </div>
+          {layouts.map((l) => (
+            <div key={l.id} className="m8-slotcard">
+              <div className="m8-slotcard-h">
+                <b>{l.name}</b>
+                <span className="m8-muted">{l.isDefault ? "Default layout" : l.scope === "builtin" ? "Built-in layout" : "Workspace layout"}</span>
+                <span className="m8-spacer" />
+                <Btn variant="sm" icon="link" onClick={() => app.go("layouts")}>Open in Layouts</Btn>
+              </div>
+              <div className="m8-slots">{slotRows(l)}</div>
+            </div>
+          ))}
+          <div className="m8-slotcard m8-slotcard-fixed">{placementFooter}{mobileRow}</div>
           <div className="m8-acts">
             <Btn variant="primary" icon="check" disabled={!placeDirty || busy || readOnly} loading={busy} onClick={() => void savePlacementDraft()}>Save Placement Draft</Btn>
             <Btn disabled={!placeDirty} onClick={() => setPDraft(null)}>Discard placement changes</Btn>
@@ -870,87 +1046,122 @@ export function Menus() {
         const gd = megaDocOf(g.id)!;
         const gIssues = checks.byMenu[`mega:${g.id}`] ?? [];
         const usage = megaUsage(siteId, g.id);
+        const dirtyMega = gDraft[g.id] && !sameDoc(gDraft[g.id].doc, g.draft);
         return (
-          <div className="m8-mega">
+          <>
+            <div className="m8-two m8-mega-grid">
+              <div className="m8-panel">
+                <h3 className="m8-h3">Mega Menus</h3>
+                <p className="m8-muted">Create and manage mega menu layouts.</p>
+                <div className="m8-mega-list">
+                  {megas.map((x) => {
+                    const used = megaUsage(siteId, x.id);
+                    return (
+                      <button key={x.id} type="button" className={`m8-mega-item${x.id === g.id ? " is-on" : ""}`} aria-pressed={x.id === g.id} onClick={() => setMegaId(x.id)}>
+                        <Icon name="columns" size={14} />
+                        <span className="m8-mega-item-txt"><b>{megaDocOf(x.id)?.name}</b><small className="m8-muted">{used.length ? `Used in: ${used.map((u) => u.menuName).join(", ")}` : "Not in use"}</small></span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <Btn icon="plus" disabled={readOnly} onClick={() => setModal({ kind: "create-mega" })}>Create Mega Menu</Btn>
+                <div className="m8-hint-line">Attach a panel to a top-level item in Menu Builder.</div>
+              </div>
+
+              <div className="m8-panel">
+                <div className="m8-panel-head">
+                  <h3 className="m8-h3">{gd.name}</h3>
+                  <Pill tone={megaHasChanges(g) ? "amber" : "green"} dot>{megaHasChanges(g) ? "Draft" : "Published"}</Pill>
+                  <span className="m8-spacer" />
+                  <Btn variant="sm" icon="trash" disabled={readOnly || usage.length > 0} title={usage.length ? "Detach it from its menu item first." : undefined} onClick={() => setModal({ kind: "delete-mega", megaId: g.id })}>Delete</Btn>
+                </div>
+                <div className="m8-muted">{usage.length ? `Used in: ${usage.map((u) => u.menuName).join(", ")}` : "Used in: nothing yet. Attach it to a top-level item in Menu Builder."}</div>
+                <Field label="Panel name"><input aria-label="Mega panel name" value={gd.name} disabled={readOnly} onChange={(e) => setMegaDoc(g.id, { ...gd, name: e.target.value })} /></Field>
+                <MegaEditor doc={gd} pages={pages as never} idp={`mega-${g.id}`} disabled={readOnly} onChange={(next) => setMegaDoc(g.id, next)} />
+                {gIssues.map((i) => <p key={i.id} className={i.severity === "error" ? "m8-err-text" : "m8-warn-text"}><Icon name="alert" size={12} /> {i.detail}</p>)}
+                <div className="m8-acts">
+                  <Btn variant="primary" icon="check" disabled={!dirtyMega || busy || readOnly} loading={busy} onClick={() => void saveAll()}>Save Draft</Btn>
+                </div>
+              </div>
+            </div>
             <div className="m8-panel">
-              <div className="m8-toolbar">
+              <div className="m8-panel-head">
+                <h3 className="m8-h3">Mega Panel Preview</h3>
+                <span className="m8-spacer" />
                 <select aria-label="Mega panel" value={g.id} onChange={(e) => setMegaId(e.target.value)}>
                   {megas.map((x) => <option key={x.id} value={x.id}>{megaDocOf(x.id)?.name}</option>)}
                 </select>
-                <Btn variant="sm" icon="plus" disabled={readOnly} onClick={() => setModal({ kind: "create-mega" })}>Create Mega Menu</Btn>
-                <span className="m8-spacer" />
-                <Btn variant="sm" icon="trash" disabled={readOnly || usage.length > 0} title={usage.length ? "Detach it from its menu item first." : undefined} onClick={() => setModal({ kind: "delete-mega", megaId: g.id })}>Delete</Btn>
               </div>
-              <div className="m8-muted">{usage.length ? `Used in: ${usage.map((u) => u.menuName).join(", ")}` : "Used in: nothing yet. Attach it to a top-level item in Menu Builder."}</div>
-              <Field label="Panel name"><input aria-label="Mega panel name" value={gd.name} disabled={readOnly} onChange={(e) => setMegaDoc(g.id, { ...gd, name: e.target.value })} /></Field>
-              <MegaEditor doc={gd} pages={pages as never} idp={`mega-${g.id}`} disabled={readOnly} onChange={(next) => setMegaDoc(g.id, next)} />
-              {gIssues.map((i) => <p key={i.id} className={i.severity === "error" ? "m8-err-text" : "m8-warn-text"}><Icon name="alert" size={12} /> {i.detail}</p>)}
-              <div className="m8-acts"><Btn variant="primary" icon="check" disabled={!megaHasChanges(g) && !(gDraft[g.id] && !sameDoc(gDraft[g.id].doc, g.draft)) || busy || readOnly} loading={busy} onClick={() => void saveAll()}>Save Draft</Btn></div>
-            </div>
-            <div className="m8-panel">
-              <h3 className="m8-h3">Preview</h3>
               <MegaPanelView mega={gd} pages={pages as never} tokens={themeFor(siteId).live.tokens} />
             </div>
-          </div>
+          </>
         );
       })()}
 
-      {/* ============ VERSION HISTORY ============ */}
+      {/* ============ PREVIEW, PUBLISHING & VERSION HISTORY ============ */}
       {tab === "history" && (
-        <div className="m8-panel">
-          <div className="m8-banner is-info" role="note"><Icon name="info" size={13} /><span>Each publish creates a numbered version of every live menu, mega panel and layout placement. Rollback restores them together and publishes that as a new version. History is never rewritten.</span></div>
-          <table className="m8-table">
-            <thead><tr><th>Version</th><th>Summary</th><th>By</th><th>When</th><th>Type</th><th><span className="m8-sr">Actions</span></th></tr></thead>
-            <tbody>
-              {[...data.versions].sort((a, b) => b.v - a.v).map((v) => (
-                <tr key={v.id}>
-                  <td><b>v{v.v}</b>{v.v === liveVersion && <Pill tone="green">Live</Pill>}</td>
-                  <td>{v.summary}</td>
-                  <td>{v.by}</td>
-                  <td>{when(v.at)}</td>
-                  <td>{v.kind === "rollback" ? "Rollback" : "Publish"}</td>
-                  <td className="m8-row-end">{v.v !== liveVersion && <Btn variant="sm" icon="undo" disabled={readOnly || busy} onClick={() => setModal({ kind: "rollback", version: v })}>Roll back</Btn>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* ============ SETTINGS ============ */}
-      {tab === "settings" && (
-        <div className="m8-panel">
-          <h3 className="m8-h3">Mobile style</h3>
-          <p className="m8-muted">Below 1024 px the header switches to the drawer. Children open as an accordion. Footer menus render as footer navigation and are not used as mobile header content.</p>
-          {m ? (
-            <>
-              <Field label="Mobile menu for this menu">
-                <select aria-label="Mobile style" value={d!.mobile.behaviour} disabled={readOnly} onChange={(e) => patchDoc((x) => ({ ...x, mobile: { ...x.mobile, behaviour: e.target.value as "drawer" | "accordion" } }))}>
-                  <option value="drawer">Drawer with accordion</option>
-                  <option value="accordion">Accordion only</option>
-                </select>
-              </Field>
-              <div className="m8-inline"><Switch checked={d!.mobile.openFirstLevel} onChange={(v) => !readOnly && patchDoc((x) => ({ ...x, mobile: { ...x.mobile, openFirstLevel: v } }))} label="Open first group" /><span>Open the first group by default</span></div>
-            </>
-          ) : <p className="m8-muted">Choose a menu in Menu Builder.</p>}
-          {m && (
-            <>
-              <h3 className="m8-h3">Danger zone</h3>
-              <p className="m8-muted">A menu that is placed in a layout slot or compiled into one can't be deleted. Move it out first.</p>
-              <div className="m8-acts">
-                <Btn variant="danger" icon="trash" disabled={readOnly || placed(m.id).length > 0 || m.applied.length > 0}
-                  title={placed(m.id).length || m.applied.length ? "Move this menu out of its slots first." : undefined}
-                  onClick={() => setModal({ kind: "delete-menu" })}>Delete {m.draft.name}</Btn>
+        <div className="m8-hist">
+          <aside className="m8-hist-side">
+            <div className="m8-panel">
+              <h4 className="m8-h4">Preview Navigation</h4>
+              <div className="m8-seg" role="radiogroup" aria-label="History preview device">
+                {([["desktop", "Desktop"], ["mobile", "Mobile"], ["tablet", "Tablet"]] as [Device, string][]).map(([dv, lbl]) => (
+                  <button key={dv} role="radio" aria-checked={device === dv} onClick={() => setDevice(dv)}>{lbl}</button>
+                ))}
               </div>
-            </>
-          )}
-          <h3 className="m8-h3">Limits</h3>
-          <ul className="m8-limits">
-            <li>3 levels deep at most</li>
-            <li>{MENU_LIMITS.maxTop} top-level items per menu</li>
-            <li>Mega panels: up to {MENU_LIMITS.maxColumns} columns</li>
-            <li>{MENU_LIMITS.maxItems} items per menu</li>
-          </ul>
+            </div>
+            <div className="m8-panel m8-status">
+              <h4 className="m8-h4">Publishing Status</h4>
+              <div className={`m8-status-row${liveRec ? " is-live" : ""}`}>
+                <Icon name={liveRec ? "check" : "clock"} size={14} />
+                <div>
+                  <b>{liveRec ? "Published (Live)" : "Not published yet"}</b>
+                  <small className="m8-muted">{liveRec ? `Live since ${when(liveRec.at)}` : "Publish to make these menus live."}</small>
+                </div>
+              </div>
+              <div className="m8-status-row">
+                <Icon name="pencil" size={14} />
+                <div>
+                  <b>Draft changes</b>
+                  <small className="m8-muted">{changes.length ? `${changes.length} unsaved change${changes.length === 1 ? "" : "s"}` : "No unsaved changes"}</small>
+                  {changes.length > 0 && <button type="button" className="m8-link-btn" onClick={() => setModal({ kind: "changes" })}>View changes</button>}
+                </div>
+              </div>
+              <Btn variant="primary" icon="rocket" disabled={readOnly || busy || checks.errors > 0 || draftCount === 0} onClick={() => setModal({ kind: "changes" })}>Publish Changes</Btn>
+              <Btn icon="link" onClick={() => setModal({ kind: "validate" })}>Validate Links ({checks.all.length} issue{checks.all.length === 1 ? "" : "s"})</Btn>
+              <Btn icon="clock" onClick={() => document.getElementById("m8-versions")?.scrollIntoView({ behavior: "smooth", block: "start" })}>View Release History</Btn>
+              <Btn icon="undo" disabled={readOnly || busy || !prevVersion} title={prevVersion ? undefined : "There is no earlier version yet."}
+                onClick={() => prevVersion && setModal({ kind: "rollback", version: prevVersion })}>Rollback to Previous Version</Btn>
+            </div>
+          </aside>
+
+          <div className="m8-hist-main">
+            <div className="m8-panel">
+              <h4 className="m8-h4">Website Navigation Preview ({deviceLabel})</h4>
+              <NavPreview items={d ? d.items : []} megaOf={(id) => (id ? megaDocOf(id) : undefined)} pages={pages as never} tokens={themeFor(siteId).live.tokens}
+                device={device} brand={siteName} mobileBehaviour={device === "desktop" ? "drawer" : "accordion"} openFirstLevel={d ? d.mobile.openFirstLevel : false}
+                openId={openPanel} onOpen={setOpenPanel} label={`${d ? d.name : "Menu"} preview`} />
+            </div>
+            <div className="m8-panel" id="m8-versions">
+              <div className="m8-panel-head"><h3 className="m8-h3">Version History ({data.versions.length})</h3></div>
+              <div className="m8-banner is-info" role="note"><Icon name="info" size={13} /><span>Each publish creates a numbered version of every live menu, mega panel and layout placement. Rollback restores them together and publishes that as a new version. History is never rewritten.</span></div>
+              <div className="m8-table-wrap"><table className="m8-table">
+                <thead><tr><th>Version</th><th>Change summary</th><th>Published by</th><th>Date &amp; time</th><th>Type</th><th><span className="m8-sr">Actions</span></th></tr></thead>
+                <tbody>
+                  {versionsDesc.map((v) => (
+                    <tr key={v.id}>
+                      <td><b>v{v.v}</b>{v.v === liveVersion && <Pill tone="green">Live</Pill>}</td>
+                      <td>{v.summary}</td>
+                      <td>{v.by}</td>
+                      <td>{when(v.at)}</td>
+                      <td>{v.kind === "rollback" ? "Rollback" : "Publish"}</td>
+                      <td className="m8-row-end">{v.v !== liveVersion && <Btn variant="sm" icon="undo" disabled={readOnly || busy} onClick={() => setModal({ kind: "rollback", version: v })}>Roll back</Btn>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            </div>
+          </div>
         </div>
       )}
 

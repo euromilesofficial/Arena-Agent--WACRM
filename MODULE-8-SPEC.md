@@ -110,3 +110,34 @@ scheduled visibility; animation timeline editors; menu-click analytics without a
 - Layouts preview does not pin a menu revision.
 - The release modal's other checks (DNS, SSL, Core Web Vitals) are still fixed passes, as they were before this change.
 - The live header is a flat `nav`; dropdowns and mega panels are omitted at apply time.
+
+## 12. Mockup-to-build mapping (v4 visual pass)
+
+The three mockups are `uploads/Module 8_ Menus & Navigation UI-3.webp` (panels 1–4), `uploads/SaaS Menus and Navigation Dashboard-2.webp` (1 of 3 to 3 of 3) and `uploads/WACRM Menus & Navigation Dashboard-1.webp`. The screen is now five tabs: Menu Builder, Manage Menus, Menu Placements, Mega Menus, Version History. Settings is no longer a tab. Menu settings live in the builder's left panel ("Menu Settings"), as the mockups show.
+
+| Mockup element | Build |
+|---|---|
+| Title, subtitle, Website selector | Page header; website name shown as a pill (one website per screen) |
+| Preview, Save Draft, Publish Changes (count) | Page header; Validate Links beside them |
+| KPI strip: Menus, Assigned, Draft (Unpublished), Link Issues, Version History | Five KPI cards; Link Issues opens Validate Links, Version History opens its tab |
+| Menu picker with Published (Live)/Draft status and Header/Footer/Utility tags | Builder toolbar picker; each menu shows its slot tags |
+| Assigned: Header pill | Builder toolbar pill listing the slots the menu fills |
+| Preview Menu, Create Menu | Builder toolbar |
+| Add Items: Pages / Custom Link; Pages (n), Landing pages (n), Add to Menu (n) | Left panel; Custom Link is a radio beside Pages |
+| Menu Structure: Expand All / Collapse All, Maximum depth warning, type badges, ⋯ menu | Centre panel; depth banner always shown (3 levels) |
+| Menu Item Settings: Label, Link To, Behaviour, Visibility, Mega Menu / Advanced tabs | Right panel |
+| Mega Menu Layout cards 2/3/4 columns; Column Content list; Add Column | Right panel, Mega Menu tab; changes the attached panel's column count and refuses to drop filled columns |
+| Manage Menus table (name, status, used in, updated) | Manage Menus tab |
+| Menu Placements (Header (Primary), Footer, Top Bar / Utility, Mobile (Auto)) with Mobile auto-generated note | Manage Menus right card (per layout) and Menu Placements tab. Utility has no slot in layouts yet, so it is shown but not placeable |
+| Mega Menus list, panel editor with Layout, Column Gap, Show Featured Content, columns, Featured card | Mega Menus tab. The list sits above the editor; the editor uses full width |
+| Navigation Preview (Desktop/Mobile/Tablet) bar with the menu rendered | Builder preview bar below the structure; History tab preview |
+| Preview Navigation, Publishing Status (Published Live / Draft changes / View changes), Publish, Validate, View Release History, Rollback to Previous Version | Version History tab left column |
+| Version History table (version, summary, published by, date, actions) | Version History tab right column |
+
+### Open gaps (verified, not claimed as done)
+
+- The Mega Menus editor's column cards are wide. At 1280 px and below they scroll sideways. A dedicated card layout is not built.
+- "Custom" column layout (the fourth mockup card) is not offered. Phase 1 uses 2, 3 and 4 columns.
+- The Menu Placements tab's Utility row can be seen but not used, because layouts have no utility slot.
+- Layouts screen still reads bindings only, and Layouts preview does not pin a menu revision (carried over from section 11).
+- Visual checks were made with screenshots at 1440 px. Tablet and mobile widths were checked only through the CSS breakpoints, not by screenshot.

@@ -120,13 +120,13 @@ async def browser():
         await pg.goto(URL + "#/menus"); await pg.reload(); await pg.wait_for_timeout(1400)
 
         # ---- screen structure (mockup) ----
-        names = ["Menu Builder", "Manage Menus", "Menu Placements", "Mega Menus", "Version History", "Settings"]
+        names = ["Menu Builder", "Manage Menus", "Menu Placements", "Mega Menus", "Version History"]
         tabs_ok = True
         for n in names:
             tabs_ok = tabs_ok and await pg.get_by_role("tab", name=n).count() == 1
-        ck("B1 six tabs match the mockup", tabs_ok)
+        ck("B1 five tabs match the mockup", tabs_ok)
         kpi_ok = True
-        for t in ["Menus", "Assigned", "Draft (unpublished)", "Link issues", "Version history"]:
+        for t in ["Menus", "Assigned", "Draft (Unpublished)", "Link Issues", "Version History"]:
             kpi_ok = kpi_ok and await pg.get_by_text(t, exact=True).count() >= 1
         ck("B2 KPI strip shows menus, assigned, draft, link issues, versions", kpi_ok)
         ck("B3 the builder shows three panels: add items, structure, settings",
@@ -161,15 +161,15 @@ async def browser():
         lab = pg.get_by_label("Label", exact=True)
         await lab.fill("Scholarships & aid"); await pg.wait_for_timeout(100)
         ck("B11 editing the label changes the row", await pg.locator(".m8-row-label", has_text="Scholarships & aid").count() == 1)
-        await pg.get_by_role("button", name="Custom link").click(); await pg.wait_for_timeout(120)
+        await pg.get_by_role("radio", name="Custom Link").click(); await pg.wait_for_timeout(120)
         await pg.get_by_label("Custom link address").fill("javascript:alert(1)")
-        await pg.get_by_role("button", name="Add custom link").click(); await pg.wait_for_timeout(200)
+        await pg.get_by_role("button", name="Add to Menu").click(); await pg.wait_for_timeout(200)
         ck("B13 a javascript: custom link is refused with a message",
            await pg.get_by_text("Address not allowed").count() >= 1)
 
         # ---- mega panel ----
         await pg.locator(".m8-row.is-mega").first.click(); await pg.wait_for_timeout(150)
-        await pg.get_by_role("tab", name="Mega Panel").click(); await pg.wait_for_timeout(120)
+        await pg.get_by_role("tab", name="Mega Menu", exact=True).click(); await pg.wait_for_timeout(120)
         await pg.get_by_role("button", name="Edit panel in Mega Menus").click(); await pg.wait_for_timeout(250)
         ck("B14 Edit panel opens the Mega Menus editor on that panel",
            await pg.get_by_label("Mega panel name").input_value() == "Study Abroad mega menu")
@@ -223,14 +223,15 @@ async def browser():
         await pg.get_by_label("Filter menus").select_option("all")
         ck("B30 a menu placed on the site cannot be deleted (row Delete is disabled)",
            await pg.locator("table tbody tr", has_text="Primary Navigation").get_by_role("button", name="Delete").is_disabled())
-        await pg.get_by_role("tab", name="Settings").click(); await pg.wait_for_timeout(200)
+        await pg.get_by_role("tab", name="Menu Builder").click(); await pg.wait_for_timeout(200)
+        await pg.get_by_role("tab", name="Menu Settings").click(); await pg.wait_for_timeout(200)
         ck("B30b the Settings delete is disabled for a placed menu",
            await pg.get_by_role("button", name="Delete Primary Navigation").is_disabled())
 
         # ---- placements ----
         await pg.get_by_role("tab", name="Menu Placements").click(); await pg.wait_for_timeout(200)
-        ck("B31 placements shows header and footer per layout, plus utility and mobile rows", await pg.get_by_text("Top bar / Utility").count() == 1 and await pg.get_by_text("Save Placement Draft").count() == 1)
-        ck("B32 mobile is generated from the header", await pg.get_by_text("Auto · responsive").count() == 1)
+        ck("B31 placements shows header and footer per layout, plus utility and mobile rows", await pg.get_by_text("Top Bar / Utility").count() == 1 and await pg.get_by_text("Save Placement Draft").count() == 1)
+        ck("B32 mobile is generated from the header", await pg.get_by_text("Auto (Responsive)").count() == 1)
 
         # ---- mega menus tab ----
         await pg.get_by_role("tab", name="Mega Menus").click(); await pg.wait_for_timeout(200)
@@ -241,7 +242,8 @@ async def browser():
         ck("B34 creating a panel selects it for editing", _mp == "Testing panel", _mp)
 
         # ---- settings ----
-        await pg.get_by_role("tab", name="Settings").click(); await pg.wait_for_timeout(200)
+        await pg.get_by_role("tab", name="Menu Builder").click(); await pg.wait_for_timeout(200)
+        await pg.get_by_role("tab", name="Menu Settings").click(); await pg.wait_for_timeout(200)
         ck("B35 settings sets the mobile style", await pg.get_by_label("Mobile style").count() == 1)
         ck("B36 settings shows the limits", await pg.get_by_text("3 levels deep at most").count() == 1)
 
