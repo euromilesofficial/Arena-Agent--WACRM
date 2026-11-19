@@ -5279,3 +5279,6 @@ button.m8-kpi{cursor:pointer}
 .m8-preset-card{overflow:hidden}
 .m8-preset-card b,.m8-preset-card small{white-space:normal;overflow-wrap:anywhere}
 .m8-preset-demo{flex-wrap:nowrap;overflow:hidden;max-width:100%;white-space:nowrap}
+/* v4: mega editor columns collapse to two per row at laptop widths, so they never cramp or scroll sideways */
+@media (max-width:1366px){ .m8-mega-cols{grid-template-columns:repeat(2,minmax(0,1fr)) !important} }
+@media (max-width:1100px){ .m8-mega-cols{grid-template-columns:minmax(0,1fr) !important} }

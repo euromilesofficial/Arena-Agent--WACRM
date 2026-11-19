@@ -110,7 +110,7 @@ Closed in the completion pass (see §13). Still open:
 - The release modal's DNS, SSL and Core Web Vitals checks are still fixed passes, as before. They belong to the release gate, not Module 8.
 - §31.8 mapping is approximate until the owner re-pastes the verbatim v1.1 text.
 - README §18 conflict (M8 "after M11" vs built, sidebar under Manage): owner decision.
-- Tablet and mobile layouts are checked by CSS breakpoints; screenshots at those widths are not in the QA evidence.
+- Tablet and mobile layouts: checked by `qa_m8_responsive.py` (no sideways scroll at 1280, 1024 and 768; builder stacks and tablet drawer at 768) and by screenshot at 768 px. Phone width (390 px) is not yet in the QA suite.
 
 ## 12. Mockup-to-build mapping (v4 visual pass)
 
@@ -137,11 +137,11 @@ The three mockups are `uploads/Module 8_ Menus & Navigation UI-3.webp` (panels 1
 
 ### Open gaps (verified, not claimed as done)
 
-- The Mega Menus editor's column cards are wide. At 1280 px and below they scroll sideways. A dedicated card layout is not built.
+- Closed in §15: the Mega Menus editor collapses to two columns at 1366 px and one at 1100 px. The column cards no longer scroll sideways.
 - "Custom" column layout (the fourth mockup card) is not offered. Phase 1 uses 2, 3 and 4 columns.
 - The Menu Placements tab's Utility row can be seen but not used, because layouts have no utility slot.
-- Layouts screen still reads bindings only, and Layouts preview does not pin a menu revision (carried over from section 11).
-- Visual checks were made with screenshots at 1440 px. Tablet and mobile widths were checked only through the CSS breakpoints, not by screenshot.
+- Layouts preview pinning was closed in §13 (`qa_m8_final.py` L4a–d).
+- Visual checks were made with screenshots at 1440 px, 1280 px and 768 px.
 
 ## 13. Completion pass (gaps closed)
 
@@ -179,6 +179,19 @@ Fixes in this pass:
 
 Open gaps after this pass:
 
-- Preset demo chips clip at the card edge on narrow columns.
+- Preset demo chips: closed in §15 (two chips per card).
 - Mega panels do not compile into the published header (the header is a flat `nav`, per scope).
 - §31.8 fifteen-test mapping is still approximate (§9).
+
+## 15. Responsive and open-gap pass
+
+| Gap (from §12, §14) | Resolution | Evidence |
+|---|---|---|
+| Mega editor columns cramped and off the fold at 1280 px | Editor collapses to two columns at 1366 px and one column at 1100 px (CSS, `!important` over the inline grid) | `qa_m8_responsive.py` R4a, R4b |
+| Preset demo chips clipped | Two chips per demo card; cards wrap in two columns in the settings column | `qa_m8_responsive.py` R7 |
+| Tablet and mobile not checked by screenshot | 1280, 1024 and 768 checked for overflow; 768 screenshot confirms the stacked builder and the tablet drawer | `qa_m8_responsive.py` R1–R6, `/tmp/resp_768_builder.png` |
+| Stale open-gap text (§11, §12) | Corrected; Layouts pinning was closed in §13 | this section |
+
+Decision: README §18 says M8 comes "after M11", but the built module sits under Manage in the sidebar and has its own tab set. The assistant decided to keep the built position and record it as a deliberate placement, not a bug. The owner can overrule it later.
+
+Still deliberately out of scope: mega panels on the live header (the header is a flat `nav`, per M7); a "Custom" column layout (limits are 2 to 4 columns); a separate phone-width screenshot suite.

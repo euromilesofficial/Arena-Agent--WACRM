@@ -111,7 +111,7 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
           <span>Show featured content</span>
         </label>
       </div>
-      <div className="m8-mega-grid" style={{ gap: GAP_PX[doc.gap], gridTemplateColumns: `repeat(${cols + (doc.featured.enabled ? 1 : 0)}, minmax(0, 1fr))` }}>
+      <div className="m8-mega-grid m8-mega-cols" style={{ gap: GAP_PX[doc.gap], gridTemplateColumns: `repeat(${cols + (doc.featured.enabled ? 1 : 0)}, minmax(0, 1fr))` }}>
         {doc.columns.map((c, i) => (
           <section className="m8-mcol" key={c.id} aria-label={`Column ${i + 1}`}>
             <header>

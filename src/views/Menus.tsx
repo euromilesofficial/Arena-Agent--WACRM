@@ -764,7 +764,7 @@ export function Menus() {
                             <button key={pr.id} type="button" role="radio" aria-checked={styleOf(d).preset === pr.id}
                               className={`m8-preset-card m8-preset-${pr.id}${styleOf(d).preset === pr.id ? " is-on" : ""}`}
                               onClick={() => patchDoc((x) => ({ ...x, style: { ...styleOf(x), preset: pr.id as Preset } }))}>
-                              <span className="m8-preset-demo" aria-hidden="true"><i>Home</i><i>Programs</i><i>About</i></span>
+                              <span className="m8-preset-demo" aria-hidden="true"><i>Home</i><i>Programs</i></span>
                               <b>{pr.label}</b><small>{pr.hint}</small>
                             </button>
                           ))}

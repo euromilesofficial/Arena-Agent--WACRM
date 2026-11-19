@@ -401,6 +401,12 @@
         "name": "Module 8 — drag and drop and style controls (v4)",
         "assertions": 29,
         "covers": "unit (menu-db.ts in Node): drop before, after and inside; refusals for depth, mega placement, own subtree, item limit; page drops; style defaults. browser: real HTML5 drags onto top, middle and bottom zones; refused drop toast; page dragged from Add Items; Alt+arrow fallback; five presets, hover, dropdown animation, mega surface and animation reach the preview"
+      },
+      {
+        "file": "qa_m8_responsive.py",
+        "name": "Module 8 — responsive (1280, 1024, 768)",
+        "assertions": 9,
+        "covers": "browser: no sideways page scroll at 1280, 1024 and 768; mega editor two columns at 1280 and one at 1024; preset cards inside the settings column; builder stacks at 768; tablet preview shows the drawer; no page errors"
       }
     ]
   },

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19 21:02:48 UTC",
+  "generatedAt": "2026-11-19 21:35:07 UTC",
   "node": "v20.20.2",
   "artifact": "WACRM-CMS.html",
   "suites": [
@@ -7,163 +7,175 @@
       "file": "qa_ai.py",
       "passed": 60,
       "failed": 0,
-      "seconds": 37.313
+      "seconds": 36.877
     },
     {
       "file": "qa_theme.py",
       "passed": 241,
       "failed": 0,
-      "seconds": 117.035
+      "seconds": 116.474
     },
     {
       "file": "qa_builder.py",
       "passed": 98,
       "failed": 0,
-      "seconds": 43.361
+      "seconds": 43.359
     },
     {
       "file": "qa_states_m4.py",
       "passed": 47,
       "failed": 0,
-      "seconds": 44.118
+      "seconds": 44.194
     },
     {
       "file": "qa_pages.py",
       "passed": 106,
       "failed": 0,
-      "seconds": 121.861
+      "seconds": 121.878
     },
     {
       "file": "qa_states_m3.py",
       "passed": 40,
       "failed": 0,
-      "seconds": 57.193
+      "seconds": 56.837
     },
     {
       "file": "qa_module2.py",
       "passed": 48,
       "failed": 0,
-      "seconds": 35.384
+      "seconds": 35.758
     },
     {
       "file": "qa_states_m1.py",
       "passed": 39,
       "failed": 0,
-      "seconds": 45.829
+      "seconds": 45.735
     },
     {
       "file": "qa_flows.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 56.248
+      "seconds": 54.775
     },
     {
       "file": "qa_react.py",
       "passed": null,
       "failed": 0,
-      "seconds": 4.337
+      "seconds": 4.24
     },
     {
       "file": "qa_library.py",
       "passed": 90,
       "failed": 0,
-      "seconds": 54.492
+      "seconds": 54.324
     },
     {
       "file": "qa_layouts.py",
       "passed": 99,
       "failed": 0,
-      "seconds": 35.284
+      "seconds": 34.662
     },
     {
       "file": "qa_states_m7.py",
       "passed": 38,
       "failed": 0,
-      "seconds": 44.31
+      "seconds": 44.537
     },
     {
       "file": "qa_import.py",
       "passed": 65,
       "failed": 0,
-      "seconds": 32.747
+      "seconds": 33.739
     },
     {
       "file": "qa_m7_links.py",
       "passed": 45,
       "failed": 0,
-      "seconds": 35.898
+      "seconds": 35.493
     },
     {
       "file": "qa_m7_export_edit.py",
       "passed": 24,
       "failed": 0,
-      "seconds": 10.471
+      "seconds": 10.321
     },
     {
       "file": "qa_m7_inline.py",
       "passed": 15,
       "failed": 0,
-      "seconds": 12.936
+      "seconds": 12.72
     },
     {
       "file": "qa_builder_inline.py",
       "passed": 30,
       "failed": 0,
-      "seconds": 25.883
+      "seconds": 25.083
     },
     {
       "file": "qa_m4_inline.py",
       "passed": 17,
       "failed": 0,
-      "seconds": 12.015
+      "seconds": 11.621
     },
     {
       "file": "qa_states.py",
       "passed": 25,
       "failed": 0,
-      "seconds": 37.854
+      "seconds": 37.545
     },
     {
       "file": "qa_m7_ai.py",
       "passed": 18,
       "failed": 0,
-      "seconds": 16.856
+      "seconds": 13.157
     },
     {
       "file": "qa_m7_footer.py",
       "passed": 17,
       "failed": 0,
-      "seconds": 9.474
+      "seconds": 8.976
     },
     {
       "file": "qa_m7_diff.py",
       "passed": 16,
       "failed": 0,
-      "seconds": 6.59
+      "seconds": 6.06
     },
     {
       "file": "qa_m7_zip.py",
       "passed": 20,
       "failed": 0,
-      "seconds": 9.053
+      "seconds": 8.857
     },
     {
       "file": "qa_m8_menus.py",
       "passed": 69,
       "failed": 0,
-      "seconds": 36.763
+      "seconds": 36.791
     },
     {
       "file": "qa_m8_v3.py",
       "passed": 35,
       "failed": 0,
-      "seconds": 18.332
+      "seconds": 18.646
     },
     {
       "file": "qa_m8_final.py",
       "passed": 14,
       "failed": 0,
-      "seconds": 18.514
+      "seconds": 18.997
+    },
+    {
+      "file": "qa_m8_dnd.py",
+      "passed": 29,
+      "failed": 0,
+      "seconds": 8.212
+    },
+    {
+      "file": "qa_m8_responsive.py",
+      "passed": 9,
+      "failed": 0,
+      "seconds": 8.288
     }
   ]
 }
