@@ -480,6 +480,29 @@ export function menuRefInfo(menuId: string): { name: string; liveRev: number; ha
   return { name: m.draft.name, liveRev: m.liveRev, hasLive: !!m.live };
 }
 
+/** The menu the LIVE placement puts in a layout slot (what the site shows), or null. */
+export function livePlacementMenu(siteId: string, layoutId: string, slot: Slot): string | null {
+  const p = store().placements[siteId];
+  return slotsOf(p?.live ?? null, layoutId)[slot];
+}
+
+/**
+ * The published copy of a menu, read synchronously, for a pinned preview (M7 spec: preview pins the
+ * layout revision, the menu revision and the tokens). Reads the live copy only, never a draft.
+ */
+export function menuPinned(menuId: string): { name: string; liveRev: number; liveVersion: number; nav: string[]; groups: { title: string; links: string[] }[] } | null {
+  const s = store();
+  const m = s.menus.find((x) => x.id === menuId);
+  if (!m || !m.live) return null;
+  const everyone = (it: MenuItem) => it.audience === "everyone";
+  const top = m.live.items.filter(everyone);
+  const withKids = top.filter((i) => i.children.length > 0);
+  const groups = withKids.length
+    ? withKids.map((i) => ({ title: i.label, links: i.children.filter(everyone).map((c) => c.label) }))
+    : [{ title: m.live.name, links: top.map((i) => i.label) }];
+  return { name: m.live.name, liveRev: m.liveRev, liveVersion: Math.max(0, ...s.versions.map((v) => v.v)), nav: top.map((i) => i.label), groups };
+}
+
 export interface ReleaseIssue { id: string; detail: string }
 /**
  * Publish-release gate (M7 spec L778: broken menu references block publish). Checks the immutable LIVE

@@ -9,7 +9,8 @@
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Field, Modal, Pill, Switch, Tip } from "@/components/ui";
-import { menuRefInfo } from "@/lib/menu-db";
+import { livePlacementMenu, menuPinned, menuRefInfo } from "@/lib/menu-db";
+import { themeFor } from "@/lib/theme-db";
 import { useApp } from "@/lib/store";
 
 /** the menu a header variant reads from, if it has been applied */
@@ -18,8 +19,8 @@ import { DBX } from "@/lib/data";
 import { REGISTRY, type BlockType } from "@/lib/builder";
 import { footerCols, footerGroups } from "@/lib/footer";
 import {
-  LayoutsAPI, labelFor, resolveLayoutId, usageRows,
-  type LayoutDraft, type LayoutFrame, type PageTemplateDoc, type SharedRegion, type UsageRow
+  LayoutsAPI, labelFor, layoutSnapshot, resolveLayoutId, usageRows,
+  type LayoutDraft, type LayoutFrame, type PageTemplateDoc, type RegionVariant, type SharedRegion, type UsageRow
 } from "@/lib/layout-db";
 
 const ALL_TYPES = Object.keys(REGISTRY) as BlockType[];
@@ -237,6 +238,17 @@ export function ReassignModal({ siteId, layoutId, layouts, preselected, onClose,
 
 /* ---------------- preview ---------------- */
 
+/** the menu a layout's header or footer variant points at, or null */
+function boundMenuId(siteId: string, layout: LayoutDraft, slot: "header" | "footer"): string | null {
+  /* the live placement is what the site shows; the compiled variant is the fallback before first publish */
+  const placed = livePlacementMenu(siteId, layout.id, slot);
+  if (placed) return placed;
+  const ref = layout[slot];
+  const reg = layoutSnapshot().regions.find((r) => r.id === ref.regionId);
+  const v = reg?.variants.find((x) => x.id === ref.variantId) as (RegionVariant & { menuRef?: { menuId: string } }) | undefined;
+  return v?.menuRef?.menuId ?? null;
+}
+
 export function PreviewModal({ siteId, layout, frame, onClose }: {
   siteId: string; layout: LayoutDraft; frame: LayoutFrame; onClose: () => void;
 }) {
@@ -246,6 +258,22 @@ export function PreviewModal({ siteId, layout, frame, onClose }: {
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const page = pages.find((p) => p.id === pageId);
   const bound = page ? labelFor(resolveLayoutId(page.layout) ?? null) : "";
+  /* Pinned at open (M7 spec: pin the layout revision, the menu revision and the tokens). Changes made
+     while this preview is open do not move it; close and reopen to see them. */
+  const [pin] = useState(() => {
+    const hId = boundMenuId(siteId, layout, "header");
+    const fId = boundMenuId(siteId, layout, "footer");
+    const hm = hId ? menuPinned(hId) : null;
+    const fm = fId ? menuPinned(fId) : null;
+    const theme = themeFor(siteId).live;
+    const shown: LayoutFrame = {
+      ...frame,
+      header: frame.header && hm ? { ...frame.header, nav: hm.nav } : frame.header,
+      footer: frame.footer && fm ? { ...frame.footer, groups: fm.groups } : frame.footer,
+    };
+    return { frame: shown, hm, fm, layoutRev: layout.rev, tokens: theme ? theme.id : "none" };
+  });
+  const shown = pin.frame;
 
   return (
     <Modal title={`Preview · ${layout.name}`} sub="A read-only draft preview. Nothing here is live, and nothing can be edited in the frame." icon="eye" width="wide" onClose={onClose}
@@ -264,9 +292,15 @@ export function PreviewModal({ siteId, layout, frame, onClose }: {
         </div>
         <Pill tone="amber" dot>Draft preview — not live</Pill>
       </div>
+      <div className="m7-pv-pin" role="note">
+        <span>Pinned at open: layout rev {pin.layoutRev}</span>
+        <span>header: {pin.hm ? `${pin.hm.name} live rev ${pin.hm.liveRev} (version ${pin.hm.liveVersion})` : "not bound to a menu"}</span>
+        <span>footer: {pin.fm ? `${pin.fm.name} live rev ${pin.fm.liveRev} (version ${pin.fm.liveVersion})` : "not bound to a menu"}</span>
+        <span>theme: {pin.tokens}</span>
+      </div>
       <div className={`m7-pv-frame is-${device}`}>
         {frame.announcement && <div className="m7-pv-announce">{frame.announcement.text}</div>}
-        {frame.header && <div className="m7-pv-header"><b>{frame.header.brand}</b><nav>{frame.header.nav.map((l) => <span key={l}>{l}</span>)}</nav><em>{frame.header.cta}</em></div>}
+        {shown.header && <div className="m7-pv-header"><b>{shown.header.brand}</b><nav>{shown.header.nav.map((l) => <span key={l}>{l}</span>)}</nav><em>{shown.header.cta}</em></div>}
         <div className="m7-pv-body">
           <div className="m7-pv-slot">{page ? `${page.title} — page content (${page.blocks} blocks)` : "No page selected"}</div>
           <div className="m7-pv-meta">
@@ -274,7 +308,12 @@ export function PreviewModal({ siteId, layout, frame, onClose }: {
             <span>Page currently bound to: <b>{bound || "unassigned"}</b></span>
           </div>
         </div>
-        {frame.footer && <div className="m7-pv-footer">{frame.footer.note} · {frame.footer.variant}</div>}
+        {shown.footer && (
+          <div className="m7-pv-footer">
+            {shown.footer.groups.map((g) => <div key={g.title}><b>{g.title}</b> {g.links.join(" · ")}</div>)}
+            <div>{shown.footer.note} · {shown.footer.variant}</div>
+          </div>
+        )}
       </div>
     </Modal>
   );
@@ -327,7 +366,7 @@ export function RegionDrawer({ region: opened, onClose, onDone }: { region: Shar
       const blocks = variant.blocks.map((b, i) => i !== 0 ? b : {
         ...b,
         props: { ...(b.props as any), ...(region.kind === "announcement" ? { text } : region.kind === "header" ? { brand, nav: nav.split(",").map((s) => s.trim()).filter(Boolean), cta }
-          : region.kind === "footer" ? { columns: Number(fCols), note: fNote.trim(), groups: fTitles.map((title, i) => ({ title: title.trim(), links: (fLinks[i] ?? "").split(",").map((s) => s.trim()).filter(Boolean) })) } : {}) }
+          : region.kind === "footer" ? { columns: Number(fCols), note: fNote.trim(), groups: menuRefOf(props) ? footerGroups(props) : fTitles.map((title, i) => ({ title: title.trim(), links: (fLinks[i] ?? "").split(",").map((s) => s.trim()).filter(Boolean) })) } : {}) }
       });
       await LayoutsAPI.saveRegionVariant(region.id, { ...variant, name, blocks });
       app.toast({
@@ -364,7 +403,17 @@ export function RegionDrawer({ region: opened, onClose, onDone }: { region: Shar
           <Field label="Note" hint="Shown under the brand line. Plain text.">
             <input value={fNote} onChange={(e) => setFNote(e.target.value)} maxLength={120} placeholder="Compact legal row" />
           </Field>
-          {fTitles.map((t, i) => (
+          {menuRefOf(props) && (
+            <p className="f12 muted">Link columns come from the footer menu, so they are not typed here. Edit them in Menus &amp; Navigation, then publish.</p>
+          )}
+          {menuRefOf(props) && (() => {
+            const ref = menuRefOf(props)!;
+            const info = menuRefInfo(ref.menuId);
+            if (!info) return <p className="f12 muted">The footer menu was deleted. Choose another in Menus &amp; Navigation.</p>;
+            const stale = info.liveRev !== ref.liveRev;
+            return <p className="f12"><b>{info.name}</b> · <span className={stale ? "m8-warn-text" : "m8-ok-text"}>{stale ? "Out of date. Publish it from Menus to refresh the footer." : "In sync with the live menu"}</span></p>;
+          })()}
+          {!menuRefOf(props) && fTitles.map((t, i) => (
             <div key={i} className="m7-pair" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, opacity: i + 2 <= Number(fCols) ? 1 : 0.55 }}>
               <Field label={`Column ${i + 2} title`} hint={i + 2 <= Number(fCols) ? "Shown" : "Hidden at this column count"}>
                 <input value={t} onChange={(e) => setFTitles((a) => a.map((x, j) => (j === i ? e.target.value : x)))} maxLength={30} aria-label={`Column ${i + 2} title`} />

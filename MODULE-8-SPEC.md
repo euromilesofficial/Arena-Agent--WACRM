@@ -105,11 +105,12 @@ scheduled visibility; animation timeline editors; menu-click analytics without a
 
 ## 11. Open items (not claimed as done)
 
-- Layouts screen does not yet edit bindings. It shows the binding read-only and links to Menus.
-- Footer drawer: links still edited there. Not re-verified against menu-derived groups in this pass.
-- Layouts preview does not pin a menu revision.
-- The release modal's other checks (DNS, SSL, Core Web Vitals) are still fixed passes, as they were before this change.
-- The live header is a flat `nav`; dropdowns and mega panels are omitted at apply time.
+Closed in the completion pass (see §13). Still open:
+
+- The release modal's DNS, SSL and Core Web Vitals checks are still fixed passes, as before. They belong to the release gate, not Module 8.
+- §31.8 mapping is approximate until the owner re-pastes the verbatim v1.1 text.
+- README §18 conflict (M8 "after M11" vs built, sidebar under Manage): owner decision.
+- Tablet and mobile layouts are checked by CSS breakpoints; screenshots at those widths are not in the QA evidence.
 
 ## 12. Mockup-to-build mapping (v4 visual pass)
 
@@ -141,3 +142,18 @@ The three mockups are `uploads/Module 8_ Menus & Navigation UI-3.webp` (panels 1
 - The Menu Placements tab's Utility row can be seen but not used, because layouts have no utility slot.
 - Layouts screen still reads bindings only, and Layouts preview does not pin a menu revision (carried over from section 11).
 - Visual checks were made with screenshots at 1440 px. Tablet and mobile widths were checked only through the CSS breakpoints, not by screenshot.
+
+## 13. Completion pass (gaps closed)
+
+| Gap | Resolution | Evidence |
+|---|---|---|
+| Layouts owns slot bindings; screen was read-only | Layouts > Regions shows a header menu and a footer menu selector per layout. They write the same placement draft as Menus. Replacing an occupied slot asks first ("Replace in Draft"). The header cannot be set to None. | `qa_m8_final.py` L1a–L3 |
+| Layouts preview did not pin a menu revision (M7 spec: pin layout rev, menu rev, tokens) | The preview is captured when it opens. A banner shows the layout revision, the live menu revision and version for the header and footer, and the theme. The header nav and footer groups come from the live placement's menu. Changes made while it is open do not move it. | `qa_m8_final.py` L4a–L4d |
+| Footer drawer could overwrite menu-derived groups with typed values | When the footer is menu-bound, the drawer shows its sync state and makes the link columns read-only ("Edit them in Menus & Navigation, then publish"). Save keeps the stored groups. | `qa_m8_final.py` L5a–L5c |
+| Git history used 61 MB | `git gc` (no history removed). `.git` went from 61 MB to 33 MB. | `git count-objects`, `git fsck` clean |
+
+Decisions kept:
+
+- The Mega Menu layout cards offer 2, 3 and 4 columns. The mockup's "Custom" card is not offered, because the spec's column limits are 2 to 4 (`MENU_LIMITS`).
+- Utility menus can be created and edited but not placed, because layouts have no utility slot.
+- Footer menus render as footer navigation only. A separate mobile menu is deferred.

@@ -15,6 +15,7 @@ import { Icon } from "@/components/Icon";
 import { Btn, EmptyState, ErrorState, MenuItem, MenuLabel, Pill, Popover, Skel, Tip } from "@/components/ui";
 import { useApp } from "@/lib/store";
 import { DBX } from "@/lib/data";
+import { MenusAPI, MenuError, slotsOf, LOC_LABEL, type Slot } from "@/lib/menu-db";
 import { REGISTRY, type BlockType } from "@/lib/builder";
 import { LayoutCanvas, type LayoutDevice } from "@/components/layouts/LayoutCanvas";
 import {
@@ -763,11 +764,13 @@ export function Layouts() {
                 <div className="m7-sec-h"><h4>Regions</h4><span>Order fixed: announcement → header → slot → footer</span></div>
                 {regionRow("announcement", "Announcement", draft.announcement, (v) => setVariant("announcement", v), () => toggleRef("announcement"))}
                 {regionRow("header", "Global Header", draft.header, (v) => setVariant("header", v), () => toggleRef("header"))}
+                {draft.header.visible && <SlotMenuBinding siteId={siteId} layoutId={draft.id} slot="header" />}
                 <div className="m7-region is-slot">
                   <div className="m7-region-h"><Icon name="lock" size={12} /><b>Main Content Slot</b><Pill tone="violet">Required</Pill></div>
                   <p>{draft.slot.seed.length} seed blocks · {draft.slot.policy.allow.length || 20} allowed types · max {draft.slot.policy.maxBlocks}</p>
                 </div>
                 {regionRow("footer", "Global Footer", draft.footer, (v) => setVariant("footer", v), () => toggleRef("footer"))}
+                {draft.footer.visible && <SlotMenuBinding siteId={siteId} layoutId={draft.id} slot="footer" />}
               </div>
 
               <div className="m7-insp-foot">
@@ -1219,6 +1222,74 @@ export function Layouts() {
           onStay={() => setPending(null)}
           onLeave={() => { const run = pending; setPending(null); setDraft(null); run(); }}
         />
+      )}
+    </div>
+  );
+}
+
+
+/**
+ * Layouts owns the slot bindings (layout_id / slot_key / menu_id). This selector edits the same
+ * placement draft as Menus > Menu Placements, so the two screens always agree. Replacing an occupied
+ * slot asks first ("Replace in Draft"). Unassigning the header is blocked.
+ */
+function SlotMenuBinding({ siteId, layoutId, slot }: { siteId: string; layoutId: string; slot: Slot }) {
+  const app = useApp();
+  const [menus, setMenus] = useState<{ id: string; name: string }[]>([]);
+  const [current, setCurrent] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let live = true;
+    MenusAPI.load(siteId).then((m) => {
+      if (!live) return;
+      setMenus(m.menus.map((x) => ({ id: x.id, name: x.draft.name })));
+      setCurrent(slotsOf(m.placements.draft, layoutId)[slot]);
+    }).catch(() => undefined);
+    return () => { live = false; };
+  }, [siteId, layoutId, slot, tick]);
+
+  const save = async (to: string | null) => {
+    setBusy(true);
+    try {
+      const m = await MenusAPI.load(siteId);
+      const base = m.placements.draft;
+      await MenusAPI.savePlacements(siteId, { ...base, [layoutId]: { ...slotsOf(base, layoutId), [slot]: to } }, null);
+      setPending(null);
+      setTick((t) => t + 1);
+      app.toast({ type: "success", title: "Navigation placement saved as draft.", sub: "It goes live when you publish." });
+    } catch (e) {
+      app.toast({ type: "error", title: "Could not save placement", sub: e instanceof MenuError ? e.message : undefined });
+    } finally { setBusy(false); }
+  };
+
+  const choose = (v: string) => {
+    const to = v || null;
+    if (!to && slot === "header") { app.toast({ type: "error", title: "The header needs a menu", sub: "Choose another menu to replace it." }); return; }
+    if (to && current && to !== current) { setPending(to); return; }
+    void save(to);
+  };
+
+  return (
+    <div className="m8-bind" aria-label={`${LOC_LABEL[slot]} menu binding`}>
+      <div className="m7-region-h"><Icon name="menu" size={12} /><b>{LOC_LABEL[slot]} menu</b></div>
+      <div className="m8-inline">
+        <select aria-label={`${LOC_LABEL[slot]} menu for this layout`} value={current ?? ""} disabled={busy} onChange={(e) => choose(e.target.value)}>
+          {slot === "footer" && <option value="">None</option>}
+          {!current && slot === "header" && <option value="" disabled>Choose a menu</option>}
+          {menus.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+        </select>
+        <button type="button" className="m8-link-btn" onClick={() => app.go("menus")}>Edit in Menus</button>
+      </div>
+      {pending && (
+        <div className="m8-banner is-warn" role="alert">
+          <span>{LOC_LABEL[slot]} currently shows <b>{menus.find((x) => x.id === current)?.name ?? "another menu"}</b>. Replace it with <b>{menus.find((x) => x.id === pending)?.name}</b> in the draft?</span>
+          <div className="m8-banner-acts">
+            <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => void save(pending)}>Replace in Draft</button>
+            <button type="button" className="btn btn-sm" onClick={() => setPending(null)}>Cancel</button>
+          </div>
+        </div>
       )}
     </div>
   );

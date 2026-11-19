@@ -389,6 +389,12 @@
         "name": "Module 8 — spec v1.1 §31 (data rules and browser)",
         "assertions": 35,
         "covers": "Node (one bundle of menu-db.ts and layout-db.ts): apply writes menuRef, placement draft rules (header required, unknown menu refused), publish compiles chrome, rollback restores menus and bindings together, delete guards, URL policy, tree operations; browser: Replace in Draft, Save Placement Draft toast, header unassign blocked, Alt+arrow reorder, tablet drawer, settings delete guard"
+      },
+      {
+        "file": "qa_m8_final.py",
+        "name": "Module 8 — closing gaps (Layouts bindings, pinned preview, footer drawer)",
+        "assertions": 14,
+        "covers": "browser: Layouts owns the header and footer menu bindings (placement draft, Replace in Draft confirmation, header cannot be unassigned); Layouts preview pins the live placement's menu revision and shows its nav and footer groups; a menu-bound footer's columns are read-only in the Global Footer drawer and show sync state"
       }
     ]
   },
