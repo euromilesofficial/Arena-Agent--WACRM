@@ -407,6 +407,12 @@
         "name": "Module 8 — responsive (1280, 1024, 768)",
         "assertions": 13,
         "covers": "browser: no sideways page scroll at 1280, 1024 and 768; mega editor two columns at 1280 and one at 1024; preset cards inside the settings column; builder stacks at 768; tablet preview shows the drawer; phone 390px builder stacks, phone drawer, tappable rows; no page errors"
+      },
+      {
+        "file": "qa_m8_hier.py",
+        "name": "Module 8 — hierarchy drag and drop, mega themes, effects (v5)",
+        "assertions": 16,
+        "covers": "unit (menu-db.ts in Node): drop at parent, child and grandchild depths; refusals past the third level, subtree depth, mega placement, own subtree; browser: pointer drags land at the child and parent levels; six mega themes, new drop animation and hover effect reach the preview"
       }
     ]
   },

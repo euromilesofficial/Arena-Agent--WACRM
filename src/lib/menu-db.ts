@@ -52,8 +52,8 @@ export interface MenuItem {
 
 /** Look and motion of a menu. Optional on the document, so older drafts keep working. */
 export type Preset = "classic" | "minimal" | "pill" | "underline" | "bold";
-export type DropAnim = "fade" | "slide" | "scale" | "none";
-export type HoverFx = "none" | "underline" | "lift" | "highlight";
+export type DropAnim = "fade" | "slide" | "scale" | "stagger" | "blur" | "flip" | "none";
+export type HoverFx = "none" | "underline" | "lift" | "highlight" | "sweep" | "glow" | "arrow";
 export interface MenuStyle { preset: Preset; dropAnim: DropAnim; hoverFx: HoverFx }
 export const PRESETS: { id: Preset; label: string; hint: string }[] = [
   { id: "classic", label: "Classic", hint: "Plain text, thin active line" },
@@ -63,10 +63,12 @@ export const PRESETS: { id: Preset; label: string; hint: string }[] = [
   { id: "bold", label: "Bold", hint: "Heavy weight on a dark bar" },
 ];
 export const DROP_ANIMS: { id: DropAnim; label: string }[] = [
-  { id: "fade", label: "Fade in" }, { id: "slide", label: "Slide down" }, { id: "scale", label: "Scale up" }, { id: "none", label: "No animation" },
+  { id: "fade", label: "Fade in" }, { id: "slide", label: "Slide down" }, { id: "scale", label: "Scale up" },
+  { id: "stagger", label: "Stagger columns" }, { id: "blur", label: "Blur in" }, { id: "flip", label: "Flip down" }, { id: "none", label: "No animation" },
 ];
 export const HOVER_FX: { id: HoverFx; label: string }[] = [
-  { id: "underline", label: "Underline" }, { id: "lift", label: "Lift" }, { id: "highlight", label: "Highlight" }, { id: "none", label: "None" },
+  { id: "underline", label: "Underline" }, { id: "lift", label: "Lift" }, { id: "highlight", label: "Highlight" },
+  { id: "sweep", label: "Sweep" }, { id: "glow", label: "Glow" }, { id: "arrow", label: "Arrow" }, { id: "none", label: "None" },
 ];
 export const MENU_STYLE_DEFAULT: MenuStyle = { preset: "classic", dropAnim: "fade", hoverFx: "underline" };
 export const styleOf = (d: { style?: Partial<MenuStyle> }): MenuStyle => ({ ...MENU_STYLE_DEFAULT, ...(d.style ?? {}) });
@@ -100,7 +102,17 @@ export interface MegaLink { id: string; label: string; link: LinkRef | null }
 export interface MegaColumn { id: string; title: string; links: MegaLink[] }
 export interface MegaFeatured { enabled: boolean; image: string; title: string; text: string; ctaLabel: string; ctaLink: LinkRef | null }
 export type Surface = "card" | "flat" | "bordered";
-export interface MegaDoc { name: string; gap: Gap; columns: MegaColumn[]; featured: MegaFeatured; surface?: Surface; dropAnim?: DropAnim }
+/** Mega panel themes. Each is a complete look (type, colour, rules, featured card), pre-built in CSS. */
+export type MegaTheme = "classic" | "editorial" | "dark" | "minimal" | "image" | "brand";
+export const MEGA_THEMES: { id: MegaTheme; label: string; hint: string }[] = [
+  { id: "classic", label: "Classic", hint: "White card, bold headings, violet accents" },
+  { id: "editorial", label: "Editorial", hint: "Serif headings, ruled columns, magazine feel" },
+  { id: "dark", label: "Dark", hint: "Night panel, light text, glowing accent" },
+  { id: "minimal", label: "Minimal", hint: "Whitespace, small caps headings, no boxes" },
+  { id: "image", label: "Image cards", hint: "Each column leads with a picture card" },
+  { id: "brand", label: "Brand bar", hint: "Coloured header band over the columns" },
+];
+export interface MegaDoc { name: string; gap: Gap; columns: MegaColumn[]; featured: MegaFeatured; surface?: Surface; dropAnim?: DropAnim; theme?: MegaTheme }
 export const SURFACES: { id: Surface; label: string }[] = [{ id: "card", label: "Card" }, { id: "flat", label: "Flat" }, { id: "bordered", label: "Bordered" }];
 export interface MegaRec {
   id: string; siteId: string; rev: number; updatedAt: string; updatedBy: string;
@@ -283,6 +295,42 @@ export function dropNode(items: MenuItem[], node: MenuItem, targetId: string, wh
   if (node.behaviour === "mega" && levelOf(next, node.id) > 0) return { error: "Mega menus attach to top-level items only." };
   if (countItems(next) > MENU_LIMITS.maxItems) return { error: `A menu takes ${MENU_LIMITS.maxItems} items at most.` };
   return { items: next };
+}
+
+/** The chain of ids from the top level down to an item, inclusive. */
+export function chainTo(items: MenuItem[], id: string, acc: string[] = []): string[] | null {
+  for (const it of items) {
+    if (it.id === id) return [...acc, it.id];
+    const r = chainTo(it.children, id, [...acc, it.id]);
+    if (r) return r;
+  }
+  return null;
+}
+
+/**
+ * Places `node` at a hierarchy depth next to a target row. Depth 0 is the top level.
+ * - depth <= target's level: the node becomes a sibling of the target's ancestor at that depth,
+ *   before or after it (the drop lands in the target's own list when depth equals its level).
+ * - depth = target's level + 1: the node becomes the target's child (the target becomes a dropdown).
+ * Every rule that dropNode enforces still applies (depth limit, mega placement, item limit).
+ */
+export function dropAtDepth(items: MenuItem[], node: MenuItem, targetId: string, where: "before" | "after", depth: number): { items: MenuItem[] } | { error: string } {
+  const chain = chainTo(items, targetId);
+  if (!chain) return { error: "That row is no longer in the menu." };
+  const tLevel = chain.length - 1;
+  if (depth > tLevel + 1 || depth < 0) return { error: "That level is not available here." };
+  if (depth === tLevel + 1) return dropNode(items, node, targetId, "inside");
+  return dropNode(items, node, chain[depth], where);
+}
+
+/** Moves an existing row to a depth next to a target. Same guards as moveNode. */
+export function moveAtDepth(items: MenuItem[], dragId: string, targetId: string, where: "before" | "after", depth: number): { items: MenuItem[] } | { error: string } {
+  if (dragId === targetId) return { error: "Drop it somewhere else." };
+  const dragged = findItem(items, dragId);
+  if (!dragged) return { error: "That item is no longer in the menu." };
+  if (findItem(dragged.children, targetId)) return { error: "An item can't move inside itself." };
+  const without = removeItem(items, dragId);
+  return dropAtDepth(without, dragged, targetId, where, depth);
 }
 
 /** Moves an existing item to a drop position. Refuses to drop a row into its own subtree. */

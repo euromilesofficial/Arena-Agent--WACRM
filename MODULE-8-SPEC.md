@@ -205,3 +205,41 @@ Still deliberately out of scope: mega panels on the live header (the header is a
 | Phone width (390 px) not tested | Added to the responsive suite: builder stacks, phone drawer, tappable rows at least 36 px | `qa_m8_responsive.py` R9a–c, `/tmp/resp_390_builder.png` |
 
 Still open: §31.8 verbatim text is not in the workspace, so the fifteen-test mapping cannot be fully verified here.
+
+## 17. Hierarchy drag and drop, mega themes, effects, and model review (v5)
+
+### 17.1 Research that shaped the decisions
+
+- Nested menus in enterprise tools use three gestures. Drop below a parent and shift right to indent, with a visible indicator. Drop on top of an item to make it a submenu. Keep indent and outdent buttons as the keyboard and accessible path. Sources: Experro multi-level menus (help.experro.com) for the shift-right indicator; Aether CMS menu editor for the indent and outdent controls and the hierarchy rules; UX Stack Exchange "Menu builder suggestions" for dropping onto an item and for keeping buttons beside drag-and-drop.
+- Nesting depth is limited in practice to two or three levels. Sources: Experro ("2–3 levels is typical"); ProcessWire Menu Builder uses a `maxLevels` setting for the same reason.
+- Mega menu styles cluster into four families: editorial (serif type, ruled columns, a featured article), image cards (each destination is a picture, with the box reserved before the image loads), minimal whitespace (Walmart, Nike, Home Depot), and category-first panels (Target, Best Buy). Sources: CodeFronts editorial mega menus (Aug 2026 and Oct 2026 pages); CodeFronts "Mega Menu with Category Image Cards"; Exclusive Addons "7 examples of mega menus"; mycodelesswebsite 2026 examples.
+
+### 17.2 What was built
+
+| Area | Built | Evidence |
+|---|---|---|
+| Hierarchy drop | The pointer's x chooses the level, 36px per level, from the parent level to the grandchild level. The drop surface is the whole tree, so a pointer far to the left still reaches a row. | `qa_m8_hier.py` H1–H9, HB1, HB2 |
+| Refusals | Past the third level, a subtree that would exceed three levels, a mega item below the top level, into its own subtree, onto itself. Each refusal is a toast. | H5–H9 |
+| Mega themes | Six: Classic, Editorial, Dark, Minimal, Image cards, Brand bar. Each is a complete look with its own type, colour and layout. | `qa_m8_hier.py` HS1–HS2; screenshots `/tmp/theme_*.png` (checked: editorial serif and rules, dark glow, image blocks) |
+| Drop animations | Added Stagger columns, Blur in, Flip down (alongside Fade, Slide, Scale, None). Reduced motion turns them off. | HS4 |
+| Hover effects | Added Sweep (underline draws in), Glow, Arrow (an arrow reveals). Alongside Underline, Lift, Highlight, None. | HS3 |
+| Keyboard | Alt+arrows still move, indent and outdent. Keyboard depth is unchanged. | `qa_m8_dnd.py` DB8 |
+
+### 17.3 Model review: gaps found
+
+Built in this pass: hierarchy drop, six themes, new effects.
+
+Found and not built. Each is a real gap against enterprise menu builders and is listed so the owner can prioritise it:
+
+1. Per-item icon and short description. Mega and dropdown items in the research examples carry icons and one-line descriptions (weDevs, Fiverr, Miro). Not in the model.
+2. Per-column "View all" link. Common in mega panels. Not in the model.
+3. Media for mega images. The image cards and featured art use CSS and drawn placeholders, not uploaded media from the Media Library.
+4. Per-locale menus. The Localization module exists, but menus have one language. Not built.
+5. Menu export and import (JSON). Not built.
+6. Auto-expand a collapsed parent when a drag hovers its middle, and auto-scroll near the tree edges. Not built.
+7. Themes on the live site. Mega panels are not part of the live header (flat `nav`, per the M7 scope), so the six themes show only in the builder preview.
+
+### 17.4 Verification limits, stated plainly
+
+- The drop indicator line was not verified visually during a live drag. In a headless drag the indicator stayed on an earlier row while the drop itself used the drop event's own coordinates, and those landed correctly (HB1, HB2). Real browsers fire drag-over continuously, so the indicator should follow the pointer, but this is not proven here.
+- The §31.8 verbatim text is still missing from the workspace.

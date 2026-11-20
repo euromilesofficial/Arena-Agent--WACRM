@@ -85,14 +85,22 @@ async def row_box(pg, label):
     row = pg.locator(".m8-row", has=pg.locator(".m8-row-label", has_text=label)).first
     return row
 
-async def drag_to_zone(pg, src_grip_label, dst_label, zone):
-    """Drag a row by its grip onto the top, middle or bottom quarter of another row."""
+async def drag_to_zone(pg, src_grip_label, dst_label, zone, depth=0):
+    """Drag a row by its grip onto the top, middle or bottom quarter of another row, at a hierarchy depth.
+    The depth comes from the pointer's x, measured from the tree's left edge (36px per level)."""
     src = (await row_box(pg, src_grip_label)).locator(".m8-grip")
+    await src.scroll_into_view_if_needed(); await pg.wait_for_timeout(120)
+    sb = await src.bounding_box()
     dst = await row_box(pg, dst_label)
-    box = await dst.bounding_box()
-    y = {"before": 0.12, "inside": 0.5, "after": 0.88}[zone]
-    await src.drag_to(dst, target_position={"x": 40, "y": box["height"] * y})
-    await pg.wait_for_timeout(350)
+    await dst.scroll_into_view_if_needed(); await pg.wait_for_timeout(120)
+    db = await dst.bounding_box()
+    tree_left = await pg.evaluate("() => { const t = document.querySelector('ul[role=tree]'); return t ? t.getBoundingClientRect().left : 0; }")
+    y = db["y"] + db["height"] * {"before": 0.12, "inside": 0.5, "after": 0.88}[zone]
+    x = tree_left + depth * 36 + 18
+    await pg.mouse.move(sb["x"] + sb["width"] / 2, sb["y"] + sb["height"] / 2); await pg.mouse.down()
+    await pg.mouse.move(x, y - 14, steps=6); await pg.mouse.move(x, y, steps=8)
+    await pg.wait_for_timeout(120)
+    await pg.mouse.up(); await pg.wait_for_timeout(350)
 
 async def browser():
     async with async_playwright() as p:
@@ -143,8 +151,10 @@ async def browser():
         page_title = (await pages_li.locator("span").first.text_content() or "").strip()
         count_before = await pg.locator(".m8-row").count()
         dst = pg.locator(".m8-tree > .m8-node > .m8-row").first
-        await pages_li.drag_to(dst, target_position={"x": 40, "y": 3})
-        await pg.wait_for_timeout(350)
+        dbox = await dst.bounding_box(); sbox = await pages_li.bounding_box()
+        tl = await pg.evaluate("() => document.querySelector('ul[role=tree]').getBoundingClientRect().left")
+        await pg.mouse.move(sbox["x"] + 20, sbox["y"] + sbox["height"] / 2); await pg.mouse.down()
+        await pg.mouse.move(tl + 18, dbox["y"] + 3, steps=8); await pg.mouse.up(); await pg.wait_for_timeout(350)
         ck("DB6 a page dragged from Add Items is added to the menu", await pg.locator(".m8-row").count() == count_before + 1)
         ck("DB7 the added page is named after the page", await pg.locator(".m8-row-label", has_text=page_title).count() >= 1, page_title)
 

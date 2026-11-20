@@ -14,7 +14,7 @@ import { DBX, type CmsPage } from "@/lib/data";
 import { themeFor } from "@/lib/theme-db";
 import {
   LOCATIONS, LOC_LABEL, MENU_LIMITS, MENU_TYPE_LABEL, MenuError, MenusAPI, addChild, blankLink, checkMega, checkMenu, countItems,
-  DropWhere, duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, dropNode, moveNode, moveItem,
+  DropWhere, dropAtDepth, moveAtDepth, duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, moveItem,
   outdentItem, placedIn, removeItem, sameDoc, slotsOf, statusOf, toTopLevel, urlOk, walk, hasChanges,
   type Audience, type Behaviour, type Loaded, type MegaDoc, type MenuDoc, type MenuIssue, type MenuItem, type MenuType, type Placements, type Slot, type VersionRec,
 } from "@/lib/menu-db";
@@ -67,7 +67,7 @@ export function Menus() {
   const [manageFilter, setManageFilter] = useState<"all" | "published" | "draft" | "assigned" | "unassigned">("all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragPage, setDragPage] = useState<string | null>(null);
-  const [dropHint, setDropHint] = useState<{ id: string; where: DropWhere } | null>(null);
+  const [dropHint, setDropHint] = useState<{ id: string; where: DropWhere; depth: number } | null>(null);
   const [rowMenu, setRowMenu] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
   const [previewing, setPreviewing] = useState(false);
@@ -452,31 +452,58 @@ export function Menus() {
   };
 
   /* ---------- drag and drop ---------- */
-  const zoneOf = (e: { clientY: number; currentTarget: Element }): DropWhere => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const y = (e.clientY - r.top) / Math.max(1, r.height);
-    return y < 0.25 ? "before" : y > 0.75 ? "after" : "inside";
+  /* A row drop has a place (before, after, or inside) and, for before and after, a hierarchy depth.
+     The pointer's horizontal position chooses the depth, so one drag can land at the parent level,
+     the child level, or the grandchild level, as enterprise menu builders do. */
+  const INDENT_PX = 36;
+  const planIn = (rect: DOMRect, clientX: number, clientY: number, level: number, treeLeft: number): { where: DropWhere; depth: number } => {
+    const y = (clientY - rect.top) / Math.max(1, rect.height);
+    const maxDepth = Math.min(level + 1, MENU_LIMITS.maxDepth - 1);
+    if (y >= 0.25 && y <= 0.75) return { where: "inside", depth: level + 1 <= MENU_LIMITS.maxDepth - 1 ? level + 1 : level };
+    const want = Math.floor((clientX - treeLeft) / INDENT_PX);
+    return { where: y < 0.25 ? "before" : "after", depth: Math.max(0, Math.min(maxDepth, want)) };
   };
-  const dropOnRow = (targetId: string, targetLabel: string, where: DropWhere) => {
+  /* The whole tree is the drop surface: the row under the pointer's height is the target, so a
+     pointer far to the left (the parent level) still lands on a row that is nested further in. */
+  const treeTarget = (tree: HTMLElement, clientX: number, clientY: number) => {
+    const rows = Array.from(tree.querySelectorAll<HTMLElement>(".m8-row[data-row-id]"));
+    if (!rows.length) return null;
+    let best = rows[0], bestD = Infinity;
+    for (const r of rows) {
+      const b = r.getBoundingClientRect();
+      const d = clientY < b.top ? b.top - clientY : clientY > b.bottom ? clientY - b.bottom : 0;
+      if (d < bestD) { best = r; bestD = d; if (d === 0) break; }
+    }
+    const b = best.getBoundingClientRect();
+    const level = Number(best.dataset.rowLevel ?? 0);
+    const left = tree.getBoundingClientRect().left;
+    return { id: best.dataset.rowId as string, label: best.dataset.rowLabel ?? "item", plan: planIn(b, clientX, clientY, level, left) };
+  };
+  const dropOnRow = (targetId: string, targetLabel: string, plan: { where: DropWhere; depth: number }) => {
     if (!doc || readOnly) return;
     const fromPage = dragPage;
     const fromRow = dragId;
     setDragId(null); setDragPage(null); setDropHint(null);
+    /* "inside" is the target's child level; dropAtDepth turns that into a child append */
+    const level = levelOf(doc.items, targetId);
+    const where: "before" | "after" = plan.where === "before" ? "before" : "after";
+    const depth = plan.where === "inside" ? level + 1 : plan.depth;
     let res: { items: MenuItem[] } | { error: string };
     let verb: string;
     if (fromPage) {
       const page = pages.find((x) => x.id === fromPage);
-      res = dropNode(doc.items, blankLink(page?.title ?? "Page", { kind: "page", pageId: fromPage }), targetId, where);
+      res = dropAtDepth(doc.items, blankLink(page?.title ?? "Page", { kind: "page", pageId: fromPage }), targetId, where, depth);
       verb = `Added ${page?.title ?? "page"}`;
     } else if (fromRow) {
       if (fromRow === targetId) return;
-      res = moveNode(doc.items, fromRow, targetId, where);
+      res = moveAtDepth(doc.items, fromRow, targetId, where, depth);
       verb = `Moved ${findItem(doc.items, fromRow)?.label ?? "item"}`;
     } else return;
     if ("error" in res) { app.toast({ type: "error", title: "Can't drop it here", sub: res.error }); setAnnounce(res.error); return; }
     setDoc({ ...doc, items: res.items });
-    if (where === "inside") setCollapsed((c) => { const n = new Set(c); n.delete(targetId); return n; });
-    const place = where === "inside" ? `inside ${targetLabel}` : `${where} ${targetLabel}`;
+    if (plan.where === "inside") setCollapsed((c) => { const n = new Set(c); n.delete(targetId); return n; });
+    const lvlName = depth === 0 ? "top level" : `level ${depth + 1}`;
+    const place = plan.where === "inside" ? `inside ${targetLabel}` : `${plan.where} ${targetLabel}, at the ${lvlName}`;
     setAnnounce(`${verb} ${place}.`);
   };
 
@@ -495,7 +522,9 @@ export function Menus() {
         <li key={it.id} role="none" className={`m8-node depth-${depth}`}>
           <div
             role="treeitem" aria-level={depth + 1} aria-selected={sel} aria-expanded={kids ? !isCollapsed : undefined}
+            data-row-id={it.id} data-row-level={depth} data-row-label={it.label || "item"}
             tabIndex={0} className={`m8-row${sel ? " is-sel" : ""}${it.behaviour === "mega" ? " is-mega" : ""}${dragId === it.id ? " is-drag" : ""}${dropHint?.id === it.id && (dragId || dragPage) ? ` is-drop-${dropHint.where}` : ""}`}
+            style={dropHint?.id === it.id && (dragId || dragPage) ? ({ "--drop-indent": `${dropHint.depth * 36}px` } as React.CSSProperties) : undefined}
             onClick={() => { setItemId(it.id); setItemTab("settings"); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setItemId(it.id); setItemTab("settings"); return; }
@@ -505,9 +534,6 @@ export function Menus() {
               if (e.key === "ArrowRight" && e.shiftKey) { e.preventDefault(); indent(it.id); }
               if (e.key === "ArrowLeft" && e.shiftKey) { e.preventDefault(); outdent(it.id); }
             }}
-            onDragOver={(e) => { if (!readOnly && (dragId || dragPage)) { e.preventDefault(); e.dataTransfer.dropEffect = dragPage ? "copy" : "move"; const where = zoneOf(e); if (dropHint?.id !== it.id || dropHint.where !== where) setDropHint({ id: it.id, where }); } }}
-            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropHint((h) => (h?.id === it.id ? null : h)); }}
-            onDrop={(e) => { e.preventDefault(); dropOnRow(it.id, it.label || "item", zoneOf(e)); }}
           >
             <span className="m8-grip" draggable={!readOnly} aria-hidden="true" title="Drag to reorder. Or Alt + arrow keys; Alt + Shift + arrows change level."
               onDragStart={(e) => { e.dataTransfer.setData("text/plain", it.id); e.dataTransfer.effectAllowed = "move"; setDragId(it.id); }} onDragEnd={() => setDragId(null)}>
@@ -823,7 +849,21 @@ export function Menus() {
                   {d.items.length === 0 ? (
                     <EmptyState icon="menu" title="This menu is empty" desc="Add pages or a custom link from the left." />
                   ) : (
-                    <ul role="tree" aria-label="Menu items" className="m8-tree" onDragOver={(e) => { if (dragId || dragPage) e.preventDefault(); }} onDragLeave={() => setDropHint(null)}>
+                    <ul role="tree" aria-label="Menu items" className="m8-tree"
+                      onDragOver={(e) => {
+                        if (!(dragId || dragPage) || readOnly) return;
+                        e.preventDefault(); e.dataTransfer.dropEffect = dragPage ? "copy" : "move";
+                        const t = treeTarget(e.currentTarget, e.clientX, e.clientY);
+                        if (!t) return;
+                        const cur = dropHint;
+                        if (!cur || cur.id !== t.id || cur.where !== t.plan.where || cur.depth !== t.plan.depth) setDropHint({ id: t.id, ...t.plan });
+                      }}
+                      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropHint(null); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const t = treeTarget(e.currentTarget, e.clientX, e.clientY);
+                        if (t) dropOnRow(t.id, t.label, t.plan); else { setDragId(null); setDragPage(null); setDropHint(null); }
+                      }}>
                       {renderRows(d.items, 0)}
                     </ul>
                   )}

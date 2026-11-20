@@ -7,7 +7,7 @@ import type { ThemeTokens } from "@/lib/theme-db";
 import { stackFor } from "@/lib/theme-db";
 import {
   MENU_LIMITS, anchorOk, linkLabel, newId, urlOk, type LinkRef, type MegaColumn, type MegaDoc, type MegaFeatured, type MegaLink,
-  type MenuItem, type PageLike, type Gap, type MenuStyle, type Surface, type DropAnim, SURFACES, DROP_ANIMS, styleOf,
+  type MenuItem, type PageLike, type Gap, type MenuStyle, type Surface, type DropAnim, type MegaTheme, SURFACES, DROP_ANIMS, MEGA_THEMES, styleOf,
 } from "@/lib/menu-db";
 
 export type Device = "desktop" | "tablet" | "mobile";
@@ -92,6 +92,12 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
           <span className="m8-lbl">Column gap</span>
           <select value={doc.gap} disabled={disabled} onChange={(e) => onChange({ ...doc, gap: e.target.value as Gap })}>
             <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
+          </select>
+        </label>
+        <label className="m8-field m8-theme-field">
+          <span className="m8-lbl">Panel theme</span>
+          <select aria-label="Panel theme" value={doc.theme ?? "classic"} disabled={disabled} onChange={(e) => onChange({ ...doc, theme: e.target.value as MegaTheme })}>
+            {MEGA_THEMES.map((t) => <option key={t.id} value={t.id}>{t.label} — {t.hint}</option>)}
           </select>
         </label>
         <label className="m8-field">
@@ -257,7 +263,7 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
 export function MegaPanelView({ mega, pages, tokens }: { mega: MegaDoc; pages: PageLike[]; tokens: ThemeTokens }) {
   const cols = mega.columns.length + (mega.featured.enabled ? 1 : 0);
   return (
-    <div className={`m8-mega-view m8-surface-${mega.surface ?? "card"}`} style={{ gap: GAP_PX[mega.gap], gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, color: tokens.colors.text }}>
+    <div className={`m8-mega-view m8-surface-${mega.surface ?? "card"} m8-theme-${mega.theme ?? "classic"}`} style={{ gap: GAP_PX[mega.gap], gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, color: tokens.colors.text }}>
       {mega.columns.map((c) => (
         <div key={c.id}>
           <b>{c.title || "Untitled"}</b>
