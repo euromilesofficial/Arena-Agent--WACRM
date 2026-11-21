@@ -17,7 +17,7 @@
 import { DBX } from "./data";
 import { PAGE_TEMPLATES, REGISTRY, type BlockNode, type BlockType } from "./builder";
 import { footerCols, footerGroups, type FooterGroup } from "@/lib/footer";
-import type { MenuStyle } from "./menu-db";
+import type { MenuStyle, LinkRef, MegaDoc } from "./menu-db";
 
 /* ---------------- shared regions (global chrome) ---------------- */
 
@@ -49,7 +49,14 @@ export interface HeaderChromeProps {
   sticky: boolean;
   menuRef?: MenuRef;
   menuStyle?: MenuStyle;
+  /** the live menu as a tree, with each mega panel's live copy; lets the live header show dropdowns and panels */
+  menuTree?: MenuTree;
 }
+export interface MenuTreeNode {
+  id: string; label: string; link: LinkRef | null; newTab: boolean; behaviour: "link" | "dropdown" | "mega";
+  icon?: string; description?: string; children: MenuTreeNode[]; mega: MegaDoc | null;
+}
+export interface MenuTree { items: MenuTreeNode[] }
 
 /** Footer variant props. `groups` is derived from the live menu at apply time; edited only in the Global Footer drawer. */
 export interface FooterChromeProps {
@@ -94,6 +101,8 @@ export interface LayoutDraft {
   scope: "builtin" | "workspace" | "site";
   isDefault: boolean;
   archived: boolean;
+  /** the language this layout serves; a menu fills only layouts of its own locale. Unset means the site default. */
+  locale?: string;
   announcement: RegionRef;
   header: RegionRef;
   footer: RegionRef;
@@ -202,7 +211,7 @@ export interface LayoutFrame {
   layoutId: string | null;
   layoutName: string;
   announcement: { text: string; visible: boolean } | null;
-  header: { name: string; brand: string; nav: string[]; cta: string; variant: string; menuStyle?: MenuStyle } | null;
+  header: { name: string; brand: string; nav: string[]; cta: string; variant: string; menuStyle?: MenuStyle; menuTree?: MenuTree } | null;
   footer: { name: string; variant: string; columns: string[]; note: string; groups: FooterGroup[]; menuStyle?: MenuStyle } | null;
   slotPolicy: SlotPolicy;
   issues: PreflightIssue[];
@@ -567,7 +576,8 @@ export function frameOf(l: LayoutDraft): LayoutFrame {
       nav: (headerProps.nav as string[]) ?? ["Home"],
       cta: headerProps.cta ?? "Enquire Now",
       variant: h.name,
-      menuStyle: headerProps.menuStyle
+      menuStyle: headerProps.menuStyle,
+      menuTree: headerProps.menuTree
     } : null,
     footer: f && l.footer.visible ? {
       name: f.name,
@@ -757,6 +767,16 @@ export const LayoutsAPI = {
     return clone(d.layouts.find((l) => l.id === id)!);
   },
 
+  /** Sets a layout's locale. Menu-side checks (no placed menu of another locale) run in MenusAPI.setLayoutLocale. */
+  async setLocale(id: string, locale: string): Promise<LayoutDraft> {
+    await wait(120, 220);
+    const d = get();
+    const target = d.layouts.find((l) => l.id === id);
+    if (!target) throw new Err("E_MISSING", "Layout not found.");
+    d.layouts = d.layouts.map((l) => (l.id === id ? { ...l, locale, rev: l.rev + 1, updatedAt: now() } : l));
+    snapshot(target, "layout", `Locale set to ${locale}`);
+    return clone(d.layouts.find((l) => l.id === id)!);
+  },
   async createLayout(siteId: string, name: string, fromId?: string): Promise<LayoutDraft> {
     await wait(260, 520);
     if (mode.fail) throw new Err("E_SAVE", "Could not create the layout.");

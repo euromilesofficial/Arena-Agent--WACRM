@@ -10,7 +10,8 @@ import { useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, Field, Modal, Pill, Switch, Tip } from "@/components/ui";
 import { livePlacementMenu, menuPinned, menuRefInfo } from "@/lib/menu-db";
-import { themeFor } from "@/lib/theme-db";
+import { themeFor, DEFAULT_TOKENS } from "@/lib/theme-db";
+import { ChromeNav } from "@/components/menus/ChromeNav";
 import { useApp } from "@/lib/store";
 
 /** the menu a header variant reads from, if it has been applied */
@@ -274,6 +275,7 @@ export function PreviewModal({ siteId, layout, frame, onClose }: {
     return { frame: shown, hm, fm, layoutRev: layout.rev, tokens: theme ? theme.id : "none" };
   });
   const shown = pin.frame;
+  const previewTokens = themeFor(siteId).live?.tokens ?? DEFAULT_TOKENS;
 
   return (
     <Modal title={`Preview · ${layout.name}`} sub="A read-only draft preview. Nothing here is live, and nothing can be edited in the frame." icon="eye" width="wide" onClose={onClose}
@@ -300,7 +302,7 @@ export function PreviewModal({ siteId, layout, frame, onClose }: {
       </div>
       <div className={`m7-pv-frame is-${device}`}>
         {frame.announcement && <div className="m7-pv-announce">{frame.announcement.text}</div>}
-        {shown.header && <div className="m7-pv-header"><b>{shown.header.brand}</b><nav className={`m8-preset-${shown.header.menuStyle?.preset ?? "classic"} m8-hover-${shown.header.menuStyle?.hoverFx ?? "underline"}`}>{shown.header.nav.map((l) => <span key={l}>{l}</span>)}</nav><em>{shown.header.cta}</em></div>}
+        {shown.header && <div className="m7-pv-header"><b>{shown.header.brand}</b>{shown.header.menuTree ? <ChromeNav tree={shown.header.menuTree} tokens={previewTokens} menuStyle={shown.header.menuStyle} label="Header navigation preview" /> : <nav className={`m8-preset-${shown.header.menuStyle?.preset ?? "classic"} m8-hover-${shown.header.menuStyle?.hoverFx ?? "underline"}`}>{shown.header.nav.map((l) => <span key={l}>{l}</span>)}</nav>}<em>{shown.header.cta}</em></div>}
         <div className="m7-pv-body">
           <div className="m7-pv-slot">{page ? `${page.title} — page content (${page.blocks} blocks)` : "No page selected"}</div>
           <div className="m7-pv-meta">

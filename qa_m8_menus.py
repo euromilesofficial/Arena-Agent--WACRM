@@ -137,7 +137,8 @@ async def browser():
 
         # ---- menu picker ----
         await pg.locator(".m8-select").click(); await pg.wait_for_timeout(150)
-        ck("B7 the menu picker lists all four menus", await pg.get_by_role("option").count() == 4, str(await pg.get_by_role("option").count()))
+        pop_opts = pg.locator(".m8-picker-pop").get_by_role("option")  # scoped: the Translate picker is a native select
+        ck("B7 the menu picker lists all four menus", await pop_opts.count() == 4, str(await pop_opts.count()))
         await pg.keyboard.press("Escape"); await pg.wait_for_timeout(100)
         ck("B8 Escape closes the picker", await pg.locator(".m8-picker-pop").count() == 0)
 

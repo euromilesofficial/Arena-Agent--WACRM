@@ -2,6 +2,7 @@
    Module 8 · shared parts — link picker, mega panel editor, navigation preview.
    Pure presentation over the menu-db types. No data access here.
    ============================================================ */
+import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import type { ThemeTokens } from "@/lib/theme-db";
 import { stackFor } from "@/lib/theme-db";
@@ -175,8 +176,10 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp, assets = [] }:
               <select value={doc.featured.image} disabled={disabled} onChange={(e) => setFeat({ image: e.target.value })}>
                 {FEATURED_IMAGES.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
                 {assets.length > 0 && <optgroup label="Media Library">{assets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</optgroup>}
+                {isUploaded(doc.featured.image) && <option value={doc.featured.image}>Uploaded image</option>}
               </select>
             </label>
+            <UploadField disabled={disabled} label="Upload image" onFile={(url) => setFeat({ image: url })} />
             <FeaturedArt image={doc.featured.image} />
             <label className="m8-field"><span className="m8-lbl">Title</span>
               <input aria-label="Featured title" value={doc.featured.title} disabled={disabled} onChange={(e) => setFeat({ title: e.target.value })} />
@@ -198,7 +201,22 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp, assets = [] }:
 }
 
 /* ---------- artwork (the featured card's image; drawn, not fetched) ---------- */
+/** uploads are stored in the mega panel as a data URL; only image types and up to 400 KB are accepted */
+export const UPLOAD_MAX_BYTES = 400 * 1024;
+export const isUploaded = (image: string): boolean => image.startsWith("data:image/");
+export function readUpload(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { reject(new Error("Choose a PNG, JPEG or WebP image.")); return; }
+    if (file.size > UPLOAD_MAX_BYTES) { reject(new Error("That image is larger than 400 KB. Choose a smaller one.")); return; }
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("The image could not be read."));
+    r.readAsDataURL(file);
+  });
+}
+
 export function FeaturedArt({ image }: { image: string }) {
+  if (isUploaded(image)) return <img className="m8-art m8-art-photo" src={image} alt="" />;
   const photo = SAMPLE_IMAGES[image];
   if (photo) return <img className="m8-art m8-art-photo" src={photo} alt="" />;
   const f = FEATURED_IMAGES.find((x) => x.id === image) ?? FEATURED_IMAGES[0];
@@ -211,6 +229,28 @@ export function FeaturedArt({ image }: { image: string }) {
         <rect x="112" y="92" width="18" height="38" fill="rgba(0,0,0,.25)" /><rect x="150" y="92" width="18" height="38" fill="rgba(0,0,0,.25)" /><rect x="188" y="92" width="18" height="38" fill="rgba(0,0,0,.25)" />
       </g>
     </svg>
+  );
+}
+
+/** a file picker for a mega image; the image is checked before it is stored */
+export function UploadField({ label, disabled, onFile }: { label: string; disabled?: boolean; onFile: (dataUrl: string) => void }) {
+  const [err, setErr] = useState("");
+  return (
+    <div className="m8-upload">
+      <label className="m8-btn-like">
+        <span>{label}</span>
+        <input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={disabled} aria-label={label}
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (!f) return;
+            try { setErr(""); onFile(await readUpload(f)); }
+            catch (x) { setErr(x instanceof Error ? x.message : "The image could not be used."); }
+          }} />
+      </label>
+      <small className="m8-muted">PNG, JPEG or WebP, up to 400 KB.</small>
+      {err && <p className="m8-err-text" role="alert">{err}</p>}
+    </div>
   );
 }
 

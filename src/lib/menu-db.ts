@@ -12,7 +12,8 @@
    from the page registry at check time (MODULE-7-SPEC §LinkRef).
    ============================================================ */
 import { DBX, type CmsPage } from "./data";
-import { LayoutsAPI, layoutSnapshot, type LayoutDraft, type SharedRegion, type RegionVariant } from "./layout-db";
+import { LayoutsAPI, layoutSnapshot, type LayoutDraft, type SharedRegion, type RegionVariant, type MenuTree, type MenuTreeNode } from "./layout-db";
+import { DEFAULT_LOCALE, isLocale, localeLabel } from "./locales";
 import { footerGroups, type FooterGroup } from "./footer";
 
 /** Prototype states, driven by the app's state menu (see Menus.tsx). Off in normal use. */
@@ -102,6 +103,8 @@ export interface MenuRec {
   rev: number;
   updatedAt: string;
   updatedBy: string;
+  /** the language this menu serves (a locale id from locales.ts) */
+  locale: string;
   draft: MenuDoc;
   live: MenuDoc | null;
   liveAt: string | null;
@@ -564,7 +567,7 @@ function store(): State {
     { id: "mega_dest", siteId: SITE, rev: 1, updatedAt: stamp, updatedBy: "Priya Nair", draft: megaDest(), live: null, liveAt: null, liveRev: 0 },
   ];
   const menuRecs: MenuRec[] = docs.map((d, i) => ({
-    id: ids[i], siteId: SITE, rev: 1, updatedAt: stamp, updatedBy: "Priya Nair", draft: clone(d),
+    id: ids[i], siteId: SITE, rev: 1, updatedAt: stamp, updatedBy: "Priya Nair", locale: DEFAULT_LOCALE, draft: clone(d),
     live: i === 3 ? null : clone(d), liveAt: i === 3 ? null : stamp, applied: [], liveRev: i === 3 ? 0 : 1,
   }));
   // Study Abroad's panel is attached to the primary menu item (mega_study); the draft of the primary menu carries the id
@@ -790,6 +793,24 @@ async function compileChrome(siteId: string, layouts: LayoutDraft[]): Promise<vo
   }
 }
 
+/** true when a menu sits in any slot, in the draft or the live placements */
+function menuPlaced(siteId: string, menuId: string): boolean {
+  const p = store().placements[siteId];
+  if (!p) return false;
+  return [p.draft, p.live].some((pl) => pl && LOCATIONS.some((slot) => Object.keys(pl).some((lid) => slotsOf(pl, lid)[slot] === menuId)));
+}
+
+/** The menu as a tree for the header variant: visible items only, each mega panel's live copy attached. */
+function menuTreeOf(rec: MenuRec, megas: MegaRec[]): MenuTree {
+  const conv = (items: MenuItem[]): MenuTreeNode[] => items.filter((i) => i.audience === "everyone").map((i) => {
+    const g = i.megaId ? megas.find((x) => x.id === i.megaId) : undefined;
+    const d = g ? (g.live ?? g.draft) : null;
+    return { id: i.id, label: i.label.trim(), link: i.link, newTab: i.newTab, behaviour: i.behaviour, icon: i.icon, description: i.description,
+      children: conv(i.children), mega: d ? clone(d) : null };
+  });
+  return { items: conv((rec.live ?? rec.draft).items) };
+}
+
 /* ---------- JSON export and import ---------- */
 export const MENU_EXPORT_KIND = "wacrm.menu";
 export const MENU_EXPORT_VERSION = 1;
@@ -945,11 +966,11 @@ export const MenusAPI = {
     return clone(rec);
   },
 
-  async createMenu(siteId: string, name: string, description: string, type: MenuType = "main"): Promise<MenuRec> {
+  async createMenu(siteId: string, name: string, description: string, type: MenuType = "main", locale: string = DEFAULT_LOCALE): Promise<MenuRec> {
     await pause(200);
     if (mode.fail) throw new MenuError("E_SAVE", "The menu service is unreachable. Nothing was created.");
     if (siteMenus(siteId).length >= 12) throw new MenuError("E_LIMIT", "A website can have 12 menus at most.");
-    const rec: MenuRec = { id: newId("menu"), siteId, rev: 1, updatedAt: now(), updatedBy: "You",
+    const rec: MenuRec = { id: newId("menu"), siteId, rev: 1, updatedAt: now(), updatedBy: "You", locale,
       draft: { name, description, type, items: [], mobile: { behaviour: "drawer", openFirstLevel: false } }, live: null, liveAt: null, applied: [], liveRev: 0 };
     store().menus.push(rec);
     return clone(rec);
@@ -960,10 +981,68 @@ export const MenusAPI = {
     const src = store().menus.find((m) => m.id === menuId);
     if (!src) throw new MenuError("E_MISSING", "That menu no longer exists.");
     const copy = (items: MenuItem[]): MenuItem[] => items.map((i) => ({ ...i, id: newItemId(), children: copy(i.children) }));
-    const rec: MenuRec = { id: newId("menu"), siteId: src.siteId, rev: 1, updatedAt: now(), updatedBy: "You",
+    const rec: MenuRec = { id: newId("menu"), siteId: src.siteId, rev: 1, updatedAt: now(), updatedBy: "You", locale: src.locale,
       draft: { ...clone(src.draft), name: `${src.draft.name} (copy)`, items: copy(src.draft.items) }, live: null, liveAt: null, applied: [], liveRev: 0 };
     store().menus.push(rec);
     return clone(rec);
+  },
+
+  /** Changes a menu's locale. Refused while the menu sits in a slot or was applied to chrome. */
+  async setMenuLocale(menuId: string, locale: string): Promise<MenuRec> {
+    await pause(140);
+    const rec = store().menus.find((m) => m.id === menuId);
+    if (!rec) throw new MenuError("E_MISSING", "That menu no longer exists.");
+    if (!isLocale(locale)) throw new MenuError("E_VALID", "That locale is not supported.");
+    if (menuPlaced(rec.siteId, menuId) || rec.applied.length > 0) throw new MenuError("E_VALID", "Move this menu out of its slots before changing its locale.");
+    rec.locale = locale; rec.updatedAt = now(); rec.updatedBy = "You";
+    return clone(rec);
+  },
+
+  /**
+   * Copies a menu, with its mega panels, into another locale. Labels are copied as they are, so the
+   * new menu is a draft to translate before it is published. Refused when the locale is the same.
+   */
+  async translateMenu(menuId: string, locale: string): Promise<MenuRec> {
+    await pause(220);
+    if (mode.fail) throw new MenuError("E_SAVE", "The menu service is unreachable. Nothing was copied.");
+    const s = store();
+    const src = s.menus.find((m) => m.id === menuId);
+    if (!src) throw new MenuError("E_MISSING", "That menu no longer exists.");
+    if (!isLocale(locale)) throw new MenuError("E_VALID", "That locale is not supported.");
+    if (locale === src.locale) throw new MenuError("E_VALID", `${src.draft.name} is already ${localeLabel(locale)}.`);
+    if (siteMenus(src.siteId).length >= 12) throw new MenuError("E_LIMIT", "A website can have 12 menus at most.");
+    const megaCopy = new Map<string, string>();
+    const copyMega = (id: string): string | null => {
+      if (megaCopy.has(id)) return megaCopy.get(id)!;
+      const g = s.megas.find((x) => x.id === id);
+      if (!g) return null;
+      const nid = newId("mega");
+      megaCopy.set(id, nid);
+      s.megas.push({ id: nid, siteId: g.siteId, rev: 1, updatedAt: now(), updatedBy: "You", draft: clone(g.draft), live: null, liveAt: null, liveRev: 0 });
+      return nid;
+    };
+    const copy = (items: MenuItem[]): MenuItem[] => items.map((i) => ({ ...clone(i), id: newItemId(), megaId: i.megaId ? copyMega(i.megaId) : null, children: copy(i.children) }));
+    const draft: MenuDoc = { ...clone(src.draft), name: `${src.draft.name} (${locale})`, items: copy(src.draft.items) };
+    const rec: MenuRec = { id: newId("menu"), siteId: src.siteId, rev: 1, updatedAt: now(), updatedBy: "You", locale, draft, live: null, liveAt: null, applied: [], liveRev: 0 };
+    s.menus.push(rec);
+    return clone(rec);
+  },
+
+  /** Sets a layout's locale. Refused while a menu of another locale fills one of its slots. */
+  async setLayoutLocale(siteId: string, layoutId: string, locale: string): Promise<void> {
+    await pause(120);
+    if (!isLocale(locale)) throw new MenuError("E_VALID", "That locale is not supported.");
+    const p = store().placements[siteId];
+    const menus = siteMenus(siteId);
+    for (const pl of [p?.draft, p?.live]) {
+      if (!pl) continue;
+      for (const slot of LOCATIONS) {
+        const id = slotsOf(pl, layoutId)[slot];
+        const m = id ? menus.find((x) => x.id === id) : undefined;
+        if (m && m.locale !== locale) throw new MenuError("E_VALID", `${m.draft.name} is ${localeLabel(m.locale)}. Move it out of this layout before changing the layout's locale.`);
+      }
+    }
+    await LayoutsAPI.setLocale(layoutId, locale);
   },
 
   /** Creates a new menu (and its mega panels) from an export file. The import is a draft; nothing goes live. */
@@ -977,7 +1056,7 @@ export const MenusAPI = {
     for (const g of parsed.megas) {
       s.megas.push({ id: g.id, siteId, rev: 1, updatedAt: now(), updatedBy: "You", draft: g.doc, live: null, liveAt: null, liveRev: 0 });
     }
-    const rec: MenuRec = { id: newId("menu"), siteId, rev: 1, updatedAt: now(), updatedBy: "You", draft: parsed.menu, live: null, liveAt: null, applied: [], liveRev: 0 };
+    const rec: MenuRec = { id: newId("menu"), siteId, rev: 1, updatedAt: now(), updatedBy: "You", locale: DEFAULT_LOCALE, draft: parsed.menu, live: null, liveAt: null, applied: [], liveRev: 0 };
     s.menus.push(rec);
     return clone(rec);
   },
@@ -1039,6 +1118,9 @@ export const MenusAPI = {
         const id = next[slot];
         if (id && !layout[slot].visible) throw new MenuError("E_VALID", `${layout.name} has no ${slot}. Choose another layout.`);
         if (id && !menus.some((m) => m.id === id)) throw new MenuError("E_MISSING", "A chosen menu no longer exists.");
+        const chosen = id ? menus.find((m) => m.id === id) : undefined;
+        const lt = layout.locale ?? DEFAULT_LOCALE;
+        if (chosen && chosen.locale !== lt) throw new MenuError("E_VALID", `${chosen.draft.name} is ${localeLabel(chosen.locale)}, but ${layout.name} is ${localeLabel(lt)}. A menu fills only layouts in its own locale.`);
         if (!id && prev[slot] && layout[slot].visible && slot === "header") throw new MenuError("E_VALID", `${layout.name} needs a header menu. Replace it instead of removing it.`);
       }
     }
@@ -1105,10 +1187,9 @@ export const MenusAPI = {
       const visible = live.items.filter((i) => i.audience === "everyone");
       const hidden = live.items.filter((i) => i.audience !== "everyone").map((i) => i.label);
       if (hidden.length) omitted.push(`hidden from visitors: ${hidden.join(", ")}`);
-      const nested = live.items.filter((i) => i.children.length > 0 || i.behaviour === "mega").length;
-      if (nested) omitted.push(`dropdowns and mega panels (${nested}) — a header variant shows top-level labels only`);
       props.nav = visible.map((i) => i.label.trim()).filter(Boolean);
       props.menuStyle = styleOf(live);
+      props.menuTree = menuTreeOf(rec, siteMegas(rec.siteId));
       written = (props.nav as string[]).length;
     } else if (region.kind === "footer") {
       const groups: FooterGroup[] = live.items

@@ -423,8 +423,14 @@
       {
         "file": "qa_m8_gaps.py",
         "name": "Module 8 — open gaps closed (export/import, icons, View all, media art, auto-expand, auto-scroll, indicator)",
-        "assertions": 39,
+        "assertions": 41,
         "covers": "unit: JSON export keeps used panels only, round trip keeps icons, descriptions, View all and link icons, import refuses bad depth, mega placement, item limit, links, kind and version, store import is a draft; browser: toolbar on one line at 768px, Export JSON download, Import JSON creates a draft, item icon and description, View all, Media Library art, mega link icon and description, drag on a collapsed parent expands it, drag near the edge scrolls, indicator follows the pointer"
+      },
+      {
+        "file": "qa_m8_locale.py",
+        "name": "Module 8 — per-locale menus, live-site mega panels, Menu Status beside preview, mega image upload",
+        "assertions": 27,
+        "covers": "unit (menu-db.ts and layout-db.ts in Node): a menu has a language and translation is a draft copy, layouts have a language and a menu only fills a layout of its own language (checked on save and on layout change), placed menus cannot change language, publish and apply write the live menu tree to the header variant; browser: language and translate controls, Menu Status card beside the preview, live header dropdowns and mega panels in the layout preview, PNG/JPEG/WebP upload up to 400 KB with non-image refusal, no page errors"
       }
     ]
   },

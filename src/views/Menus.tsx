@@ -20,6 +20,7 @@ import {
   type Audience, type Behaviour, type Loaded, type MegaDoc, type MenuDoc, type MenuIssue, type MenuItem, type MenuType, type Placements, type Slot, type VersionRec,
 } from "@/lib/menu-db";
 import { type Device, LinkEditor, MegaEditor, MegaPanelView, NavPreview } from "@/components/menus/MenuParts";
+import { DEFAULT_LOCALE, MENU_LOCALES, localeLabel } from "@/lib/locales";
 import { DROP_ANIMS, HOVER_FX, PRESETS, styleOf, type DropAnim, type HoverFx, type Preset } from "@/lib/menu-db";
 import { AUD_LABEL, Accordion, ago, ChromeList, CreateMegaModal, CreateMenuModal, Head, Kpi, depthOfId, placeLabel, renderTabs, when, type ModalState, type Tab } from "./MenusParts";
 
@@ -205,6 +206,29 @@ export function Menus() {
   };
   const setItemField = (fn: (it: MenuItem) => MenuItem) => { if (doc && itemId) setDoc({ ...doc, items: mapItem(doc.items, itemId, fn) }); };
   /** Downloads the open draft and the mega panels its items use, as a JSON file. */
+  /** copies a menu into another language; the copy is a draft and is never live */
+  const translateTo = async (menuId: string, loc: string) => {
+    try {
+      const copy = await MenusAPI.translateMenu(menuId, loc);
+      await reload();
+      setMenuId(copy.id);
+      app.toast({ type: "success", title: `Copied to ${localeLabel(loc)}`, sub: "The copy is a draft. Translate its labels, then publish." });
+    } catch (e) { toastErr(e, "Could not translate menu"); }
+  };
+  const setLocaleOf = async (menuId: string, loc: string) => {
+    try {
+      await MenusAPI.setMenuLocale(menuId, loc);
+      await reload();
+      app.toast({ type: "success", title: `Menu language set to ${localeLabel(loc)}` });
+    } catch (e) { toastErr(e, "Could not change the menu language"); }
+  };
+  const setLayoutLocaleOf = async (layoutId: string, loc: string, name: string) => {
+    try {
+      await MenusAPI.setLayoutLocale(siteId, layoutId, loc);
+      await reload();
+      app.toast({ type: "success", title: `${name} is now ${localeLabel(loc)}` });
+    } catch (e) { toastErr(e, "Could not change the layout language"); }
+  };
   const exportMenu = () => {
     if (!doc) return;
     const panels = megas.map((g) => ({ id: g.id, doc: megaDocOf(g.id) })).filter((x): x is { id: string; doc: MegaDoc } => !!x.doc);
@@ -663,7 +687,17 @@ export function Menus() {
     });
 
   /** one placement slot row, used on Manage Menus and in Menu Placements */
-  const slotRows = (l: (typeof layouts)[number]) => LOCATIONS.map((slot) => {
+  const slotRows = (l: (typeof layouts)[number]) => (<>
+   <div key="locale" className="m8-slot-row">
+    <span className="m8-slot-ic"><Icon name="globe" size={14} /></span>
+    <label htmlFor={`lang-${l.id}`} className="m8-slot-lbl">Language</label>
+    <select id={`lang-${l.id}`} aria-label={`Layout language for ${l.name}`} value={l.locale ?? DEFAULT_LOCALE} disabled={readOnly}
+      onChange={(e) => void setLayoutLocaleOf(l.id, e.target.value, l.name)}>
+      {MENU_LOCALES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+    </select>
+    {!menus.some((x) => x.locale === (l.locale ?? DEFAULT_LOCALE)) && <small className="m8-muted">No menu in {localeLabel(l.locale ?? DEFAULT_LOCALE)} yet. Translate a menu to this language.</small>}
+   </div>
+   {LOCATIONS.map((slot) => {
     const visible = slot === "header" ? l.header.visible : l.footer.visible;
     const cur = slotsOf(placeDoc, l.id)[slot];
     const liveCur = slotsOf(data.placements.live, l.id)[slot];
@@ -682,7 +716,7 @@ export function Menus() {
               chooseSlot(l.id, slot, v);
             }}>
             {slot === "footer" && <option value="">None</option>}
-            {menus.map((x) => <option key={x.id} value={x.id}>{x.draft.name}</option>)}
+            {menus.filter((x) => x.locale === (l.locale ?? DEFAULT_LOCALE) || x.id === cur).map((x) => <option key={x.id} value={x.id}>{x.draft.name}</option>)}
             {slot === "header" && !cur && <option value="" disabled>Choose a menu</option>}
           </select>
         )}
@@ -690,7 +724,8 @@ export function Menus() {
         {blocked && <small className="m8-muted">Unassigning the header is blocked unless the layout supports no navigation.</small>}
       </div>
     );
-  });
+   })}
+  </>);
 
   const placementFooter = (
     <div className="m8-slot-row is-fixed">
@@ -718,6 +753,33 @@ export function Menus() {
       Publish Changes{draftCount ? ` (${draftCount})` : ""}
     </Btn>
   );
+
+  const placedNow = !!m && (slotNames(m.id).length > 0);
+  const statusCard = (<>
+            <div className="m8-panel m8-status">
+              <h4 className="m8-h4">Publishing Status</h4>
+              <div className={`m8-status-row${liveRec ? " is-live" : ""}`}>
+                <Icon name={liveRec ? "check" : "clock"} size={14} />
+                <div>
+                  <b>{liveRec ? "Published (Live)" : "Not published yet"}</b>
+                  <small className="m8-muted">{liveRec ? `Live since ${when(liveRec.at)}` : "Publish to make these menus live."}</small>
+                </div>
+              </div>
+              <div className="m8-status-row">
+                <Icon name="pencil" size={14} />
+                <div>
+                  <b>Draft changes</b>
+                  <small className="m8-muted">{changes.length ? `${changes.length} unsaved change${changes.length === 1 ? "" : "s"}` : "No unsaved changes"}</small>
+                  {changes.length > 0 && <button type="button" className="m8-link-btn" onClick={() => setModal({ kind: "changes" })}>View changes</button>}
+                </div>
+              </div>
+              <Btn variant="primary" icon="rocket" disabled={readOnly || busy || checks.errors > 0 || draftCount === 0} onClick={() => setModal({ kind: "changes" })}>Publish Changes</Btn>
+              <Btn icon="link" onClick={() => setModal({ kind: "validate" })}>Validate Links ({checks.all.length} issue{checks.all.length === 1 ? "" : "s"})</Btn>
+              <Btn icon="clock" onClick={() => document.getElementById("m8-versions")?.scrollIntoView({ behavior: "smooth", block: "start" })}>View Release History</Btn>
+              <Btn icon="undo" disabled={readOnly || busy || !prevVersion} title={prevVersion ? undefined : "There is no earlier version yet."}
+                onClick={() => prevVersion && setModal({ kind: "rollback", version: prevVersion })}>Rollback to Previous Version</Btn>
+            </div>
+  </>);
 
   return (
     <div className={`m8-wrap${readOnly ? " is-readonly" : ""}`}>
@@ -797,6 +859,11 @@ export function Menus() {
             )}
             <span className="m8-spacer" />
             <Btn icon="eye" disabled={!m} onClick={() => setPreviewing(true)}>Preview Menu</Btn>
+            <select className="m8-translate" aria-label="Translate menu to" value="" disabled={readOnly || !m}
+              onChange={(e) => { const v = e.target.value; if (m && v) void translateTo(m.id, v); }}>
+              <option value="">Translate to…</option>
+              {MENU_LOCALES.filter((x) => !m || x.id !== m.locale).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+            </select>
             <Btn icon="download" disabled={!m} title="Download this menu and its mega panels as a JSON file" onClick={exportMenu}>Export JSON</Btn>
             <Btn icon="upload" disabled={readOnly || menus.length >= 12} title="Create a new menu from a JSON export" onClick={() => importRef.current?.click()}>Import JSON</Btn>
             <input ref={importRef} type="file" accept="application/json,.json" hidden aria-label="Import menu JSON file"
@@ -863,6 +930,13 @@ export function Menus() {
                     <div className="m8-cfg-body">
                       <Field label="Menu name">
                         <input aria-label="Menu name" value={d.name} disabled={readOnly} onChange={(e) => patchDoc((x) => ({ ...x, name: e.target.value }))} />
+                      </Field>
+                      <Field label="Language">
+                        <select aria-label="Menu language" value={m?.locale ?? DEFAULT_LOCALE} disabled={readOnly || !m || placedNow}
+                          title={placedNow ? "Move this menu out of its slots before changing its language." : undefined}
+                          onChange={(e) => m && void setLocaleOf(m.id, e.target.value)}>
+                          {MENU_LOCALES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                        </select>
                       </Field>
                       <Field label="Mobile menu">
                         <select aria-label="Mobile style" value={d.mobile.behaviour} disabled={readOnly} onChange={(e) => patchDoc((x) => ({ ...x, mobile: { ...x.mobile, behaviour: e.target.value as "drawer" | "accordion" } }))}>
@@ -1112,7 +1186,7 @@ export function Menus() {
               </div>
 
               {/* ---- PREVIEW (below) ---- */}
-              <section id="m8-preview" className="m8-preview" aria-label="Menu preview">
+              <div className="m8-prev-row"><section id="m8-preview" className="m8-preview" aria-label="Menu preview">
                 <div className="m8-preview-bar">
                   <span className="m8-preview-title"><Icon name={device === "desktop" ? "monitor" : device === "tablet" ? "tablet" : "phone"} size={14} /> Navigation Preview ({deviceLabel})</span>
                   <span className="m8-spacer" />
@@ -1126,6 +1200,7 @@ export function Menus() {
                   device={device} brand={siteName} menuStyle={styleOf(d)} mobileBehaviour={device === "mobile" || device === "tablet" ? "accordion" : "drawer"} openFirstLevel={d.mobile.openFirstLevel}
                   openId={openPanel} onOpen={setOpenPanel} label={`${d.name} preview`} />
               </section>
+              <div className="m8-status-side">{statusCard}</div></div>
             </>
           )}
         </>
@@ -1308,29 +1383,7 @@ export function Menus() {
                 ))}
               </div>
             </div>
-            <div className="m8-panel m8-status">
-              <h4 className="m8-h4">Publishing Status</h4>
-              <div className={`m8-status-row${liveRec ? " is-live" : ""}`}>
-                <Icon name={liveRec ? "check" : "clock"} size={14} />
-                <div>
-                  <b>{liveRec ? "Published (Live)" : "Not published yet"}</b>
-                  <small className="m8-muted">{liveRec ? `Live since ${when(liveRec.at)}` : "Publish to make these menus live."}</small>
-                </div>
-              </div>
-              <div className="m8-status-row">
-                <Icon name="pencil" size={14} />
-                <div>
-                  <b>Draft changes</b>
-                  <small className="m8-muted">{changes.length ? `${changes.length} unsaved change${changes.length === 1 ? "" : "s"}` : "No unsaved changes"}</small>
-                  {changes.length > 0 && <button type="button" className="m8-link-btn" onClick={() => setModal({ kind: "changes" })}>View changes</button>}
-                </div>
-              </div>
-              <Btn variant="primary" icon="rocket" disabled={readOnly || busy || checks.errors > 0 || draftCount === 0} onClick={() => setModal({ kind: "changes" })}>Publish Changes</Btn>
-              <Btn icon="link" onClick={() => setModal({ kind: "validate" })}>Validate Links ({checks.all.length} issue{checks.all.length === 1 ? "" : "s"})</Btn>
-              <Btn icon="clock" onClick={() => document.getElementById("m8-versions")?.scrollIntoView({ behavior: "smooth", block: "start" })}>View Release History</Btn>
-              <Btn icon="undo" disabled={readOnly || busy || !prevVersion} title={prevVersion ? undefined : "There is no earlier version yet."}
-                onClick={() => prevVersion && setModal({ kind: "rollback", version: prevVersion })}>Rollback to Previous Version</Btn>
-            </div>
+            {statusCard}
           </aside>
 
           <div className="m8-hist-main">

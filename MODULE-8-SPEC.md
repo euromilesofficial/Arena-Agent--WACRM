@@ -275,3 +275,22 @@ Re-checked against the three mockups, the v1.1 spec text in the workspace, and t
 ### 18.3 Suite totals after this pass
 
 `qa-all` runs 32 suites. The Module 8 suites are `qa_m8_dnd` 29, `qa_m8_hier` 16, `qa_m8_swap` 12, `qa_m8_gaps` 41, `qa_m8_menus` 69, `qa_m8_v3` 35, `qa_m8_final` 14, `qa_m8_responsive` 13.
+
+## 19. Four open gaps built (v7)
+
+### 19.1 Closed in this pass
+
+- **Per-locale menus.** A menu has a language (`MenuRec.locale`, one of `MENU_LOCALES` in `src/lib/locales.ts`). A layout has a language (`LayoutDraft.locale`, default `en-IN`). A menu fills only layouts in its own language. This is checked on save (`savePlacements`) and when a layout changes language (`setLayoutLocale`). A placed menu cannot change language. "Translate to…" copies a menu, with its mega panels, into another language as a draft that is never live.
+- **Live-site mega panels and themes.** The header variant now stores the live menu as a tree (`MenuTree`, written by `apply`). Each node carries its live mega panel, and the panel carries its theme and surface. The layout preview draws dropdowns and mega panels from that tree (`ChromeNav`). The earlier documented delta, "mega data only in the publish snapshot", is closed for the header. Footer groups are unchanged, because the footer is flat groups by design.
+- **Menu Status card.** The card (Publishing Status, Publish Changes, Validate Links, Release History, Rollback) sits beside the editor preview. It is no longer only in the History tab. This closes the mockup-4 layout delta.
+- **Mega image upload.** The featured image accepts a PNG, JPEG or WebP file up to 400 KB. The image is stored in the panel as a `data:image/` URL, so it travels with the panel and the publish snapshot. Other files are refused. `FeaturedArt` renders only `data:image/` URLs from uploads.
+
+### 19.2 Verification
+
+`qa_m8_locale.py`: 27 checks. Unit: 10 (locale rules, translation, placement refusals, layout language). Browser: 17 (status card position, language and translate controls, live header dropdowns and mega panels, upload accept and refuse, no page errors). `handover.config.json` now records `qa_m8_gaps` at 41 and `qa_m8_locale` at 27.
+
+### 19.3 Still open, with the reason
+
+- **Verbatim §31.8 text** is not in the workspace. The fifteen-test mapping stays approximate until the owner supplies the text.
+- **Upload storage.** Uploads are kept inside the panel's data, not in the media library. Module 5's asset store has no upload path, and adding one is outside M8 scope. Uploads are capped at 400 KB for that reason.
+- **Footer per-locale placement** follows the same rule as the header. Footer groups are flat, so no tree is carried.
