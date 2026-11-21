@@ -145,3 +145,9 @@ Recorded against the M7 spec. What changed, and what is still open.
   replaces the free comma list with the menu's links. Editing bindings from Layouts is still open;
   they are edited from Menus (Manage Placements).
 - **Release modal other checks** (DNS, SSL, Core Web Vitals) now read real data (release site's domains; vitals grade). A failed check disables Publish.
+
+## 7. Module 8 integration check (gap pass)
+
+- The M7 release gate, link typing and footer drawer were re-run with M8 changes: `qa_m7_links.py` 45/45, `qa_m7_footer.py` 17/17.
+- New M8 data (icons, descriptions, View all, featured media assets) is optional and does not change the header or footer compile. Header variants still show flat labels only, as M7 requires.
+- Open M7-related item: mega panels do not reach the live header (M7 scope). See MODULE-8-SPEC.md §18.2.

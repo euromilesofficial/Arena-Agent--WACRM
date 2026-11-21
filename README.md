@@ -307,7 +307,7 @@ The sidebar is the product's shape. Built screens navigate; the rest render a de
 | | Block Library | ✅ M5 |
 | | Theme Studio | ✅ M6 / M6.1 |
 | | Layouts & Templates | ✅ M7 (master layouts, slot policy, templates, usage) |
-| | Menus & Navigation | ✅ M8 (spec: MODULE-8-SPEC.md) |
+| | Menus & Navigation | ✅ M8 (spec: MODULE-8-SPEC.md; §18 gap closure: export/import, icons, View all, auto-expand, swaps; 4 open items listed there) |
 | | Media Library | ⬜ M9 |
 | | Forms & Leads | ⬜ M10 |
 | | Publishing & Releases | ⬜ **M11** — owns every publish action in the product |
@@ -642,7 +642,7 @@ Rules baked into those contracts, and into the UI:
 ## 18. Roadmap
 
 M7 is built (`#/layouts`, 99 + 38 checks) — see `MODULE-7-BUILD.md` for what shipped and
-the honest deltas. M8 Menus & Navigation is rebuilt to the owner's three mockups and spec v1.1 §31 (`#/menus`; 69 checks in `qa_m8_menus.py`, 35 in `qa_m8_v3.py`, 14 in `qa_m8_final.py`, 29 in `qa_m8_dnd.py` (drag and drop, style presets, hover, animation, mega surface), 13 in `qa_m8_responsive.py` (1280, 1024, 768, 390), 16 in `qa_m8_hier.py` (hierarchy drag and drop, six mega themes, effects) for the Layouts bindings, the pinned preview and the footer drawer) — see `MODULE-8-SPEC.md`. The v1.1 text was not saved verbatim; a working copy is in the file and the owner should re-paste it.
+the honest deltas. M8 Menus & Navigation is rebuilt to the owner's three mockups and spec v1.1 §31 (`#/menus`; 69 checks in `qa_m8_menus.py`, 35 in `qa_m8_v3.py`, 14 in `qa_m8_final.py`, 29 in `qa_m8_dnd.py` (drag and drop, style presets, hover, animation, mega surface), 13 in `qa_m8_responsive.py` (1280, 1024, 768, 390), 16 in `qa_m8_hier.py` (hierarchy drag and drop, six mega themes, effects), 12 in `qa_m8_swap.py` (swap submenu with main item, swap with next), 41 in `qa_m8_gaps.py` (JSON export and import, icons, View all, media art, auto-expand, auto-scroll, indicator, toolbar) for the Layouts bindings, the pinned preview and the footer drawer) — see `MODULE-8-SPEC.md`. The v1.1 text was not saved verbatim; a working copy is in the file and the owner should re-paste it.
 The remaining modules are below.
 
 > **Decision (sequencing, made by the assistant and reported):** the table below lists Menus &

@@ -413,6 +413,18 @@
         "name": "Module 8 — hierarchy drag and drop, mega themes, effects (v5)",
         "assertions": 16,
         "covers": "unit (menu-db.ts in Node): drop at parent, child and grandchild depths; refusals past the third level, subtree depth, mega placement, own subtree; browser: pointer drags land at the child and parent levels; six mega themes, new drop animation and hover effect reach the preview"
+      },
+      {
+        "file": "qa_m8_swap.py",
+        "name": "Module 8 — swap submenu with main item, swap with next",
+        "assertions": 12,
+        "covers": "unit (menu-db.ts in Node): swap a submenu item with its main item (children kept, behaviour set), refusals at the top level and past three levels, swap with the next row; browser: row menu offers both swaps and the swap moves the item"
+      },
+      {
+        "file": "qa_m8_gaps.py",
+        "name": "Module 8 — open gaps closed (export/import, icons, View all, media art, auto-expand, auto-scroll, indicator)",
+        "assertions": 39,
+        "covers": "unit: JSON export keeps used panels only, round trip keeps icons, descriptions, View all and link icons, import refuses bad depth, mega placement, item limit, links, kind and version, store import is a draft; browser: toolbar on one line at 768px, Export JSON download, Import JSON creates a draft, item icon and description, View all, Media Library art, mega link icon and description, drag on a collapsed parent expands it, drag near the edge scrolls, indicator follows the pointer"
       }
     ]
   },

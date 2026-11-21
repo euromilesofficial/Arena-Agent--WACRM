@@ -5,9 +5,10 @@
 import { Icon } from "@/components/Icon";
 import type { ThemeTokens } from "@/lib/theme-db";
 import { stackFor } from "@/lib/theme-db";
+import { SAMPLE_IMAGES } from "@/lib/builder-images";
 import {
   MENU_LIMITS, anchorOk, linkLabel, newId, urlOk, type LinkRef, type MegaColumn, type MegaDoc, type MegaFeatured, type MegaLink,
-  type MenuItem, type PageLike, type Gap, type MenuStyle, type Surface, type DropAnim, type MegaTheme, SURFACES, DROP_ANIMS, MEGA_THEMES, styleOf,
+  type MenuItem, type PageLike, type Gap, type MenuStyle, type Surface, type DropAnim, type MegaTheme, SURFACES, DROP_ANIMS, MEGA_THEMES, MENU_ICONS, styleOf,
 } from "@/lib/menu-db";
 
 export type Device = "desktop" | "tablet" | "mobile";
@@ -62,8 +63,8 @@ export function LinkEditor({ link, pages, onChange, disabled, idp, compact = fal
 }
 
 /* ---------- mega panel editor (Mega Menus tab) ---------- */
-export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
-  doc: MegaDoc; onChange: (d: MegaDoc) => void; pages: PageLike[]; disabled?: boolean; idp: string;
+export function MegaEditor({ doc, onChange, pages, disabled, idp, assets = [] }: {
+  doc: MegaDoc; onChange: (d: MegaDoc) => void; pages: PageLike[]; disabled?: boolean; idp: string; assets?: { id: string; name: string }[];
 }) {
   const cols = doc.columns.length;
   const setCols = (next: MegaColumn[]) => onChange({ ...doc, columns: next });
@@ -89,7 +90,7 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
           </div>
         </div>
         <label className="m8-field">
-          <span className="m8-lbl">Column gap</span>
+          <span className="m8-lbl">Column Gap</span>
           <select value={doc.gap} disabled={disabled} onChange={(e) => onChange({ ...doc, gap: e.target.value as Gap })}>
             <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option>
           </select>
@@ -114,7 +115,7 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
         </label>
         <label className="m8-toggle">
           <input type="checkbox" checked={doc.featured.enabled} disabled={disabled} onChange={(e) => setFeat({ enabled: e.target.checked })} />
-          <span>Show featured content</span>
+          <span>Show Featured Content</span>
         </label>
       </div>
       <div className="m8-mega-grid m8-mega-cols" style={{ gap: GAP_PX[doc.gap], gridTemplateColumns: `repeat(${cols + (doc.featured.enabled ? 1 : 0)}, minmax(0, 1fr))` }}>
@@ -134,11 +135,33 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
                     onChange={(e) => updLink(c.id, l.id, (x) => ({ ...x, label: e.target.value }))} />
                   <LinkEditor compact idp={`column ${i + 1} link`} link={l.link} pages={pages} disabled={disabled}
                     onChange={(lk) => updLink(c.id, l.id, (x) => ({ ...x, link: lk }))} />
+                  <select aria-label={`Icon for link ${l.label || "untitled"}`} value={l.icon ?? ""} disabled={disabled}
+                    onChange={(e) => updLink(c.id, l.id, (x) => ({ ...x, icon: e.target.value || undefined }))}>
+                    <option value="">No icon</option>
+                    {MENU_ICONS.map((ic) => <option key={ic.id} value={ic.id}>{ic.label}</option>)}
+                  </select>
+                  <input aria-label={`Description, column ${i + 1}`} maxLength={140} placeholder="Description (optional)" value={l.description ?? ""} disabled={disabled}
+                    onChange={(e) => updLink(c.id, l.id, (x) => ({ ...x, description: e.target.value }))} />
                   <button type="button" className="m8-icon" aria-label={`Remove link ${l.label || "untitled"}`} disabled={disabled}
                     onClick={() => updCol(c.id, (x) => ({ ...x, links: x.links.filter((y) => y.id !== l.id) }))}><Icon name="x" size={12} /></button>
                 </li>
               ))}
             </ul>
+            <div className="m8-viewall-edit">
+              <label className="m8-toggle">
+                <input type="checkbox" aria-label={`Column ${i + 1} View all link`} checked={!!c.viewAll} disabled={disabled}
+                  onChange={(e) => updCol(c.id, (x) => ({ ...x, viewAll: e.target.checked ? { label: "View all", link: pages[0] ? { kind: "page", pageId: pages[0].id } : null } : null }))} />
+                <span>Show a View all link</span>
+              </label>
+              {c.viewAll && (
+                <>
+                  <input aria-label={`Column ${i + 1} View all label`} value={c.viewAll.label} disabled={disabled} maxLength={40}
+                    onChange={(e) => updCol(c.id, (x) => ({ ...x, viewAll: x.viewAll ? { ...x.viewAll, label: e.target.value } : null }))} />
+                  <LinkEditor compact idp={`column ${i + 1} view all`} link={c.viewAll.link} pages={pages} disabled={disabled}
+                    onChange={(lk) => updCol(c.id, (x) => ({ ...x, viewAll: x.viewAll ? { ...x.viewAll, link: lk } : null }))} />
+                </>
+              )}
+            </div>
             <button type="button" className="m8-add" disabled={disabled || c.links.length >= MENU_LIMITS.maxLinksPerColumn}
               onClick={() => updCol(c.id, (x) => ({ ...x, links: [...x.links, { id: newId("ml"), label: "New link", link: pages[0] ? { kind: "page", pageId: pages[0].id } : null }] }))}>
               <Icon name="plus" size={12} /> Add link
@@ -151,6 +174,7 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
             <label className="m8-field"><span className="m8-lbl">Image</span>
               <select value={doc.featured.image} disabled={disabled} onChange={(e) => setFeat({ image: e.target.value })}>
                 {FEATURED_IMAGES.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+                {assets.length > 0 && <optgroup label="Media Library">{assets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</optgroup>}
               </select>
             </label>
             <FeaturedArt image={doc.featured.image} />
@@ -175,6 +199,8 @@ export function MegaEditor({ doc, onChange, pages, disabled, idp }: {
 
 /* ---------- artwork (the featured card's image; drawn, not fetched) ---------- */
 export function FeaturedArt({ image }: { image: string }) {
+  const photo = SAMPLE_IMAGES[image];
+  if (photo) return <img className="m8-art m8-art-photo" src={photo} alt="" />;
   const f = FEATURED_IMAGES.find((x) => x.id === image) ?? FEATURED_IMAGES[0];
   return (
     <svg className="m8-art" viewBox="0 0 320 150" role="img" aria-label={f.label} preserveAspectRatio="xMidYMid slice">
@@ -212,13 +238,13 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
               <li key={it.id}>
                 {expandable ? (
                   <button type="button" aria-expanded={isOpen} aria-controls={`pv-${it.id}`} onClick={() => onOpen(openId === it.id ? null : it.id)}>
-                    {it.label || "Untitled"} <Icon name={isOpen ? "chevUp" : "chevDown"} size={12} />
+                    {it.icon && <Icon name={it.icon} size={12} />}{it.label || "Untitled"} <Icon name={isOpen ? "chevUp" : "chevDown"} size={12} />
                   </button>
                 ) : <span>{it.label || "Untitled"}</span>}
                 {expandable && isOpen && <div id={`pv-${it.id}`} className={`m8-pv-sub ${mobileBehaviour}`}>
                   {it.behaviour === "mega" && megaOf(it.megaId) ? megaOf(it.megaId)!.columns.map((c) => (
                     <div key={c.id}><b>{c.title}</b>{c.links.map((l) => <span key={l.id}>{l.label}</span>)}</div>
-                  )) : it.children.map((c) => <span key={c.id}>{c.label}</span>)}
+                  )) : it.children.map((c) => <span key={c.id}>{c.icon && <Icon name={c.icon} size={11} />}{c.label}{c.description && <small className="m8-link-desc">{c.description}</small>}</span>)}
                 </div>}
               </li>
             );
@@ -241,13 +267,13 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
                 {hasPanel ? (
                   <button type="button" aria-expanded={isOpen} aria-controls={`pvp-${it.id}`} onClick={() => openMega(it.id)}
                     onKeyDown={(e) => { if (e.key === "Escape") onOpen(null); }}>
-                    {it.label || "Untitled"} <Icon name="chevDown" size={11} />
+                    {it.icon && <Icon name={it.icon} size={12} />}{it.label || "Untitled"} <Icon name="chevDown" size={11} />
                   </button>
-                ) : <span>{it.label || "Untitled"}</span>}
+                ) : <span>{it.icon && <Icon name={it.icon} size={12} />}{it.label || "Untitled"}</span>}
                 {isOpen && (
                   <div id={`pvp-${it.id}`} className={`m8-pv-panel m8-anim-${megaOf(it.megaId)?.dropAnim ?? st.dropAnim}`} role="region" aria-label={`${it.label} menu`} onKeyDown={(e) => { if (e.key === "Escape") onOpen(null); }}>
                     {it.behaviour === "mega" && megaOf(it.megaId) ? <MegaPanelView mega={megaOf(it.megaId)!} pages={pages} tokens={tokens} />
-                      : <ul className="m8-pv-drop">{it.children.map((c) => <li key={c.id}>{c.label}</li>)}</ul>}
+                      : <ul className="m8-pv-drop">{it.children.map((c) => <li key={c.id}>{c.icon && <Icon name={c.icon} size={12} />}<span>{c.label}</span>{c.description && <small className="m8-link-desc">{c.description}</small>}</li>)}</ul>}
                   </div>
                 )}
               </li>
@@ -267,7 +293,8 @@ export function MegaPanelView({ mega, pages, tokens }: { mega: MegaDoc; pages: P
       {mega.columns.map((c) => (
         <div key={c.id}>
           <b>{c.title || "Untitled"}</b>
-          <ul>{c.links.map((l) => <li key={l.id}>{l.label}{l.link && l.link.kind === "page" && pages.find((p) => p.id === (l.link as { pageId: string }).pageId)?.status === "draft" ? <em> draft</em> : null}</li>)}</ul>
+          <ul>{c.links.map((l) => <li key={l.id}>{l.icon && <Icon name={l.icon} size={12} />}<span>{l.label}</span>{l.description && <small className="m8-link-desc">{l.description}</small>}{l.link && l.link.kind === "page" && pages.find((p) => p.id === (l.link as { pageId: string }).pageId)?.status === "draft" ? <em> draft</em> : null}</li>)}</ul>
+{c.viewAll && <span className="m8-viewall">{c.viewAll.label || "View all"} <Icon name="arrowRight" size={11} /></span>}
         </div>
       ))}
       {mega.featured.enabled && (

@@ -11,10 +11,11 @@ import { Icon } from "@/components/Icon";
 import { Btn, EmptyState, Field, Modal, Pill, Skel, Switch } from "@/components/ui";
 import { useApp } from "@/lib/store";
 import { DBX, type CmsPage } from "@/lib/data";
+import { BuilderAPI } from "@/lib/builder-db";
 import { themeFor } from "@/lib/theme-db";
 import {
   LOCATIONS, LOC_LABEL, MENU_LIMITS, MENU_TYPE_LABEL, MenuError, MenusAPI, addChild, blankLink, checkMega, checkMenu, countItems,
-  DropWhere, dropAtDepth, moveAtDepth, swapWithNext, swapWithParent, locate, duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, moveItem,
+  DropWhere, dropAtDepth, moveAtDepth, swapWithNext, swapWithParent, locate, exportMenuJson, MENU_ICONS, duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, moveItem,
   outdentItem, placedIn, removeItem, sameDoc, slotsOf, statusOf, toTopLevel, urlOk, walk, hasChanges,
   type Audience, type Behaviour, type Loaded, type MegaDoc, type MenuDoc, type MenuIssue, type MenuItem, type MenuType, type Placements, type Slot, type VersionRec,
 } from "@/lib/menu-db";
@@ -69,6 +70,8 @@ export function Menus() {
   const [dragPage, setDragPage] = useState<string | null>(null);
   /* Hover feedback is painted straight onto the row (see paintHover). It never re-renders the screen. */
   const hoverRef = useRef<{ id: string | null; where: DropWhere | null; depth: number }>({ id: null, where: null, depth: -1 });
+  const expandRef = useRef<{ id: string | null; timer: number | null }>({ id: null, timer: null });
+  const importRef = useRef<HTMLInputElement>(null);
   const [rowMenu, setRowMenu] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
   const [previewing, setPreviewing] = useState(false);
@@ -201,6 +204,27 @@ export function Menus() {
     setGDraft((d) => ({ ...d, [id]: { doc: next, base: d[id]?.base ?? g.rev } }));
   };
   const setItemField = (fn: (it: MenuItem) => MenuItem) => { if (doc && itemId) setDoc({ ...doc, items: mapItem(doc.items, itemId, fn) }); };
+  /** Downloads the open draft and the mega panels its items use, as a JSON file. */
+  const exportMenu = () => {
+    if (!doc) return;
+    const panels = megas.map((g) => ({ id: g.id, doc: megaDocOf(g.id) })).filter((x): x is { id: string; doc: MegaDoc } => !!x.doc);
+    const blob = new Blob([exportMenuJson(doc, panels)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug = (doc.name || "menu").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "menu";
+    a.href = url; a.download = `${slug}.menu.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    app.toast({ type: "success", title: "Menu exported", sub: "The file holds the draft and the mega panels its items use." });
+  };
+  /** Creates a new menu from a JSON export. The result is a draft; nothing goes live. */
+  const importFile = async (f: File) => {
+    try {
+      const x = await MenusAPI.importMenu(siteId, await f.text());
+      setMenuId(x.id); setItemId(null); setTab("builder"); setTick((t) => t + 1);
+      app.toast({ type: "success", title: `${x.draft.name} imported`, sub: "It is a draft. Check it, then publish." });
+    } catch (e) { toastErr(e, "Could not import menu"); }
+  };
   const toastErr = (e: unknown, title: string) => app.toast({ type: "error", title, sub: e instanceof Error ? e.message : undefined });
   const resetDrafts = () => { setMDraft({}); setGDraft({}); setHist({}); };
 
@@ -486,6 +510,32 @@ export function Menus() {
       hoverRef.current = { id: null, where: null, depth: -1 };
     }
   };
+  /** Scrolls the nearest scrolling ancestor while a drag rests near the top or bottom edge of the viewport. */
+  const edgeScroll = (tree: HTMLElement, y: number) => {
+    const H = window.innerHeight, band = 80;
+    if (y > band && y < H - band) return;
+    let p: HTMLElement | null = tree.parentElement;
+    while (p && !/(auto|scroll)/.test(getComputedStyle(p).overflowY)) p = p.parentElement;
+    const step = y <= band ? -(Math.ceil((band - y) / 3) + 4) : Math.ceil((y - (H - band)) / 3) + 4;
+    if (p) p.scrollBy({ top: step }); else window.scrollBy({ top: step });
+  };
+  const cancelExpand = () => {
+    if (expandRef.current.timer) window.clearTimeout(expandRef.current.timer);
+    expandRef.current = { id: null, timer: null };
+  };
+  /** A drag that rests in the middle of a collapsed parent opens it after 650 ms, so its children become drop targets. */
+  const hoverExpand = (tree: HTMLElement, t: { id: string; plan: { where: DropWhere } } | null) => {
+    const row = t ? tree.querySelector<HTMLElement>(`.m8-row[data-row-id="${CSS.escape(t.id)}"]`) : null;
+    const collapsedParent = !!t && t.plan.where === "inside" && !!row && row.dataset.rowCollapsed === "true" && Number(row.dataset.rowKids) > 0;
+    if (!collapsedParent || !t) { if (expandRef.current.id !== null) cancelExpand(); return; }
+    if (expandRef.current.id === t.id) return;
+    cancelExpand();
+    const id = t.id;
+    expandRef.current = { id, timer: window.setTimeout(() => {
+      setCollapsed((c) => { const n = new Set(c); n.delete(id); return n; });
+      expandRef.current = { id: null, timer: null };
+    }, 650) };
+  };
   const treeTarget = (tree: HTMLElement, clientX: number, clientY: number) => {
     const rows = Array.from(tree.querySelectorAll<HTMLElement>(".m8-row[data-row-id]"));
     if (!rows.length) return null;
@@ -556,7 +606,7 @@ export function Menus() {
         <li key={it.id} role="none" className={`m8-node depth-${depth}`}>
           <div
             role="treeitem" aria-level={depth + 1} aria-selected={sel} aria-expanded={kids ? !isCollapsed : undefined}
-            data-row-id={it.id} data-row-level={depth} data-row-label={it.label || "item"}
+            data-row-id={it.id} data-row-level={depth} data-row-label={it.label || "item"} data-row-kids={it.children.length} data-row-collapsed={isCollapsed ? "true" : "false"}
             tabIndex={0} className={`m8-row${sel ? " is-sel" : ""}${it.behaviour === "mega" ? " is-mega" : ""}${dragId === it.id ? " is-drag" : ""}`}
             onClick={() => { setItemId(it.id); setItemTab("settings"); }}
             onKeyDown={(e) => {
@@ -747,6 +797,10 @@ export function Menus() {
             )}
             <span className="m8-spacer" />
             <Btn icon="eye" disabled={!m} onClick={() => setPreviewing(true)}>Preview Menu</Btn>
+            <Btn icon="download" disabled={!m} title="Download this menu and its mega panels as a JSON file" onClick={exportMenu}>Export JSON</Btn>
+            <Btn icon="upload" disabled={readOnly || menus.length >= 12} title="Create a new menu from a JSON export" onClick={() => importRef.current?.click()}>Import JSON</Btn>
+            <input ref={importRef} type="file" accept="application/json,.json" hidden aria-label="Import menu JSON file"
+              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void importFile(f); }} />
             <Btn variant="primary" icon="plus" disabled={readOnly || menus.length >= 12} title={menus.length >= 12 ? "A website can have 12 menus at most." : undefined} onClick={() => setModal({ kind: "create-menu" })}>Create Menu</Btn>
           </div>
 
@@ -873,11 +927,13 @@ export function Menus() {
                       <p className="m8-muted">{countItems(d.items)} items · drag and drop to organise. Create dropdowns or a mega menu.</p>
                     </div>
                     <span className="m8-spacer" />
+                    <div className="m8-col-tools">
                     {collapsed.size > 0 || parentIds(d.items).length === 0
                       ? <Btn variant="sm" disabled={parentIds(d.items).length === 0} onClick={() => setCollapsed(new Set())}>Expand All</Btn>
                       : <Btn variant="sm" onClick={() => setCollapsed(new Set(parentIds(d.items)))}>Collapse All</Btn>}
                     <Btn variant="sm" icon="undo" aria-label="Undo" disabled={readOnly || !hasPast} onClick={() => stepHistory("undo")}>Undo</Btn>
                     <Btn variant="sm" icon="redo" aria-label="Redo" disabled={readOnly || !hasFuture} onClick={() => stepHistory("redo")}>Redo</Btn>
+                    </div>
                   </div>
                   <div className="m8-depth-warn" role="note"><Icon name="alert" size={13} /><span>Maximum depth: {MENU_LIMITS.maxDepth} levels (e.g., Main › Submenu › Sub-item)</span></div>
                   <div className="m8-hint-line">Drag the grip to reorder. Alt + ↑/↓ moves an item, Alt + Shift + →/← changes its level.</div>
@@ -889,16 +945,19 @@ export function Menus() {
                         if (!(dragId || dragPage) || readOnly) return;
                         e.preventDefault(); e.dataTransfer.dropEffect = dragPage ? "copy" : "move";
                         const tree = e.currentTarget;
-                        paintHover(tree, treeTarget(tree, e.clientX, e.clientY));
+                        const t = treeTarget(tree, e.clientX, e.clientY);
+                        paintHover(tree, t);
+                        edgeScroll(tree, e.clientY);
+                        hoverExpand(tree, t);
                       }}
-                      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) paintHover(e.currentTarget, null); }}
+                      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) { paintHover(e.currentTarget, null); cancelExpand(); } }}
                       onDrop={(e) => {
                         e.preventDefault();
                         const t = treeTarget(e.currentTarget, e.clientX, e.clientY);
-                        paintHover(e.currentTarget, null);
+                        paintHover(e.currentTarget, null); cancelExpand();
                         if (t) dropOnRow(t.id, t.label, t.plan); else { setDragId(null); setDragPage(null); }
                       }}
-                      onDragEnd={(e) => { paintHover(e.currentTarget, null); setDragId(null); setDragPage(null); }}>
+                      onDragEnd={(e) => { paintHover(e.currentTarget, null); cancelExpand(); setDragId(null); setDragPage(null); }}>
                       {renderRows(d.items, 0)}
                     </ul>
                   )}
@@ -964,10 +1023,25 @@ export function Menus() {
                               {itemDepth === 0 && <option value="mega">Mega menu</option>}
                             </select>
                           </Field>
+                          <div className="m8-inline"><Switch checked={itemSel.behaviour === "mega"}
+                            onChange={(v) => {
+                              if (readOnly) return;
+                              if (v && (itemDepth > 0 || itemSel.children.length > 0)) { app.toast({ type: "error", title: "Can't show this in a mega menu", sub: "Mega panels sit at the top level and can't have submenu items." }); return; }
+                              setItemField((x) => ({ ...x, behaviour: v ? "mega" : "link", megaId: v ? x.megaId : null }));
+                            }} label="Show in Mega Menu" /><span>Show in Mega Menu</span></div>
                           <Field label="Visibility">
                             <select aria-label="Item visibility" value={itemSel.audience} disabled={readOnly} onChange={(e) => setItemField((x) => ({ ...x, audience: e.target.value as Audience }))}>
                               {(Object.keys(AUD_LABEL) as Audience[]).map((a) => <option key={a} value={a}>{AUD_LABEL[a]}</option>)}
                             </select>
+                          </Field>
+                          <Field label="Icon">
+                            <select aria-label="Item icon" value={itemSel.icon ?? ""} disabled={readOnly} onChange={(e) => setItemField((x) => ({ ...x, icon: e.target.value || undefined }))}>
+                              <option value="">No icon</option>
+                              {MENU_ICONS.map((ic) => <option key={ic.id} value={ic.id}>{ic.label}</option>)}
+                            </select>
+                          </Field>
+                          <Field label="Description" hint="Shown under the label in a dropdown. Keep it to one line.">
+                            <input aria-label="Item description" maxLength={140} value={itemSel.description ?? ""} disabled={readOnly} onChange={(e) => setItemField((x) => ({ ...x, description: e.target.value }))} />
                           </Field>
                           <div className="m8-inline"><Switch checked={itemSel.newTab} onChange={(v) => !readOnly && setItemField((x) => ({ ...x, newTab: v }))} label="Open in a new tab" /><span>Open in a new tab</span></div>
                           <div className="m8-cfg-acts">
@@ -1201,7 +1275,7 @@ export function Menus() {
                 </div>
                 <div className="m8-muted">{usage.length ? `Used in: ${usage.map((u) => u.menuName).join(", ")}` : "Used in: nothing yet. Attach it to a top-level item in Menu Builder."}</div>
                 <Field label="Panel name"><input aria-label="Mega panel name" value={gd.name} disabled={readOnly} onChange={(e) => setMegaDoc(g.id, { ...gd, name: e.target.value })} /></Field>
-                <MegaEditor doc={gd} pages={pages as never} idp={`mega-${g.id}`} disabled={readOnly} onChange={(next) => setMegaDoc(g.id, next)} />
+                <MegaEditor doc={gd} pages={pages as never} assets={BuilderAPI.assets(siteId).map((a) => ({ id: a.id, name: a.name }))} idp={`mega-${g.id}`} disabled={readOnly} onChange={(next) => setMegaDoc(g.id, next)} />
                 {gIssues.map((i) => <p key={i.id} className={i.severity === "error" ? "m8-err-text" : "m8-warn-text"}><Icon name="alert" size={12} /> {i.detail}</p>)}
                 <div className="m8-acts">
                   <Btn variant="primary" icon="check" disabled={!dirtyMega || busy || readOnly} loading={busy} onClick={() => void saveAll()}>Save Draft</Btn>

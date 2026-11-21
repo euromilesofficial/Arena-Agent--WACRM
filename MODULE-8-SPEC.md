@@ -243,3 +243,35 @@ Found and not built. Each is a real gap against enterprise menu builders and is 
 
 - The drop indicator line was not verified visually during a live drag. In a headless drag the indicator stayed on an earlier row while the drop itself used the drop event's own coordinates, and those landed correctly (HB1, HB2). Real browsers fire drag-over continuously, so the indicator should follow the pointer, but this is not proven here.
 - The §31.8 verbatim text is still missing from the workspace.
+
+## 18. Gap closure (v6)
+
+Re-checked against the three mockups, the v1.1 spec text in the workspace, and the open list in §17.3 and §17.4.
+
+### 18.1 Closed in this pass
+
+| Gap | What was built | Evidence |
+|---|---|---|
+| Swap a submenu item with its main item, and a row with the next row | Row menu: "Swap with Main Menu Item", "Swap with Next Item". Refusals are toasts. | `qa_m8_swap.py` 12/12 (W1–W9, S1–S3) |
+| Drop indicator verified during a live drag (§17.4) | The indicator follows the pointer: above row one, then below row three. Headless Chromium delivers `dragover` late, so the test moves in small steps. | `qa_m8_gaps.py` B8a–c |
+| Drag over a collapsed parent (§17.3 item 6) | A drag resting in the middle of a collapsed parent opens it after 650 ms. | B6 |
+| Auto-scroll near the viewport edges (§17.3 item 6) | A drag within 80 px of the top or bottom scrolls the nearest scrolling ancestor. | B7 |
+| Item icon and description (§17.3 item 1) | Item Settings: Icon and Description. Shown in the preview's dropdowns and mobile accordion. | G3, G4, G16, G17, B4 |
+| "View all" per mega column (§17.3 item 2) | Column toggle, label and link. Shown at the foot of the column in the panel preview. | G7, B5a, B5b |
+| Mega link icon and description | Per-link Icon select and Description field in the mega editor. | G7, B5d, B5e |
+| Media for mega images (§17.3 item 3) | The featured image lists Media Library assets. An asset with artwork renders as a real image. | B5c |
+| Menu export and import (§17.3 item 5) | Export JSON downloads the draft and only the panels its items use. Import JSON creates a new draft menu. The file is validated: kind, version, depth, mega placement, item limit, links. | G1–G22, B2, B3, B3b |
+| Toolbar wrap at 768 px (§15 screenshot) | Collapse, Undo and Redo stay on one line. | B1 |
+| Mockup: "Show in Mega Menu" switch (panel 1) | Turns a top-level link into a mega item and back. Refused with a toast for submenu items or nested items. | B9a, B9b |
+| Mockup labels "Column Gap", "Show Featured Content" | Casing aligned with the mockup. | `qa_m8_menus.py` B19 (matching is case-insensitive) |
+
+### 18.2 Still open, with the reason
+
+1. **Per-locale menus (§17.3 item 4).** Not built. It needs a locale on each menu and on each placement, and a link to the Localization module's translations. Those contracts do not exist yet. Phase 2, owner to confirm.
+2. **Mega panels and themes on the live site (§17.3 item 7).** Not built, and this is a scope change, not a bug. M7 scope keeps the live header a flat `nav`. Showing panels live needs a header variant that renders panels, which is a separate decision for the owner.
+3. **Mockup 4 "Menu Status" card.** The build puts publishing status, Validate Links, Release History and Rollback in the Version History tab. The mockup places them beside the preview. A layout delta, not a missing function.
+4. **§31.8 verbatim text.** Not in the workspace. The fifteen tests cannot be mapped one by one. §9 maps by area, and §18.1 adds the new tests. This stays open until the owner pastes the text.
+
+### 18.3 Suite totals after this pass
+
+`qa-all` runs 32 suites. The Module 8 suites are `qa_m8_dnd` 29, `qa_m8_hier` 16, `qa_m8_swap` 12, `qa_m8_gaps` 41, `qa_m8_menus` 69, `qa_m8_v3` 35, `qa_m8_final` 14, `qa_m8_responsive` 13.

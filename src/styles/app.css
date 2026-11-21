@@ -5336,3 +5336,11 @@ button.m8-kpi{cursor:pointer}
 .m8-mega-view.m8-theme-brand{border:0;border-top:6px solid var(--m8-primary,#7c3aed);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(20,10,50,.14);padding:20px}
 .m8-mega-view.m8-theme-brand b{color:var(--m8-primary,#7c3aed);font-size:14px}
 .m8-mega-view.m8-theme-brand li:hover{background:rgba(124,58,237,.08);border-radius:6px}
+
+/* ---- Module 8 · gaps closed: tools grouping, item descriptions, View all, media art ---- */
+.m8-col-tools{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;flex:0 0 auto;justify-content:flex-end}
+.m8-col-head .m8-col-title{flex:1 1 200px;min-width:0}
+.m8-link-desc{display:block;font-size:12px;opacity:.72;font-weight:400;line-height:1.35;margin-top:2px}
+.m8-viewall{display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:13px;font-weight:600;color:var(--m8-primary,#6d28d9);text-decoration:none}
+.m8-viewall-edit{display:grid;gap:6px;margin:8px 0;padding-top:8px;border-top:1px dashed rgba(0,0,0,.12)}
+img.m8-art-photo{width:100%;height:auto;aspect-ratio:320/150;object-fit:cover;border-radius:6px;display:block}

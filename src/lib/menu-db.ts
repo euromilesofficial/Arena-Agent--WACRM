@@ -48,7 +48,20 @@ export interface MenuItem {
   /** Advanced tab: extra CSS class and rel attribute */
   cssClass: string;
   rel: "" | "nofollow" | "sponsored";
+  /** optional icon from MENU_ICONS, shown beside the label in the preview */
+  icon?: string;
+  /** optional one-line description, shown under the label in dropdown and mega panels */
+  description?: string;
 }
+
+/** Icons an item or mega link can carry. Ids are Icon component names. */
+export const MENU_ICONS: { id: string; label: string }[] = [
+  { id: "star", label: "Star" }, { id: "book", label: "Book" }, { id: "globe", label: "Globe" },
+  { id: "users", label: "People" }, { id: "coins", label: "Money" }, { id: "building", label: "Building" },
+  { id: "rocket", label: "Rocket" }, { id: "help", label: "Help" }, { id: "languages", label: "Languages" },
+  { id: "shield", label: "Shield" }, { id: "chart", label: "Chart" }, { id: "file", label: "Page" },
+];
+export const MENU_ICON_IDS = MENU_ICONS.map((i) => i.id);
 
 /** Look and motion of a menu. Optional on the document, so older drafts keep working. */
 export type Preset = "classic" | "minimal" | "pill" | "underline" | "bold";
@@ -98,8 +111,9 @@ export interface MenuRec {
   liveRev: number;
 }
 
-export interface MegaLink { id: string; label: string; link: LinkRef | null }
-export interface MegaColumn { id: string; title: string; links: MegaLink[] }
+export interface MegaLink { id: string; label: string; link: LinkRef | null; icon?: string; description?: string }
+export interface MegaColumn { id: string; title: string; links: MegaLink[]; /** optional "View all" link at the foot of the column */ viewAll?: { label: string; link: LinkRef | null } | null }
+/** image: a FEATURED_IMAGES id (drawn art) or a media asset id from the Media Library */
 export interface MegaFeatured { enabled: boolean; image: string; title: string; text: string; ctaLabel: string; ctaLink: LinkRef | null }
 export type Surface = "card" | "flat" | "bordered";
 /** Mega panel themes. Each is a complete look (type, colour, rules, featured card), pre-built in CSS. */
@@ -776,6 +790,129 @@ async function compileChrome(siteId: string, layouts: LayoutDraft[]): Promise<vo
   }
 }
 
+/* ---------- JSON export and import ---------- */
+export const MENU_EXPORT_KIND = "wacrm.menu";
+export const MENU_EXPORT_VERSION = 1;
+
+/** Serialises a menu and the mega panels its items use. Panels no item uses are left out. */
+export function exportMenuJson(doc: MenuDoc, megas: { id: string; doc: MegaDoc }[]): string {
+  const used = new Set<string>();
+  walk(doc.items, 0, null, (it) => { if (it.megaId) used.add(it.megaId); });
+  return JSON.stringify({
+    kind: MENU_EXPORT_KIND, version: MENU_EXPORT_VERSION,
+    menu: doc, megas: megas.filter((g) => used.has(g.id)),
+  }, null, 2);
+}
+
+type ParsedImport = { ok: true; menu: MenuDoc; megas: { id: string; doc: MegaDoc }[] } | { ok: false; error: string };
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const str = (v: unknown, max: number): string => (typeof v === "string" ? v.trim().slice(0, max) : "");
+const oneOf = <T extends string>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
+
+/** Reads a link. Returns null for "no link", undefined when the link is malformed. */
+function readLink(v: unknown): LinkRef | null | undefined {
+  if (v === null || v === undefined) return null;
+  if (!isObj(v)) return undefined;
+  if (v.kind === "page" && typeof v.pageId === "string" && v.pageId) return { kind: "page", pageId: v.pageId };
+  if (v.kind === "url" && typeof v.url === "string") return { kind: "url", url: v.url.slice(0, 2000) };
+  if (v.kind === "anchor" && typeof v.anchor === "string") return { kind: "anchor", anchor: v.anchor.slice(0, 200) };
+  return undefined;
+}
+
+/**
+ * Reads an export file. Ids are regenerated so an import never collides with existing items.
+ * Structural limits are enforced here (levels, item count, mega placement); the usual
+ * menu checks run again when the imported menu is saved.
+ */
+export function parseMenuImport(text: string): ParsedImport {
+  let raw: unknown;
+  try { raw = JSON.parse(text); } catch { return { ok: false, error: "This file is not valid JSON." }; }
+  if (!isObj(raw) || raw.kind !== MENU_EXPORT_KIND) return { ok: false, error: "This file is not a WACRM menu export." };
+  if (raw.version !== MENU_EXPORT_VERSION) return { ok: false, error: `Export version ${String(raw.version)} is not supported.` };
+  if (!isObj(raw.menu) || !Array.isArray(raw.menu.items)) return { ok: false, error: "The export has no menu items." };
+  try {
+    const megaMap = new Map<string, string>();
+    const megas: { id: string; doc: MegaDoc }[] = [];
+    if (Array.isArray(raw.megas)) for (const g of raw.megas) {
+      if (!isObj(g) || typeof g.id !== "string" || !isObj(g.doc)) throw new Error("A mega panel in the export is malformed.");
+      const d = g.doc;
+      if (!Array.isArray(d.columns) || d.columns.length < 1 || d.columns.length > MENU_LIMITS.maxColumns) throw new Error("A mega panel needs 1 to 4 columns.");
+      const columns: MegaColumn[] = d.columns.map((c) => {
+        if (!isObj(c)) throw new Error("A mega column in the export is malformed.");
+        const links: MegaLink[] = (Array.isArray(c.links) ? c.links : []).slice(0, MENU_LIMITS.maxLinksPerColumn).map((l) => {
+          if (!isObj(l)) throw new Error("A mega link in the export is malformed.");
+          const link = readLink(l.link);
+          if (link === undefined) throw new Error(`The link on "${str(l.label, 40) || "a mega link"}" is not valid.`);
+          const out: MegaLink = { id: newId("ml"), label: str(l.label, MENU_LIMITS.maxLabel), link };
+          if (typeof l.icon === "string" && MENU_ICON_IDS.includes(l.icon)) out.icon = l.icon;
+          if (typeof l.description === "string") out.description = str(l.description, 140);
+          return out;
+        });
+        let viewAll: MegaColumn["viewAll"] = null;
+        if (isObj(c.viewAll)) {
+          const link = readLink(c.viewAll.link);
+          if (link === undefined) throw new Error("A column's View all link is not valid.");
+          viewAll = { label: str(c.viewAll.label, MENU_LIMITS.maxLabel) || "View all", link };
+        }
+        return { id: newId("mc"), title: str(c.title, 60), links, viewAll };
+      });
+      const f = isObj(d.featured) ? d.featured : {};
+      const featured: MegaFeatured = {
+        enabled: f.enabled === true, image: str(f.image, 200), title: str(f.title, 120), text: str(f.text, 400),
+        ctaLabel: str(f.ctaLabel, 40), ctaLink: readLink(f.ctaLink) ?? null,
+      };
+      const id = newId("mega");
+      megaMap.set(g.id, id);
+      megas.push({ id, doc: {
+        name: str(d.name, 80) || "Imported panel", gap: oneOf(d.gap, ["small", "medium", "large"] as const, "medium"),
+        columns, featured,
+        surface: oneOf(d.surface, ["card", "flat", "bordered"] as const, "card"),
+        dropAnim: oneOf(d.dropAnim, DROP_ANIMS.map((x) => x.id), "fade"),
+        theme: oneOf(d.theme, MEGA_THEMES.map((x) => x.id), "classic"),
+      } });
+    }
+
+    const readItem = (v: unknown, depth: number): MenuItem => {
+      if (!isObj(v)) throw new Error("A menu item in the export is malformed.");
+      const label = str(v.label, MENU_LIMITS.maxLabel);
+      const named = label || "an item";
+      let behaviour = oneOf(v.behaviour, ["link", "dropdown", "mega"] as const, "link");
+      if (behaviour === "mega" && depth > 0) throw new Error(`"${named}" is a mega panel below the top level. Mega panels sit at the top level only.`);
+      const link = readLink(v.link);
+      if (link === undefined) throw new Error(`The link on "${named}" is not valid.`);
+      if (depth > MENU_LIMITS.maxDepth - 1) throw new Error(`"${named}" is nested deeper than ${MENU_LIMITS.maxDepth} levels.`);
+      const kids = Array.isArray(v.children) ? v.children.map((c) => readItem(c, depth + 1)) : [];
+      if (behaviour === "mega" && kids.length) throw new Error(`"${named}" is a mega panel, so it can't also have submenu items.`);
+      if (kids.length && behaviour === "link") behaviour = "dropdown";
+      const src = typeof v.megaId === "string" ? v.megaId : "";
+      const item: MenuItem = {
+        id: newItemId(), label, link, newTab: v.newTab === true,
+        audience: oneOf(v.audience, ["everyone", "members", "hidden"] as const, "everyone"),
+        behaviour, megaId: behaviour === "mega" && megaMap.has(src) ? megaMap.get(src)! : null,
+        children: kids, cssClass: str(v.cssClass, 200), rel: oneOf(v.rel, ["", "nofollow", "sponsored"] as const, ""),
+      };
+      if (typeof v.icon === "string" && MENU_ICON_IDS.includes(v.icon)) item.icon = v.icon;
+      if (typeof v.description === "string") item.description = str(v.description, 140);
+      return item;
+    };
+
+    const m = raw.menu;
+    const items = (m.items as unknown[]).map((i) => readItem(i, 0));
+    if (countItems(items) > MENU_LIMITS.maxItems) throw new Error(`This menu has more than ${MENU_LIMITS.maxItems} items.`);
+    const style = isObj(m.style) ? { preset: oneOf(m.style.preset, PRESETS.map((x) => x.id), "classic"), dropAnim: oneOf(m.style.dropAnim, DROP_ANIMS.map((x) => x.id), "fade"), hoverFx: oneOf(m.style.hoverFx, HOVER_FX.map((x) => x.id), "underline") } : undefined;
+    const mob = isObj(m.mobile) ? m.mobile : {};
+    const menu: MenuDoc = {
+      name: str(m.name, 120) || "Imported menu", description: str(m.description, 300),
+      type: oneOf(m.type, ["main", "footer", "utility"] as const, "main"), items,
+      mobile: { behaviour: oneOf(mob.behaviour, ["drawer", "accordion"] as const, "drawer"), openFirstLevel: mob.openFirstLevel === true },
+      ...(style ? { style } : {}),
+    };
+    return { ok: true, menu, megas };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "The export could not be read." };
+  }
+}
+
 export const MenusAPI = {
   async load(siteId: string): Promise<Loaded> {
     await pause(180);
@@ -826,6 +963,22 @@ export const MenusAPI = {
     const rec: MenuRec = { id: newId("menu"), siteId: src.siteId, rev: 1, updatedAt: now(), updatedBy: "You",
       draft: { ...clone(src.draft), name: `${src.draft.name} (copy)`, items: copy(src.draft.items) }, live: null, liveAt: null, applied: [], liveRev: 0 };
     store().menus.push(rec);
+    return clone(rec);
+  },
+
+  /** Creates a new menu (and its mega panels) from an export file. The import is a draft; nothing goes live. */
+  async importMenu(siteId: string, text: string): Promise<MenuRec> {
+    await pause(200);
+    if (mode.fail) throw new MenuError("E_SAVE", "The import service is unreachable. Nothing was imported.");
+    const parsed = parseMenuImport(text);
+    if (!parsed.ok) throw new MenuError("E_VALID", parsed.error);
+    if (siteMenus(siteId).length >= 12) throw new MenuError("E_LIMIT", "A website can have 12 menus at most.");
+    const s = store();
+    for (const g of parsed.megas) {
+      s.megas.push({ id: g.id, siteId, rev: 1, updatedAt: now(), updatedBy: "You", draft: g.doc, live: null, liveAt: null, liveRev: 0 });
+    }
+    const rec: MenuRec = { id: newId("menu"), siteId, rev: 1, updatedAt: now(), updatedBy: "You", draft: parsed.menu, live: null, liveAt: null, applied: [], liveRev: 0 };
+    s.menus.push(rec);
     return clone(rec);
   },
 
