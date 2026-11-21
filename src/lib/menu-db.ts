@@ -323,6 +323,39 @@ export function dropAtDepth(items: MenuItem[], node: MenuItem, targetId: string,
   return dropNode(items, node, chain[depth], where);
 }
 
+/** Replaces the item with the given id, wherever it is in the tree. */
+function replaceItem(items: MenuItem[], id: string, node: MenuItem): MenuItem[] {
+  return items.map((it) => (it.id === id ? node : { ...it, children: replaceItem(it.children, id, node) }));
+}
+/** Swaps a submenu item with its main menu item. The submenu item takes the parent's place, and the parent becomes its first child. The parent keeps its other children. */
+export function swapWithParent(items: MenuItem[], childId: string): { items: MenuItem[] } | { error: string } {
+  const chain = chainTo(items, childId);
+  if (!chain || chain.length < 2) return { error: "Only a submenu item has a main menu item to swap with." };
+  const parent = findItem(items, chain[chain.length - 2]);
+  const child = findItem(items, childId);
+  if (!parent || !child) return { error: "That item is no longer in the menu." };
+  if (parent.behaviour === "mega") return { error: "A mega menu's top item keeps its panel. Detach the panel first." };
+  const remaining = parent.children.filter((c) => c.id !== childId);
+  const parentNext: MenuItem = { ...parent, children: remaining, behaviour: remaining.length || parent.behaviour !== "dropdown" ? parent.behaviour : "link" };
+  const childNext: MenuItem = { ...child, behaviour: "dropdown", megaId: null, children: [parentNext, ...child.children] };
+  const next = replaceItem(items, parent.id, childNext);
+  if (depthOf(next) > MENU_LIMITS.maxDepth) return { error: `Swapping would make the menu deeper than ${MENU_LIMITS.maxDepth} levels.` };
+  return { items: next };
+}
+/** Swaps an item with the next item in the same list. Each item keeps its own submenu. */
+export function swapWithNext(items: MenuItem[], id: string): { items: MenuItem[] } | { error: string } {
+  const loc = locate(items, id);
+  if (!loc) return { error: "That item is no longer in the menu." };
+  const nextItem = loc.list[loc.index + 1];
+  if (!nextItem) return { error: "There is no item below this one to swap with." };
+  const swapList = (list: MenuItem[]): MenuItem[] => { const out = [...list]; out[loc.index] = list[loc.index + 1]; out[loc.index + 1] = list[loc.index]; return out; };
+  const rebuild = (list: MenuItem[]): MenuItem[] => {
+    if (list === loc.list) return swapList(list);
+    return list.map((it) => ({ ...it, children: rebuild(it.children) }));
+  };
+  return { items: rebuild(items) };
+}
+
 /** Moves an existing row to a depth next to a target. Same guards as moveNode. */
 export function moveAtDepth(items: MenuItem[], dragId: string, targetId: string, where: "before" | "after", depth: number): { items: MenuItem[] } | { error: string } {
   if (dragId === targetId) return { error: "Drop it somewhere else." };

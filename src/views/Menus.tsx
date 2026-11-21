@@ -6,7 +6,7 @@
    fills each layout slot. Publish copies drafts live as a numbered version and compiles each placed
    menu into its layout's header or footer. Rollback publishes an older version as a new one.
    ============================================================ */
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/Icon";
 import { Btn, EmptyState, Field, Modal, Pill, Skel, Switch } from "@/components/ui";
 import { useApp } from "@/lib/store";
@@ -14,7 +14,7 @@ import { DBX, type CmsPage } from "@/lib/data";
 import { themeFor } from "@/lib/theme-db";
 import {
   LOCATIONS, LOC_LABEL, MENU_LIMITS, MENU_TYPE_LABEL, MenuError, MenusAPI, addChild, blankLink, checkMega, checkMenu, countItems,
-  DropWhere, dropAtDepth, moveAtDepth, duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, moveItem,
+  DropWhere, dropAtDepth, moveAtDepth, swapWithNext, swapWithParent, locate, duplicateItem, findItem, indentItem, levelOf, mapItem, megaHasChanges, megaUsage, mode as MenusMode, moveItem,
   outdentItem, placedIn, removeItem, sameDoc, slotsOf, statusOf, toTopLevel, urlOk, walk, hasChanges,
   type Audience, type Behaviour, type Loaded, type MegaDoc, type MenuDoc, type MenuIssue, type MenuItem, type MenuType, type Placements, type Slot, type VersionRec,
 } from "@/lib/menu-db";
@@ -67,7 +67,8 @@ export function Menus() {
   const [manageFilter, setManageFilter] = useState<"all" | "published" | "draft" | "assigned" | "unassigned">("all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragPage, setDragPage] = useState<string | null>(null);
-  const [dropHint, setDropHint] = useState<{ id: string; where: DropWhere; depth: number } | null>(null);
+  /* Hover feedback is painted straight onto the row (see paintHover). It never re-renders the screen. */
+  const hoverRef = useRef<{ id: string | null; where: DropWhere | null; depth: number }>({ id: null, where: null, depth: -1 });
   const [rowMenu, setRowMenu] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
   const [previewing, setPreviewing] = useState(false);
@@ -465,6 +466,26 @@ export function Menus() {
   };
   /* The whole tree is the drop surface: the row under the pointer's height is the target, so a
      pointer far to the left (the parent level) still lands on a row that is nested further in. */
+  /** Moves the drop indicator to a new target. Only the affected rows change, and no React state is set. */
+  const paintHover = (tree: HTMLElement | null, t: { id: string; plan: { where: DropWhere; depth: number } } | null) => {
+    const prev = hoverRef.current;
+    if (t && prev.id === t.id && prev.where === t.plan.where && prev.depth === t.plan.depth) return;
+    if (prev.id && tree) {
+      const old = tree.querySelector<HTMLElement>(`.m8-row[data-row-id="${CSS.escape(prev.id)}"]`);
+      if (old) { old.classList.remove("is-drop-before", "is-drop-after", "is-drop-inside"); old.style.removeProperty("--drop-indent"); old.removeAttribute("data-drop-level"); }
+    }
+    if (t && tree) {
+      const row = tree.querySelector<HTMLElement>(`.m8-row[data-row-id="${CSS.escape(t.id)}"]`);
+      if (row) {
+        row.classList.add(`is-drop-${t.plan.where}`);
+        row.style.setProperty("--drop-indent", `${t.plan.depth * INDENT_PX}px`);
+        row.dataset.dropLevel = String(t.plan.depth + 1);
+      }
+      hoverRef.current = { id: t.id, where: t.plan.where, depth: t.plan.depth };
+    } else {
+      hoverRef.current = { id: null, where: null, depth: -1 };
+    }
+  };
   const treeTarget = (tree: HTMLElement, clientX: number, clientY: number) => {
     const rows = Array.from(tree.querySelectorAll<HTMLElement>(".m8-row[data-row-id]"));
     if (!rows.length) return null;
@@ -483,7 +504,7 @@ export function Menus() {
     if (!doc || readOnly) return;
     const fromPage = dragPage;
     const fromRow = dragId;
-    setDragId(null); setDragPage(null); setDropHint(null);
+    setDragId(null); setDragPage(null); paintHover(document.querySelector("ul[role=tree]") as HTMLElement | null, null);
     /* "inside" is the target's child level; dropAtDepth turns that into a child append */
     const level = levelOf(doc.items, targetId);
     const where: "before" | "after" = plan.where === "before" ? "before" : "after";
@@ -507,6 +528,19 @@ export function Menus() {
     setAnnounce(`${verb} ${place}.`);
   };
 
+  /* swap: a submenu item trades places with its main menu item, or a row trades with the row below it */
+  const swapRow = (id: string, mode: "parent" | "next") => {
+    if (!doc || readOnly) return;
+    const res = mode === "parent" ? swapWithParent(doc.items, id) : swapWithNext(doc.items, id);
+    setRowMenu(null);
+    if ("error" in res) { app.toast({ type: "error", title: "Can't swap these", sub: res.error }); setAnnounce(res.error); return; }
+    const label = findItem(doc.items, id)?.label ?? "item";
+    setDoc({ ...doc, items: res.items });
+    const msg = mode === "parent" ? `${label} moved up to take its main item's place. The main item is now its submenu.` : `${label} swapped with the item below.`;
+    setAnnounce(msg);
+    app.toast({ type: "success", title: "Swapped", sub: msg });
+  };
+
   /* ---------- tree rows ---------- */
   const renderRows = (items: MenuItem[], depth: number): ReactNode =>
     items.map((it) => {
@@ -523,8 +557,7 @@ export function Menus() {
           <div
             role="treeitem" aria-level={depth + 1} aria-selected={sel} aria-expanded={kids ? !isCollapsed : undefined}
             data-row-id={it.id} data-row-level={depth} data-row-label={it.label || "item"}
-            tabIndex={0} className={`m8-row${sel ? " is-sel" : ""}${it.behaviour === "mega" ? " is-mega" : ""}${dragId === it.id ? " is-drag" : ""}${dropHint?.id === it.id && (dragId || dragPage) ? ` is-drop-${dropHint.where}` : ""}`}
-            style={dropHint?.id === it.id && (dragId || dragPage) ? ({ "--drop-indent": `${dropHint.depth * 36}px` } as React.CSSProperties) : undefined}
+            tabIndex={0} className={`m8-row${sel ? " is-sel" : ""}${it.behaviour === "mega" ? " is-mega" : ""}${dragId === it.id ? " is-drag" : ""}`}
             onClick={() => { setItemId(it.id); setItemTab("settings"); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setItemId(it.id); setItemTab("settings"); return; }
@@ -562,6 +595,8 @@ export function Menus() {
             <div className="m8-more" role="menu" aria-label={`Actions for ${it.label}`} onKeyDown={(e) => { if (e.key === "Escape") setRowMenu(null); }}>
               <button role="menuitem" onClick={() => { setItemId(it.id); setItemTab("settings"); setRowMenu(null); }}>Edit Item</button>
               <button role="menuitem" disabled={depthOfId(d!.items, it.id) >= MENU_LIMITS.maxDepth - 1 || it.behaviour === "mega"} onClick={() => rowAction(it.id, "child")}>Add Submenu Item</button>
+              <button role="menuitem" disabled={readOnly || depthOfId(d!.items, it.id) === 0} title="Swaps this submenu item with its main menu item" onClick={() => swapRow(it.id, "parent")}>Swap with Main Menu Item</button>
+              <button role="menuitem" disabled={readOnly || (() => { const loc = locate(d!.items, it.id); return !loc || loc.index >= loc.list.length - 1; })()} title="Trades places with the item below" onClick={() => swapRow(it.id, "next")}>Swap with Next Item</button>
               <button role="menuitem" onClick={() => { move(it.id, -1); setRowMenu(null); }}>Move Up</button>
               <button role="menuitem" onClick={() => { move(it.id, 1); setRowMenu(null); }}>Move Down</button>
               <button role="menuitem" disabled={depthOfId(d!.items, it.id) === 0} onClick={() => rowAction(it.id, "top")}>Move to Top Level</button>
@@ -737,7 +772,7 @@ export function Menus() {
                             <input aria-label="Search pages" className="m8-search" placeholder="Search pages..." value={pageQ} onChange={(e) => setPageQ(e.target.value)} />
                             <ul className="m8-pick m8-check">
                               {standardPages.map((p) => (
-                                <li key={p.id} className="m8-pagedrag" draggable={!readOnly} onDragStart={(e) => { e.dataTransfer.setData("text/plain", `page:${p.id}`); e.dataTransfer.effectAllowed = "copy"; setDragPage(p.id); }} onDragEnd={() => { setDragPage(null); setDropHint(null); }}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
+                                <li key={p.id} className="m8-pagedrag" draggable={!readOnly} onDragStart={(e) => { e.dataTransfer.setData("text/plain", `page:${p.id}`); e.dataTransfer.effectAllowed = "copy"; setDragPage(p.id); }} onDragEnd={() => { setDragPage(null); }}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
                                   onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
                                   <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
                               ))}
@@ -747,7 +782,7 @@ export function Menus() {
                           <Accordion title={`Landing pages (${landingPages.length}/${allLanding})`}>
                             <ul className="m8-pick m8-check">
                               {landingPages.map((p) => (
-                                <li key={p.id} className="m8-pagedrag" draggable={!readOnly} onDragStart={(e) => { e.dataTransfer.setData("text/plain", `page:${p.id}`); e.dataTransfer.effectAllowed = "copy"; setDragPage(p.id); }} onDragEnd={() => { setDragPage(null); setDropHint(null); }}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
+                                <li key={p.id} className="m8-pagedrag" draggable={!readOnly} onDragStart={(e) => { e.dataTransfer.setData("text/plain", `page:${p.id}`); e.dataTransfer.effectAllowed = "copy"; setDragPage(p.id); }} onDragEnd={() => { setDragPage(null); }}><label><input type="checkbox" aria-label={`Select ${p.title}`} checked={picked.includes(p.id)} disabled={readOnly}
                                   onChange={(e) => setPicked((x) => e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id))} />
                                   <span>{p.title}{p.status !== "published" && <em className="m8-draft-tag">Draft</em>}</span><small>{p.path}</small></label></li>
                               ))}
@@ -853,17 +888,17 @@ export function Menus() {
                       onDragOver={(e) => {
                         if (!(dragId || dragPage) || readOnly) return;
                         e.preventDefault(); e.dataTransfer.dropEffect = dragPage ? "copy" : "move";
-                        const t = treeTarget(e.currentTarget, e.clientX, e.clientY);
-                        if (!t) return;
-                        const cur = dropHint;
-                        if (!cur || cur.id !== t.id || cur.where !== t.plan.where || cur.depth !== t.plan.depth) setDropHint({ id: t.id, ...t.plan });
+                        const tree = e.currentTarget;
+                        paintHover(tree, treeTarget(tree, e.clientX, e.clientY));
                       }}
-                      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropHint(null); }}
+                      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) paintHover(e.currentTarget, null); }}
                       onDrop={(e) => {
                         e.preventDefault();
                         const t = treeTarget(e.currentTarget, e.clientX, e.clientY);
-                        if (t) dropOnRow(t.id, t.label, t.plan); else { setDragId(null); setDragPage(null); setDropHint(null); }
-                      }}>
+                        paintHover(e.currentTarget, null);
+                        if (t) dropOnRow(t.id, t.label, t.plan); else { setDragId(null); setDragPage(null); }
+                      }}
+                      onDragEnd={(e) => { paintHover(e.currentTarget, null); setDragId(null); setDragPage(null); }}>
                       {renderRows(d.items, 0)}
                     </ul>
                   )}
