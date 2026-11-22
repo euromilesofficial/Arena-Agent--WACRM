@@ -19,7 +19,7 @@ keep_if_in_git() {
   if [ ! -e "$path" ]; then return 0; fi
   if [ -d "$path" ]; then
     echo "  dir  $path"
-    [ $APPLY = 1 ] && rm -rf "$path"
+    if [ $APPLY = 1 ]; then rm -rf "$path"; fi
     return 0
   fi
   local local_sum git_sum
@@ -27,17 +27,17 @@ keep_if_in_git() {
   git_sum=$( (cd "$TMP/repo" && [ -e "$path" ] && md5sum "$path" | cut -c1-32) || true)
   if [ -n "$git_sum" ] && [ "$local_sum" = "$git_sum" ]; then
     echo "  file $path  (in GitHub, same content)"
-    [ $APPLY = 1 ] && rm -f "$path"
+    if [ $APPLY = 1 ]; then rm -f "$path"; fi
   else
     echo "  KEEP $path  (not confirmed in GitHub — save with git-sync.sh first)"
   fi
 }
 
-echo "Removable (confirmed in GitHub):"
-for d in node_modules dist; do [ -e "$d" ] && keep_if_in_git "$d"; done
-for f in WACRM-CMS.html src/lib/theme-font-data.ts release/wacrm-app.zip; do [ -e "$f" ] && keep_if_in_git "$f"; done
+echo "Removable (generated files confirmed in GitHub; caches rebuilt from the lockfile):"
+for d in node_modules dist; do keep_if_in_git "$d"; done
+for f in WACRM-CMS.html src/lib/theme-font-data.ts release/wacrm-app.zip; do keep_if_in_git "$f"; done
 if [ -d qa ]; then
   for f in $(find qa -type f ! -name '.gitkeep'); do keep_if_in_git "$f"; done
 fi
-for z in ../wacrm-app.zip; do [ -e "$z" ] && { echo "  KEEP $z  (outside the repo — move into release/ with lean-build.sh)"; }; done
-[ $APPLY = 1 ] && echo "applied." || echo "dry run — nothing deleted. Re-run with --apply."
+if [ -e ../wacrm-app.zip ]; then echo "  KEEP ../wacrm-app.zip  (outside the repo — lean-build.sh moves it into release/)"; fi
+if [ $APPLY = 1 ]; then echo "applied."; else echo "dry run — nothing deleted. Re-run with --apply."; fi
