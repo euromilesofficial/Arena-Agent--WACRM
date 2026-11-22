@@ -70,6 +70,9 @@ export function Menus() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragPage, setDragPage] = useState<string | null>(null);
   /* Hover feedback is painted straight onto the row (see paintHover). It never re-renders the screen. */
+  const rowDragRef = useRef<{ id: string; label: string; grabX: number; grabY: number; startX: number; startY: number; ghost: HTMLElement | null; active: boolean; off: () => void } | null>(null);
+  const dropRef = useRef<(targetId: string, label: string, plan: { where: DropWhere; depth: number }, from: string) => void>(() => {});
+  const suppressClickRef = useRef(false);
   const hoverRef = useRef<{ id: string | null; where: DropWhere | null; depth: number }>({ id: null, where: null, depth: -1 });
   const expandRef = useRef<{ id: string | null; timer: number | null }>({ id: null, timer: null });
   const importRef = useRef<HTMLInputElement>(null);
@@ -574,10 +577,10 @@ export function Menus() {
     const left = tree.getBoundingClientRect().left;
     return { id: best.dataset.rowId as string, label: best.dataset.rowLabel ?? "item", plan: planIn(b, clientX, clientY, level, left) };
   };
-  const dropOnRow = (targetId: string, targetLabel: string, plan: { where: DropWhere; depth: number }) => {
+  const dropOnRow = (targetId: string, targetLabel: string, plan: { where: DropWhere; depth: number }, fromRowOverride?: string) => {
     if (!doc || readOnly) return;
     const fromPage = dragPage;
-    const fromRow = dragId;
+    const fromRow = fromRowOverride ?? dragId;
     setDragId(null); setDragPage(null); paintHover(document.querySelector("ul[role=tree]") as HTMLElement | null, null);
     /* "inside" is the target's child level; dropAtDepth turns that into a child append */
     const level = levelOf(doc.items, targetId);
@@ -615,6 +618,76 @@ export function Menus() {
     app.toast({ type: "success", title: "Swapped", sub: msg });
   };
 
+  /* ---------- row drag (pointer, WordPress-style) ----------
+     The whole row is the handle, as in WordPress Menus: press anywhere on a row that is not a control,
+     move 4 px, and a copy of the row follows the pointer. The drop indicator moves with it. Depth comes
+     from the copy's left edge, so it does not depend on where the row was grabbed. Escape cancels. */
+  dropRef.current = (tid, lbl, plan, from) => dropOnRow(tid, lbl, plan, from);
+  /** The pointer is over the menu list: within its height, and within a small margin to its left (the copy can sit past the left edge). */
+  const overTree = (tree: HTMLElement, x: number, y: number) => {
+    const b = tree.getBoundingClientRect();
+    return y >= b.top && y <= b.bottom && x >= b.left - 160 && x <= b.right + 40;
+  };
+  const startRowDrag = (e: React.PointerEvent<HTMLDivElement>, it: MenuItem) => {
+    if (readOnly || e.button !== 0 || rowDragRef.current) return;
+    if ((e.target as HTMLElement).closest("button, input, select, textarea, a, [role=menuitem]")) return;
+    const row = e.currentTarget;
+    const rect = row.getBoundingClientRect();
+    const st = { id: it.id, label: it.label || "item", grabX: e.clientX - rect.left, grabY: e.clientY - rect.top, startX: e.clientX, startY: e.clientY, ghost: null as HTMLElement | null, active: false, off: () => {} };
+    const onMove = (ev: PointerEvent) => {
+      const cur = rowDragRef.current; if (!cur) return;
+      if (!cur.active) {
+        if (Math.hypot(ev.clientX - cur.startX, ev.clientY - cur.startY) < 4) return;
+        cur.active = true;
+        const g = row.cloneNode(true) as HTMLElement;
+        g.classList.add("m8-row-ghost"); g.classList.remove("is-sel", "is-drag");
+        g.removeAttribute("data-row-id");
+        g.style.width = `${rect.width}px`;
+        document.body.appendChild(g); cur.ghost = g;
+        document.body.classList.add("m8-row-dragging");
+        setDragId(cur.id);
+        suppressClickRef.current = true;
+      }
+      const tree = document.querySelector("ul[role=tree]") as HTMLElement | null;
+      if (!cur.ghost || !tree) return;
+      const left = ev.clientX - cur.grabX, top = ev.clientY - cur.grabY;
+      cur.ghost.style.transform = `translate(${left}px, ${top}px)`;
+      if (!overTree(tree, ev.clientX, ev.clientY)) { paintHover(tree, null); cancelExpand(); return; }
+      const t = treeTarget(tree, left, ev.clientY);
+      paintHover(tree, t);
+      edgeScroll(tree, ev.clientY);
+      hoverExpand(tree, t);
+    };
+    const finish = (commit: boolean, ev?: PointerEvent) => {
+      const cur = rowDragRef.current; rowDragRef.current = null;
+      st.off();
+      if (!cur || !cur.active) return;
+      const tree = document.querySelector("ul[role=tree]") as HTMLElement | null;
+      /* Released outside the menu list: nothing is dropped (the drag is cancelled). */
+      const t = commit && ev && tree && overTree(tree, ev.clientX, ev.clientY) ? treeTarget(tree, ev.clientX - cur.grabX, ev.clientY) : null;
+      if (cur.ghost) cur.ghost.remove();
+      document.body.classList.remove("m8-row-dragging");
+      if (tree) paintHover(tree, null);
+      cancelExpand();
+      setDragId(null);
+      if (t && t.id !== cur.id) dropRef.current(t.id, t.label, t.plan, cur.id);
+      window.setTimeout(() => { suppressClickRef.current = false; }, 0);
+    };
+    const onUp = (ev: PointerEvent) => finish(true, ev);
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") finish(false); };
+    st.off = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("keydown", onKey);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("keydown", onKey);
+    rowDragRef.current = st;
+  };
+
   /* ---------- tree rows ---------- */
   const renderRows = (items: MenuItem[], depth: number): ReactNode =>
     items.map((it) => {
@@ -632,7 +705,8 @@ export function Menus() {
             role="treeitem" aria-level={depth + 1} aria-selected={sel} aria-expanded={kids ? !isCollapsed : undefined}
             data-row-id={it.id} data-row-level={depth} data-row-label={it.label || "item"} data-row-kids={it.children.length} data-row-collapsed={isCollapsed ? "true" : "false"}
             tabIndex={0} className={`m8-row${sel ? " is-sel" : ""}${it.behaviour === "mega" ? " is-mega" : ""}${dragId === it.id ? " is-drag" : ""}`}
-            onClick={() => { setItemId(it.id); setItemTab("settings"); }}
+            onPointerDown={(e) => startRowDrag(e, it)}
+            onClick={() => { if (suppressClickRef.current) return; setItemId(it.id); setItemTab("settings"); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setItemId(it.id); setItemTab("settings"); return; }
               if (readOnly || !e.altKey) return;
@@ -642,8 +716,7 @@ export function Menus() {
               if (e.key === "ArrowLeft" && e.shiftKey) { e.preventDefault(); outdent(it.id); }
             }}
           >
-            <span className="m8-grip" draggable={!readOnly} aria-hidden="true" title="Drag to reorder. Or Alt + arrow keys; Alt + Shift + arrows change level."
-              onDragStart={(e) => { e.dataTransfer.setData("text/plain", it.id); e.dataTransfer.effectAllowed = "move"; setDragId(it.id); }} onDragEnd={() => setDragId(null)}>
+            <span className="m8-grip" aria-hidden="true" title="Drag anywhere on the row to reorder. Drag right to nest.">
               <Icon name="grip" size={14} />
             </span>
             <Icon name={it.behaviour === "mega" ? "columns" : it.behaviour === "dropdown" || kids ? "layers" : it.link?.kind === "url" ? "link" : "file"} size={14} />
@@ -1010,7 +1083,7 @@ export function Menus() {
                     </div>
                   </div>
                   <div className="m8-depth-warn" role="note"><Icon name="alert" size={13} /><span>Maximum depth: {MENU_LIMITS.maxDepth} levels (e.g., Main › Submenu › Sub-item)</span></div>
-                  <div className="m8-hint-line">Drag the grip to reorder. Alt + ↑/↓ moves an item, Alt + Shift + →/← changes its level.</div>
+                  <div className="m8-hint-line">Drag any row to reorder. Drag it right to make a submenu, left to move it up a level. Alt + ↑/↓ moves an item, Alt + Shift + →/← changes its level.</div>
                   {d.items.length === 0 ? (
                     <EmptyState icon="menu" title="This menu is empty" desc="Add pages or a custom link from the left." />
                   ) : (
