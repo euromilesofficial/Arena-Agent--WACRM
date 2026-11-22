@@ -1,6 +1,5 @@
 node_modules/
 dist/
-*.zip
 *.bundle
 .DS_Store
 
@@ -17,3 +16,6 @@ findgreattoken*
 *secret*.ts
 .env
 .env.*
+
+# python bytecode is never tracked
+__pycache__/
