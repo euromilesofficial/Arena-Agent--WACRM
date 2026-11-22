@@ -423,6 +423,15 @@ export function resolvePage(pageId: string, pages: PageLike[]): PageLike | null 
 }
 export type PageLike = Pick<CmsPage, "id" | "path" | "title" | "status"> & { trash?: unknown };
 
+/** The address a typed link points to right now. Null when the page is gone or the link is incomplete. */
+export function hrefOf(link: LinkRef | null, pages: PageLike[]): string | null {
+  if (!link) return null;
+  if (link.kind === "url") return urlOk(link.url) ? link.url : null;
+  if (link.kind === "anchor") return anchorOk(link.anchor) ? link.anchor : null;
+  const p = pages.find((x) => x.id === link.pageId);
+  return p && !p.trash ? p.path : null;
+}
+
 /** a readable target for a link: page title, URL, or anchor */
 export function linkLabel(link: LinkRef | null, pages: PageLike[]): string {
   if (!link) return "No link";
@@ -449,6 +458,16 @@ function checkLink(link: LinkRef | null, pages: PageLike[], where: { id: string;
   }
 }
 
+/* Link labels a screen reader user hears out of context. Warned, not blocked: the owner can keep a label on purpose. */
+const GENERIC_LABEL = /^(click here|here|more|read more|learn more|link|this|go|open|see more)$/i;
+/** Accessibility checks on one link label. An empty label is reported separately by the caller. */
+function labelChecks(label: string, id: string, where: { label: string; menuId?: string; itemId?: string }, out: MenuIssue[]) {
+  const t = label.trim();
+  if (!t) return;
+  if (!/[\p{L}\p{N}]/u.test(t)) out.push({ id: `${id}_nowords`, severity: "error", ...where, detail: "The label needs at least one letter or number." });
+  else if (GENERIC_LABEL.test(t)) out.push({ id: `${id}_generic`, severity: "warn", ...where, detail: `“${t}” does not say where the link goes. Name the destination, for example “Contact us”.` });
+}
+
 /** Every problem in one menu draft. Pure: pass the page registry and the mega library. */
 export function checkMenu(doc: MenuDoc, pages: PageLike[], megaIds: string[], menuId?: string): MenuIssue[] {
   const out: MenuIssue[] = [];
@@ -462,6 +481,7 @@ export function checkMenu(doc: MenuDoc, pages: PageLike[], megaIds: string[], me
     const where = { label: it.label.trim() || "Untitled link", menuId, itemId: it.id };
     if (!it.label.trim()) out.push({ id: `${it.id}_label`, severity: "error", ...where, detail: "Every link needs a label." });
     if (it.label.length > MENU_LIMITS.maxLabel) out.push({ id: `${it.id}_long`, severity: "warn", ...where, detail: `Labels over ${MENU_LIMITS.maxLabel} characters get cut off on small screens.` });
+    labelChecks(it.label, it.id, where, out);
     if (it.behaviour === "mega") {
       if (depth !== 0) out.push({ id: `${it.id}_megadepth`, severity: "error", ...where, detail: "A mega panel can only sit on a top-level link." });
       if (!it.megaId) out.push({ id: `${it.id}_nomega`, severity: "error", ...where, detail: "This mega menu has no panel attached. Attach one in the Mega Panel tab." });
@@ -475,6 +495,19 @@ export function checkMenu(doc: MenuDoc, pages: PageLike[], megaIds: string[], me
     }
     checkLink(it.link, pages, { id: it.id, ...where }, out, it.behaviour === "link");
   });
+  /* two links at one level with the same label cannot be told apart by a screen reader */
+  const sameLabel = (list: MenuItem[]) => {
+    const names = new Map<string, string>();
+    for (const it of list) {
+      const k = it.label.trim().toLowerCase();
+      if (k) {
+        if (names.has(k)) out.push({ id: `${it.id}_samelabel`, severity: "warn", menuId, itemId: it.id, label: it.label.trim(), detail: "Another link at this level has the same label. Screen-reader users cannot tell them apart." });
+        else names.set(k, it.id);
+      }
+      sameLabel(it.children);
+    }
+  };
+  sameLabel(top);
   return out;
 }
 
@@ -487,7 +520,10 @@ export function checkMega(doc: MegaDoc, pages: PageLike[], megaId?: string): Men
     if (!c.title.trim()) out.push({ id: `${c.id}_t`, severity: "error", label: where.label, detail: "Every column needs a heading." });
     if (c.links.length === 0) out.push({ id: `${c.id}_e`, severity: "warn", label: where.label, detail: `Column “${c.title || "untitled"}” has no links.` });
     if (c.links.length > MENU_LIMITS.maxLinksPerColumn) out.push({ id: `${c.id}_max`, severity: "error", label: where.label, detail: `Column “${c.title}” has more than ${MENU_LIMITS.maxLinksPerColumn} links.` });
-    c.links.forEach((l) => checkLink(l.link, pages, { id: l.id, label: l.label || "Untitled link" }, out, true));
+    c.links.forEach((l) => {
+      checkLink(l.link, pages, { id: l.id, label: l.label || "Untitled link" }, out, true);
+      labelChecks(l.label, l.id, { label: l.label || "Untitled link" }, out);
+    });
   });
   if (doc.featured.enabled) {
     if (!doc.featured.title.trim()) out.push({ id: `${where.id}_ft`, severity: "error", label: where.label, detail: "The featured card needs a title." });
@@ -801,14 +837,15 @@ function menuPlaced(siteId: string, menuId: string): boolean {
 }
 
 /** The menu as a tree for the header variant: visible items only, each mega panel's live copy attached. */
-function menuTreeOf(rec: MenuRec, megas: MegaRec[]): MenuTree {
+function menuTreeOf(rec: MenuRec, megas: MegaRec[], pages: PageLike[]): MenuTree {
   const conv = (items: MenuItem[]): MenuTreeNode[] => items.filter((i) => i.audience === "everyone").map((i) => {
     const g = i.megaId ? megas.find((x) => x.id === i.megaId) : undefined;
     const d = g ? (g.live ?? g.draft) : null;
     return { id: i.id, label: i.label.trim(), link: i.link, newTab: i.newTab, behaviour: i.behaviour, icon: i.icon, description: i.description,
       children: conv(i.children), mega: d ? clone(d) : null };
   });
-  return { items: conv((rec.live ?? rec.draft).items) };
+  const pageSnap = pages.map((p) => ({ id: p.id, path: p.path, title: p.title, status: p.status, trash: !!p.trash }));
+  return { items: conv((rec.live ?? rec.draft).items), pages: pageSnap };
 }
 
 /* ---------- JSON export and import ---------- */
@@ -1189,7 +1226,7 @@ export const MenusAPI = {
       if (hidden.length) omitted.push(`hidden from visitors: ${hidden.join(", ")}`);
       props.nav = visible.map((i) => i.label.trim()).filter(Boolean);
       props.menuStyle = styleOf(live);
-      props.menuTree = menuTreeOf(rec, siteMegas(rec.siteId));
+      props.menuTree = menuTreeOf(rec, siteMegas(rec.siteId), pagesFor(rec.siteId));
       written = (props.nav as string[]).length;
     } else if (region.kind === "footer") {
       const groups: FooterGroup[] = live.items

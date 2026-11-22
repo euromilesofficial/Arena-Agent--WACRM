@@ -4,7 +4,7 @@
 > Source of truth: `handover.config.json` (intent, decisions, next steps) + live repo facts.
 > Regenerate with `npm run handover`; `npm run build` and `npm run qa` do it for you.
 
-**Generated** 2026-11-22 02:55:51 UTC · **generated against commit** `no-git`
+**Generated** 2026-11-22 21:45:17 UTC · **generated against commit** `no-git`
 
 Desktop-first SaaS Website CMS, built module by module as a front-end prototype over a simulated backend.
 
@@ -50,10 +50,10 @@ Desktop-first SaaS Website CMS, built module by module as a front-end prototype 
 | Property | Value |
 | --- | --- |
 | File | `WACRM-CMS.html` |
-| Size | 5,241,475 B (5119 kB) · gzip 3020 kB |
-| md5 | `f4b9c8758a4f176ef0c15cedeef93407` |
-| sha256 (first 16) | `b43349d10a8a79d8` |
-| Built | 2026-11-22 02:55:51 |
+| Size | 5,243,225 B (5120 kB) · gzip 3021 kB |
+| md5 | `3b6ba743af6f6dc240ac16a649917692` |
+| sha256 (first 16) | `1bfad28ff9563144` |
+| Built | 2026-11-22 21:45:17 |
 
 ```bash
 npm ci
@@ -78,28 +78,28 @@ python3 -m playwright install chromium-headless-shell
 
 ## 5. Where the code lives
 
-Source inventory: **82 source files, 33,877 lines** of TS/TSX/CSS (52,872 lines across all tracked text files).
+Source inventory: **83 source files, 33,995 lines** of TS/TSX/CSS (53,062 lines across all tracked text files).
 
 | Area | Files | Lines | Purpose |
 | --- | --- | --- | --- |
-| `src/lib/` | 24 | 9,130 | data seams, registries, formatting, no JSX |
-| `src/components/` | 43 | 11,174 | reusable UI: shell, ui kit, charts, and per-module parts |
+| `src/lib/` | 24 | 9,169 | data seams, registries, formatting, no JSX |
+| `src/components/` | 43 | 11,196 | reusable UI: shell, ui kit, charts, and per-module parts |
 | `src/views/` | 10 | 8,132 | one file per screen; routes are hash-based |
-| `src/styles/` | 1 | 5,365 | one tokenised stylesheet (design system) |
+| `src/styles/` | 1 | 5,368 | one tokenised stylesheet (design system) |
 
 Top files by size:
 
 | File | Lines |
 | --- | --- |
-| `src/styles/app.css` | 5,365 |
+| `src/styles/app.css` | 5,368 |
 | `BACKEND-PLAN.md` | 1,617 |
 | `src/views/Menus.tsx` | 1,550 |
 | `src/lib/theme-db.ts` | 1,493 |
 | `src/views/ThemeStudio.tsx` | 1,417 |
 | `src/views/Layouts.tsx` | 1,297 |
-| `src/lib/menu-db.ts` | 1,249 |
+| `src/lib/menu-db.ts` | 1,286 |
 | `src/views/Library.tsx` | 1,099 |
-| `src/lib/layout-db.ts` | 1,062 |
+| `src/lib/layout-db.ts` | 1,064 |
 | `src/views/Builder.tsx` | 1,053 |
 | `qa_theme.py` | 1,052 |
 | `MODULE-7-SPEC.md` | 979 |

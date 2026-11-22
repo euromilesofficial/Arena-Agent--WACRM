@@ -56,7 +56,9 @@ export interface MenuTreeNode {
   id: string; label: string; link: LinkRef | null; newTab: boolean; behaviour: "link" | "dropdown" | "mega";
   icon?: string; description?: string; children: MenuTreeNode[]; mega: MegaDoc | null;
 }
-export interface MenuTree { items: MenuTreeNode[] }
+/** A page as the live header needs it: enough to turn a typed page link into its address. */
+export interface TreePage { id: string; path: string; title: string; status: "published" | "draft"; trash?: boolean }
+export interface MenuTree { items: MenuTreeNode[]; pages?: TreePage[] }
 
 /** Footer variant props. `groups` is derived from the live menu at apply time; edited only in the Global Footer drawer. */
 export interface FooterChromeProps {

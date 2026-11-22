@@ -2,13 +2,13 @@
    Module 8 · shared parts — link picker, mega panel editor, navigation preview.
    Pure presentation over the menu-db types. No data access here.
    ============================================================ */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/Icon";
 import type { ThemeTokens } from "@/lib/theme-db";
 import { stackFor } from "@/lib/theme-db";
 import { SAMPLE_IMAGES } from "@/lib/builder-images";
 import {
-  MENU_LIMITS, anchorOk, linkLabel, newId, urlOk, type LinkRef, type MegaColumn, type MegaDoc, type MegaFeatured, type MegaLink,
+  MENU_LIMITS, anchorOk, hrefOf, linkLabel, newId, urlOk, type LinkRef, type MegaColumn, type MegaDoc, type MegaFeatured, type MegaLink,
   type MenuItem, type PageLike, type Gap, type MenuStyle, type Surface, type DropAnim, type MegaTheme, SURFACES, DROP_ANIMS, MEGA_THEMES, MENU_ICONS, styleOf,
 } from "@/lib/menu-db";
 
@@ -280,11 +280,11 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
                   <button type="button" aria-expanded={isOpen} aria-controls={`pv-${it.id}`} onClick={() => onOpen(openId === it.id ? null : it.id)}>
                     {it.icon && <Icon name={it.icon} size={12} />}{it.label || "Untitled"} <Icon name={isOpen ? "chevUp" : "chevDown"} size={12} />
                   </button>
-                ) : <span>{it.label || "Untitled"}</span>}
+                ) : <MenuLink href={hrefOf(it.link, pages)} newTab={it.newTab}>{it.label || "Untitled"}</MenuLink>}
                 {expandable && isOpen && <div id={`pv-${it.id}`} className={`m8-pv-sub ${mobileBehaviour}`}>
                   {it.behaviour === "mega" && megaOf(it.megaId) ? megaOf(it.megaId)!.columns.map((c) => (
                     <div key={c.id}><b>{c.title}</b>{c.links.map((l) => <span key={l.id}>{l.label}</span>)}</div>
-                  )) : it.children.map((c) => <span key={c.id}>{c.icon && <Icon name={c.icon} size={11} />}{c.label}{c.description && <small className="m8-link-desc">{c.description}</small>}</span>)}
+                  )) : it.children.map((c) => <MenuLink key={c.id} href={hrefOf(c.link, pages)} newTab={c.newTab}>{c.icon && <Icon name={c.icon} size={11} />}{c.label}{c.description && <small className="m8-link-desc">{c.description}</small>}</MenuLink>)}
                 </div>}
               </li>
             );
@@ -309,11 +309,11 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
                     onKeyDown={(e) => { if (e.key === "Escape") onOpen(null); }}>
                     {it.icon && <Icon name={it.icon} size={12} />}{it.label || "Untitled"} <Icon name="chevDown" size={11} />
                   </button>
-                ) : <span>{it.icon && <Icon name={it.icon} size={12} />}{it.label || "Untitled"}</span>}
+                ) : <MenuLink href={hrefOf(it.link, pages)} newTab={it.newTab}>{it.icon && <Icon name={it.icon} size={12} />}{it.label || "Untitled"}</MenuLink>}
                 {isOpen && (
                   <div id={`pvp-${it.id}`} className={`m8-pv-panel m8-anim-${megaOf(it.megaId)?.dropAnim ?? st.dropAnim}`} role="region" aria-label={`${it.label} menu`} onKeyDown={(e) => { if (e.key === "Escape") onOpen(null); }}>
                     {it.behaviour === "mega" && megaOf(it.megaId) ? <MegaPanelView mega={megaOf(it.megaId)!} pages={pages} tokens={tokens} />
-                      : <ul className="m8-pv-drop">{it.children.map((c) => <li key={c.id}>{c.icon && <Icon name={c.icon} size={12} />}<span>{c.label}</span>{c.description && <small className="m8-link-desc">{c.description}</small>}</li>)}</ul>}
+                      : <ul className="m8-pv-drop">{it.children.map((c) => <li key={c.id}>{c.icon && <Icon name={c.icon} size={12} />}<MenuLink href={hrefOf(c.link, pages)} newTab={c.newTab}>{c.label}</MenuLink>{c.description && <small className="m8-link-desc">{c.description}</small>}</li>)}</ul>}
                   </div>
                 )}
               </li>
@@ -325,6 +325,21 @@ export function NavPreview({ items, megaOf, pages, tokens, device, brand, mobile
   );
 }
 
+/**
+ * A menu link as a real anchor. The typed link is resolved to its address by the caller (hrefOf).
+ * New-tab links get target and rel, and a screen-reader note. Inside the editor and every preview a click
+ * shows the link but does not follow it, so the editor is never left. Without an address it renders as text.
+ */
+export function MenuLink({ href, newTab, className, children }: { href: string | null; newTab?: boolean; className?: string; children: ReactNode }) {
+  if (!href) return <span className={className}>{children}</span>;
+  return (
+    <a className={className} href={href} {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      onClick={(e) => e.preventDefault()}>
+      {children}{newTab && <span className="m8-sr"> (opens in new tab)</span>}
+    </a>
+  );
+}
+
 /** the read-only rendering of a mega panel, as visitors see it */
 export function MegaPanelView({ mega, pages, tokens }: { mega: MegaDoc; pages: PageLike[]; tokens: ThemeTokens }) {
   const cols = mega.columns.length + (mega.featured.enabled ? 1 : 0);
@@ -333,7 +348,7 @@ export function MegaPanelView({ mega, pages, tokens }: { mega: MegaDoc; pages: P
       {mega.columns.map((c) => (
         <div key={c.id}>
           <b>{c.title || "Untitled"}</b>
-          <ul>{c.links.map((l) => <li key={l.id}>{l.icon && <Icon name={l.icon} size={12} />}<span>{l.label}</span>{l.description && <small className="m8-link-desc">{l.description}</small>}{l.link && l.link.kind === "page" && pages.find((p) => p.id === (l.link as { pageId: string }).pageId)?.status === "draft" ? <em> draft</em> : null}</li>)}</ul>
+          <ul>{c.links.map((l) => <li key={l.id}>{l.icon && <Icon name={l.icon} size={12} />}<MenuLink href={hrefOf(l.link, pages)}>{l.label}</MenuLink>{l.description && <small className="m8-link-desc">{l.description}</small>}{l.link && l.link.kind === "page" && pages.find((p) => p.id === (l.link as { pageId: string }).pageId)?.status === "draft" ? <em> draft</em> : null}</li>)}</ul>
 {c.viewAll && <span className="m8-viewall">{c.viewAll.label || "View all"} <Icon name="arrowRight" size={11} /></span>}
         </div>
       ))}
