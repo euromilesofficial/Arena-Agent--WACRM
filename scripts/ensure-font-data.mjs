@@ -22,7 +22,7 @@ const MIN_BYTES = 800_000;
 if (!fs.existsSync(FONT_DATA)) {
   console.error(`\n! src/lib/theme-font-data.ts is missing.
   It is a generated asset (the 50 embedded families) and it is in Git. Either:
-    · restore it:   git checkout -- src/lib/theme-font-data.ts
+    · restore it:   bash scripts/git-fetch.sh src/lib/theme-font-data.ts   (reads it from GitHub)
     · regenerate:  npm run fonts
   Nothing is built until this resolves — a build without fonts would look fine and be wrong.\n`);
   process.exit(1);
